@@ -6,7 +6,9 @@ import { LinkList } from "@/components/LinkList";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { VisibilityButton } from "@/components/VisibilityButton";
-import { jiraBoardUrl, loadDashboard, orbitProjectUrl } from "@/lib/dashboard";
+import { JiraOverview } from "@/components/JiraOverview";
+import { loadDashboard, orbitProjectUrl } from "@/lib/dashboard";
+import { fetchJiraOverzicht } from "@/lib/jira/overview";
 import {
   BILLING_MODE_LABELS,
   formatDate,
@@ -36,6 +38,13 @@ export default async function ProjectPage({
     .flatMap((account) => account.projecten)
     .find((item) => item.number === nummer);
   if (!project) notFound();
+
+  const jira = await Promise.all(
+    project.jiraKeys.map(async (key) => ({
+      key,
+      result: await fetchJiraOverzicht(key),
+    })),
+  );
 
   const crumbs = [
     HOME,
@@ -74,22 +83,14 @@ export default async function ProjectPage({
             </dd>
           </dl>
         </Card>
-        <Card title="Jira">
-          {project.jiraKeys.length === 0 && (
+        {project.jiraKeys.length === 0 && (
+          <Card title="Jira">
             <p className={styles.muted}>Nog geen Jira-key ingesteld.</p>
-          )}
-          {project.jiraKeys.length > 0 && (
-            <ul className={styles.plainList}>
-              {project.jiraKeys.map((key) => (
-                <li key={key}>
-                  <ExternalLink href={jiraBoardUrl(key)}>
-                    Board {key}
-                  </ExternalLink>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+          </Card>
+        )}
+        {jira.map(({ key, result }) => (
+          <JiraOverview key={key} jiraKey={key} result={result} />
+        ))}
         <Card title="Links">
           <LinkList links={project.links} />
         </Card>

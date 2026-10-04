@@ -1,4 +1,4 @@
-import { refreshOrbit } from "@/app/actions";
+import { refreshData } from "@/app/actions";
 import type { Dashboard } from "@/lib/dashboard";
 import { formatTime } from "@/lib/format";
 import styles from "./OrbitStatus.module.css";
@@ -29,7 +29,7 @@ export function OrbitStatus({ dashboard }: Props) {
           <span aria-hidden="true">⚠ </span>
           Ophalen uit Orbit is mislukt: {dashboard.message}
         </p>
-        <form action={refreshOrbit}>
+        <form action={refreshData}>
           <button className={styles.button} type="submit">
             Opnieuw proberen
           </button>
@@ -46,7 +46,7 @@ export function OrbitStatus({ dashboard }: Props) {
           {formatTime(dashboard.fetchedAt)}
         </time>
       </p>
-      <form action={refreshOrbit}>
+      <form action={refreshData}>
         <button className={styles.button} type="submit">
           Verversen
         </button>

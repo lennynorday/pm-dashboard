@@ -6,7 +6,10 @@ import { LinkList } from "@/components/LinkList";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { ProjectList } from "@/components/ProjectList";
+import { JiraOverview } from "@/components/JiraOverview";
+import { SupportOverview } from "@/components/SupportOverview";
 import { loadDashboard } from "@/lib/dashboard";
+import { fetchJiraOverzicht, fetchSupportOverzicht } from "@/lib/jira/overview";
 import styles from "../../grid.module.css";
 
 const HOME = { label: "Mijn accounts", href: "/" };
@@ -29,6 +32,18 @@ export default async function AccountPage({
 
   const account = dashboard.accounts.find((item) => item.slug === slug);
   if (!account) notFound();
+
+  const [jira, support] = await Promise.all([
+    Promise.all(
+      account.jiraKeys.map(async (key) => ({
+        key,
+        result: await fetchJiraOverzicht(key),
+      })),
+    ),
+    account.supportOrganizations.length > 0
+      ? fetchSupportOverzicht(account.supportOrganizations)
+      : null,
+  ]);
 
   const zichtbaar = account.projecten.filter(
     (p) => p.zichtbaarheid === "zichtbaar",
@@ -74,6 +89,22 @@ export default async function AccountPage({
           <LinkList links={account.links} />
         </Card>
       </div>
+      <section className={styles.section} aria-labelledby="jira">
+        <h2 id="jira" className={styles.sectionTitle}>
+          Jira
+        </h2>
+        <div className={styles.grid}>
+          {jira.map(({ key, result }) => (
+            <JiraOverview
+              key={key}
+              jiraKey={key}
+              result={result}
+              headingLevel="h3"
+            />
+          ))}
+          <SupportOverview result={support} headingLevel="h3" />
+        </div>
+      </section>
       <section className={styles.section} aria-labelledby="projecten">
         <h2 id="projecten" className={styles.sectionTitle}>
           Projecten
