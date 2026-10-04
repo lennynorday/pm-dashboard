@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   CloseIcon,
+  ExternalIcon,
   HomeIcon,
   InboxIcon,
   MenuIcon,
@@ -160,6 +161,7 @@ export function Sidebar({
               >
                 <InboxIcon />
                 <span className={styles.label}>Inbox</span>
+                <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
@@ -178,6 +180,7 @@ export function Sidebar({
               >
                 <TodoIcon />
                 <span className={styles.label}>To-do&apos;s</span>
+                <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
