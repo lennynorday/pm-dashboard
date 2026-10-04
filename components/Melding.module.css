@@ -1,0 +1,65 @@
+.melding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03);
+  padding: var(--space-03) var(--space-04);
+  border-radius: var(--radius-card);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
+
+.icoon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-yellow);
+}
+
+.icoon svg {
+  stroke-width: 2.5;
+}
+
+.tekst {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.titel {
+  margin: 0;
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.uitleg {
+  margin: 0;
+  font: var(--type-label-small);
+}
+
+.actie a,
+.actie button {
+  display: inline-block;
+  padding: var(--space-01) var(--space-04);
+  border: 1px solid var(--norday-dark);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--norday-dark);
+  font: var(--type-label-small);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actie a:hover,
+.actie button:hover {
+  background: var(--norday-dark);
+  color: var(--norday-yellow);
+}
+
+.melding :focus-visible {
+  outline-color: var(--norday-dark);
+}

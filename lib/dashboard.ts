@@ -28,6 +28,8 @@ export type Project = {
 export type Account = {
   slug: string;
   naam: string;
+  jiraKeys: string[];
+  supportOrganizations: string[];
   am: string | null;
   contactpersonen: Contactpersoon[];
   links: Link[];
@@ -67,10 +69,6 @@ export function orbitProjectUrl(number: string): string {
   return `${config.orbitSite}/project/${encodeURIComponent(number)}`;
 }
 
-export function jiraBoardUrl(key: string): string {
-  return `${config.jiraSite}/browse/${encodeURIComponent(key)}`;
-}
-
 function toProject(orbit: OrbitProject, hidden: string[]): Project {
   const projectConfig = config.projecten[orbit.number] ?? {};
   const accountSlug = slugify(orbit.client);
@@ -84,7 +82,7 @@ function toProject(orbit: OrbitProject, hidden: string[]): Project {
     status: orbit.state,
     afrekenwijze: orbit.billing,
     einddatum: orbit.endDate,
-    jiraKeys: projectConfig.jiraKeys ?? [],
+    jiraKeys: projectConfig.jiraKeys ?? accountConfig.jiraKeys ?? [],
     links: (projectConfig.links ?? []).map(toLink),
     zichtbaarheid: hidden.includes(orbit.number) ? "verborgen" : "zichtbaar",
   };
@@ -95,6 +93,8 @@ function toAccount(slug: string, projecten: Project[]): Account {
   return {
     slug,
     naam: projecten[0].accountNaam,
+    jiraKeys: accountConfig.jiraKeys ?? [],
+    supportOrganizations: accountConfig.supportOrganizations ?? [],
     am: accountConfig.am || null,
     contactpersonen: accountConfig.contactpersonen ?? [],
     links: (accountConfig.links ?? []).map(toLink),

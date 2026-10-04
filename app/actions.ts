@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { hideProject, showProject } from "@/lib/hidden-projects";
+import { clearJiraCache } from "@/lib/jira/overview";
 import { clearProjectCache } from "@/lib/orbit/projects";
 
-export async function refreshOrbit(): Promise<void> {
+export async function refreshData(): Promise<void> {
   clearProjectCache();
+  clearJiraCache();
   revalidatePath("/", "layout");
 }
 

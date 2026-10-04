@@ -1,5 +1,8 @@
-.status,
-.message {
+.melding {
+  margin-bottom: var(--space-08);
+}
+
+.status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -7,20 +10,10 @@
   margin-bottom: var(--space-08);
 }
 
-.message {
-  padding: var(--space-04);
-  border: 2px solid var(--color-accent);
-  border-radius: var(--radius-card);
-}
-
 .text {
   margin: 0;
   font: var(--type-label);
   color: var(--color-text-muted);
-}
-
-.message .text {
-  color: var(--color-text);
 }
 
 .button {

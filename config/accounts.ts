@@ -15,6 +15,9 @@ export const config: DashboardConfig = {
   },
   accounts: {
     "centraal-museum-utrecht": {
+      jiraKeys: ["CMU"],
+      // TODO: naam van de Organization in SUPP, zodra er tickets zijn.
+      supportOrganizations: [],
       links: [
         {
           label: "CMU-kanaal",
@@ -28,6 +31,9 @@ export const config: DashboardConfig = {
       ],
     },
     "stichting-kunsthal-rotterdam": {
+      jiraKeys: ["KH"],
+      // TODO: naam van de Organization in SUPP, zodra er tickets zijn.
+      supportOrganizations: [],
       links: [
         { label: "Website", url: "https://www.kunsthal.nl" },
         {
@@ -42,9 +48,26 @@ export const config: DashboardConfig = {
         },
       ],
     },
+    "stichting-de-effenaar": {
+      jiraKeys: ["EF"],
+      supportOrganizations: ["Effenaar"],
+    },
+    "stichting-tot-beheer-museum-boijmans-van-beuningen": {
+      jiraKeys: ["BOIJ"],
+      supportOrganizations: ["Boijmans"],
+    },
+    "nemo-science-museum": {
+      jiraKeys: ["NMO"],
+      supportOrganizations: ["NEMO Science Museum"],
+    },
+    "stichting-herinneringscentrum-kamp-westerbork": {
+      jiraKeys: ["WESTERBORK"],
+      supportOrganizations: ["Westerbork Corporate"],
+    },
+    wo2net: {
+      jiraKeys: ["OVDR"],
+      supportOrganizations: ["Oorlog voor de Rechter"],
+    },
   },
-  projecten: {
-    "1607": { jiraKeys: ["CMU"] },
-    "1728": { jiraKeys: ["KH"] },
-  },
+  projecten: {},
 };
