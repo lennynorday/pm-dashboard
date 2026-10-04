@@ -9,7 +9,7 @@ export const config: DashboardConfig = {
   eigenaar: "Lennart Ter Haar",
   jiraSite: "https://in10-rotterdam.atlassian.net",
   orbitSite: "https://norday.orbit.teamleader.eu",
-  jiraQaStatussen: ["Norday | QA", "Klant | Acceptatietest"],
+  jiraQaStatussen: ["Norday | QA", "Test | Norday", "Klant | Acceptatietest"],
   links: {
     inbox: "https://mail.google.com/mail/u/0/#inbox",
     todo: "https://docs.superhuman.com/d/_dbn7xvJsaKk/_su2ra91w",

@@ -18,7 +18,7 @@
 1. Het Jira-token staat alleen in `.env.local`; `.env.example` bevat `JIRA_BASE_URL`, `JIRA_EMAIL` en `JIRA_API_TOKEN` zonder waarden; geen token in de browser of in Git.
 2. De Jira-key staat per account in de config en geldt voor alle projecten van dat account; per project kan ik hem overschrijven of leegmaken.
 3. Het Jira-blok op de projectpagina toont het aantal open tickets per status (zoals Jira de status noemt), gesorteerd van "nog te doen" naar "bijna klaar".
-4. Het blok toont apart: open bugs (type Bug) en tickets op QA (status "Norday | QA" of "Klant | Acceptatietest"); de QA-statussen staan in de config.
+4. Het blok toont apart: open bugs (type Bug) en tickets op QA (status "Norday | QA", "Test | Norday" of "Klant | Acceptatietest"); de QA-statussen staan in de config.
 5. Elk aantal is een link naar dezelfde selectie in Jira; daarnaast een link naar het board.
 6. De accountpagina toont dezelfde samenvatting per Jira-project van het account, plus het aantal open supporttickets in SUPP voor de Organization van het account.
 7. Een open "Blocked"-status valt op met tekst of icoon, niet alleen met kleur.
