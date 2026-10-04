@@ -1,4 +1,4 @@
-import type { BillingMode, ProjectState } from "./orbit/projects";
+import type { ProjectState } from "./orbit/projects";
 
 const dateFormat = new Intl.DateTimeFormat("nl-NL", {
   day: "numeric",
@@ -24,13 +24,4 @@ export const PROJECT_STATE_LABELS: Record<ProjectState, string> = {
   OPEN: "Open",
   CLOSED: "Afgesloten",
   ARCHIVED: "Gearchiveerd",
-};
-
-export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
-  NONE: "Niet factureerbaar",
-  ESTIMATE: "Schatting",
-  HOURS: "Op basis van uren",
-  FIXED: "Vaste prijs",
-  OFFER: "Offerte",
-  SUBSCRIPTION: "Abonnement",
 };

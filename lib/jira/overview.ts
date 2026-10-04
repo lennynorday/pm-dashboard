@@ -40,6 +40,7 @@ const cache = new Map<string, { issues: JiraIssue[]; fetchedAt: Date }>();
 
 export function clearJiraCache(): void {
   cache.clear();
+  boards.clear();
 }
 
 async function cachedSearch(

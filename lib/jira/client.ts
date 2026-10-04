@@ -122,7 +122,7 @@ export async function searchIssues(jql: string): Promise<JiraIssue[]> {
 /** Het board van een Jira-project, afgeleid uit de sprint van een recent ticket. */
 export async function findBoardId(key: string): Promise<number | null> {
   const data = await postSearch({
-    jql: `project = "${key}" AND sprint is not EMPTY ORDER BY updated DESC`,
+    jql: `project = "${key.replace(/"/g, '\\"')}" AND sprint is not EMPTY ORDER BY updated DESC`,
     maxResults: 1,
   });
   const sprint = parseIssues(data)[0]?.sprints.find(

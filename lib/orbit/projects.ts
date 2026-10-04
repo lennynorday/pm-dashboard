@@ -3,16 +3,6 @@ import { callOrbitTool } from "./client";
 export const PROJECT_STATES = ["DRAFT", "OPEN", "CLOSED", "ARCHIVED"] as const;
 export type ProjectState = (typeof PROJECT_STATES)[number];
 
-export const BILLING_MODES = [
-  "NONE",
-  "ESTIMATE",
-  "HOURS",
-  "FIXED",
-  "OFFER",
-  "SUBSCRIPTION",
-] as const;
-export type BillingMode = (typeof BILLING_MODES)[number];
-
 export type OrbitProject = {
   /** Het interne id van Orbit. */
   id: string;
@@ -20,18 +10,12 @@ export type OrbitProject = {
   number: string;
   name: string;
   client: string;
-  owner: string;
   state: ProjectState;
-  billing: BillingMode | null;
   endDate: string | null;
 };
 
 function parseState(value: string): ProjectState | null {
   return PROJECT_STATES.find((state) => state === value) ?? null;
-}
-
-function parseBilling(value: string): BillingMode | null {
-  return BILLING_MODES.find((mode) => mode === value) ?? null;
 }
 
 /**
@@ -56,9 +40,7 @@ function parseRow(line: string): OrbitProject | null {
     number: link[1],
     name: cells[1],
     client: cells[2] || "Onbekende klant",
-    owner: cells[3],
     state,
-    billing: parseBilling(cells[5]),
     endDate,
   };
 }
@@ -97,6 +79,13 @@ export async function fetchMyProjects(): Promise<ProjectListResult> {
   });
   if (result.status !== "ok") return result;
 
-  cache = { projects: parseProjectList(result.text), fetchedAt: new Date() };
+  const projects = parseProjectList(result.text);
+  if (projects.length === 0 && result.text.includes("jump:PROJECT:")) {
+    return {
+      status: "fout",
+      message: "De projectlijst van Orbit heeft een onbekend formaat.",
+    };
+  }
+  cache = { projects, fetchedAt: new Date() };
   return { status: "ok", ...cache };
 }
