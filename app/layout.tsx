@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
-import { SiteHeader } from "@/components/SiteHeader";
+import { cookies } from "next/headers";
+import { Sidebar } from "@/components/Sidebar/Sidebar";
+import { config } from "@/config/accounts";
+import { loadDashboard } from "@/lib/dashboard";
+import { toNavAccounts } from "@/lib/navigation";
+import {
+  dataTheme,
+  MENU_COOKIE,
+  parseMenuStand,
+  parseThema,
+  THEMA_COOKIE,
+} from "@/lib/preferences";
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -8,21 +19,36 @@ export const metadata: Metadata = {
   description: "Overzicht van accounts en projecten",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const thema = parseThema(cookieStore.get(THEMA_COOKIE)?.value);
+  const stand = parseMenuStand(cookieStore.get(MENU_COOKIE)?.value);
+  const dashboard = await loadDashboard();
+  const accounts =
+    dashboard.status === "ok" ? toNavAccounts(dashboard.accounts) : [];
+
   return (
-    <html lang="nl">
+    <html lang="nl" data-theme={dataTheme(thema)}>
       <body>
         <a className={styles.skipLink} href="#inhoud">
           Naar de inhoud
         </a>
-        <SiteHeader />
-        <main id="inhoud" className={styles.main}>
-          {children}
-        </main>
+        <div className={styles.shell}>
+          <Sidebar
+            accounts={accounts}
+            inboxUrl={config.links.inbox}
+            todoUrl={config.links.todo}
+            initialStand={stand}
+            initialThema={thema}
+          />
+          <main id="inhoud" className={styles.main}>
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

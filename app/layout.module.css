@@ -1,11 +1,12 @@
 .main {
   max-width: var(--content-max-width);
-  margin: 0 auto;
+  min-width: 0;
   padding: var(--space-08) var(--space-04) var(--space-11);
 }
 
 .skipLink {
   position: absolute;
+  z-index: 30;
   left: var(--space-04);
   top: -100px;
   padding: var(--space-02) var(--space-04);
@@ -18,7 +19,13 @@
 }
 
 @media (min-width: 1024px) {
+  .shell {
+    display: flex;
+    align-items: flex-start;
+  }
+
   .main {
+    flex: 1;
     padding-inline: var(--space-08);
   }
 }

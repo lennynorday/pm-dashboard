@@ -1,0 +1,389 @@
+/* Mobiel eerst: bovenbalk met knop "Menu", het menu schuift over de inhoud. */
+
+.sidebar {
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 72px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-04);
+  padding: var(--space-03) var(--space-04);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.brand {
+  font: var(--type-ui-heading-2);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  text-decoration: none;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  padding: var(--space-02) var(--space-04);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+  font: var(--type-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.brand:focus-visible,
+.menuButton:focus-visible {
+  outline-color: var(--norday-yellow);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgb(61 16 40 / 0.5);
+}
+
+.panel {
+  display: none;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 11;
+  width: min(var(--sidebar-width), 85vw);
+  overflow-y: auto;
+  flex-direction: column;
+  gap: var(--space-06);
+  padding: var(--space-04);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-line-subtle);
+}
+
+.sidebar[data-mobile-open="true"] .panel {
+  display: flex;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-02);
+  min-height: 40px;
+}
+
+.brandPanel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  font: var(--type-ui-heading-2);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  text-decoration: none;
+}
+
+.brandShort {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-small);
+  background: var(--norday-dark);
+  color: var(--norday-yellow);
+  font-size: 18px;
+}
+
+.closeButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-02);
+}
+
+.sectionTitle {
+  margin: 0 0 0 var(--space-03);
+  font: var(--type-label-small);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0 var(--space-03);
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-01);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-03);
+  min-width: 0;
+  min-height: 40px;
+  padding: var(--space-02) var(--space-03);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  font: var(--type-nav);
+  text-decoration: none;
+}
+
+.item svg {
+  flex: none;
+}
+
+.item:hover,
+.project:hover,
+.expand:hover,
+.closeButton:hover,
+.collapse:hover {
+  background: var(--color-surface-accent);
+}
+
+.item[aria-current="page"],
+.project[aria-current="page"] {
+  background: var(--color-surface-accent);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.label {
+  overflow-wrap: anywhere;
+}
+
+.item .external {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  color: var(--color-text-muted);
+}
+
+.initials {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-line-subtle);
+  border-radius: var(--radius-pill);
+  font: var(--type-label-small);
+  font-weight: 600;
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-01);
+}
+
+.expand {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.expand svg {
+  transition: transform 150ms ease;
+}
+
+.expand[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.projects {
+  margin: var(--space-01) 0 var(--space-02) 23px;
+  padding: 0 0 0 var(--space-02);
+  border-left: 1px solid var(--color-line-subtle);
+  list-style: none;
+}
+
+.project {
+  display: block;
+  padding: var(--space-02) var(--space-03);
+  border-radius: var(--radius-small);
+  color: var(--color-text-muted);
+  font: var(--type-nav-small);
+  text-decoration: none;
+}
+
+.project[aria-current="page"] {
+  color: var(--color-text);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-03);
+  margin-top: auto;
+}
+
+.theme {
+  display: flex;
+  gap: var(--space-01);
+  padding: var(--space-01);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-accent);
+}
+
+.themeButton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-02);
+  min-height: 36px;
+  padding: var(--space-01) var(--space-03);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: var(--type-label-small);
+  cursor: pointer;
+}
+
+.themeButton[aria-pressed="true"] {
+  border-color: var(--color-line-subtle);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.collapse {
+  display: none;
+}
+
+.tooltip {
+  display: none;
+}
+
+/* Vanaf 1024px: vast zijmenu naast de inhoud, inklapbaar. */
+@media (min-width: 1024px) {
+  .topbar,
+  .backdrop,
+  .closeButton {
+    display: none;
+  }
+
+  .panel,
+  .sidebar[data-mobile-open="true"] .panel {
+    display: flex;
+    position: sticky;
+    top: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    transition: width 150ms ease;
+  }
+
+  .collapse {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-03);
+    min-height: 40px;
+    padding: var(--space-02) var(--space-03);
+    border: 0;
+    border-radius: var(--radius-small);
+    background: transparent;
+    color: var(--color-text-muted);
+    font: var(--type-nav);
+    cursor: pointer;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .panel {
+    width: var(--sidebar-collapsed-width);
+    overflow: visible;
+    padding-inline: var(--space-03);
+  }
+
+  /* Ingeklapt: tekst alleen voor screenreaders, iconen en beginletters in beeld. */
+  .sidebar[data-stand="ingeklapt"] .label,
+  .sidebar[data-stand="ingeklapt"] .sectionTitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .external,
+  .sidebar[data-stand="ingeklapt"] .expand,
+  .sidebar[data-stand="ingeklapt"] .projects,
+  .sidebar[data-stand="ingeklapt"] .empty {
+    display: none;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .item,
+  .sidebar[data-stand="ingeklapt"] .collapse {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .theme {
+    flex-direction: column;
+    border-radius: var(--radius-card);
+  }
+
+  .sidebar[data-stand="ingeklapt"] .themeButton {
+    padding-inline: 0;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .tooltip {
+    position: absolute;
+    left: calc(100% + var(--space-03));
+    top: 50%;
+    z-index: 20;
+    transform: translateY(-50%);
+    padding: var(--space-01) var(--space-03);
+    border-radius: var(--radius-small);
+    background: var(--norday-dark);
+    color: var(--norday-white);
+    font: var(--type-label-small);
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid var(--color-line-subtle);
+    pointer-events: none;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .item:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .item:focus-visible .tooltip,
+  .sidebar[data-stand="ingeklapt"] .collapse:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip {
+    display: block;
+  }
+
+  .sidebar[data-tooltips-hidden="true"] .tooltip {
+    display: none !important;
+  }
+}
