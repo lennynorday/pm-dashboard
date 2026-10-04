@@ -16,32 +16,6 @@
   margin: 0 0 var(--space-04);
 }
 
-.facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-02) var(--space-05);
-  margin: 0;
-}
-
-.facts dt {
-  color: var(--color-text-muted);
-}
-
-.facts dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.plainList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.plainList li + li {
-  margin-top: var(--space-02);
-}
-
 .muted {
   margin: 0;
   color: var(--color-text-muted);

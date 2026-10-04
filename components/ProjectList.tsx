@@ -1,6 +1,7 @@
 import NextLink from "next/link";
 import type { Project } from "@/lib/dashboard";
 import { formatDate, PROJECT_STATE_LABELS } from "@/lib/format";
+import { projectHref } from "@/lib/navigation";
 import { VisibilityButton } from "./VisibilityButton";
 import styles from "./ProjectList.module.css";
 
@@ -13,7 +14,7 @@ export function ProjectList({ projecten }: Props) {
         <li key={project.number} className={styles.item}>
           <div className={styles.main}>
             <NextLink
-              href={`/projecten/${project.number}`}
+              href={projectHref(project.accountSlug, project.number)}
               className={styles.name}
             >
               {project.naam}

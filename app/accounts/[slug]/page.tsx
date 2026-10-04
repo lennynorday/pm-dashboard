@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AccountPeople } from "@/components/AccountPeople";
+import { AccountProjects } from "@/components/AccountProjects";
 import { Card } from "@/components/Card";
 import { HiddenProjects } from "@/components/HiddenProjects";
+import { JiraOverview } from "@/components/JiraOverview";
 import { LinkList } from "@/components/LinkList";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
-import { ProjectList } from "@/components/ProjectList";
-import { JiraOverview } from "@/components/JiraOverview";
 import { SupportOverview } from "@/components/SupportOverview";
 import { loadDashboard } from "@/lib/dashboard";
 import { fetchJiraOverzicht, fetchSupportOverzicht } from "@/lib/jira/overview";
@@ -54,44 +55,28 @@ export default async function AccountPage({
 
   return (
     <>
-      <PageHeading title={account.naam} crumbs={[HOME]} />
+      <PageHeading title={account.naam} crumbs={[HOME]}>
+        <AccountPeople
+          am={account.am}
+          contactpersonen={account.contactpersonen}
+        />
+      </PageHeading>
       <OrbitStatus dashboard={dashboard} />
-      <div className={styles.grid}>
-        <Card title="Gegevens" accent>
-          <dl className={styles.facts}>
-            <dt>Account manager</dt>
-            <dd>{account.am ?? "Nog niet ingesteld"}</dd>
-            <dt>Contactpersonen</dt>
-            <dd>
-              {account.contactpersonen.length === 0 && "Nog niet ingesteld"}
-              {account.contactpersonen.length > 0 && (
-                <ul className={styles.plainList}>
-                  {account.contactpersonen.map((persoon) => (
-                    <li key={persoon.naam}>
-                      {persoon.naam}
-                      {persoon.rol && `, ${persoon.rol}`}
-                      {persoon.email && (
-                        <>
-                          {" "}
-                          <a href={`mailto:${persoon.email}`}>
-                            {persoon.email}
-                          </a>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </dd>
-          </dl>
-        </Card>
-        <Card title="Links">
-          <LinkList links={account.links} />
-        </Card>
-      </div>
+
+      <section className={styles.section} aria-labelledby="projecten">
+        <h2 id="projecten" className={styles.sectionTitle}>
+          Projecten
+        </h2>
+        {zichtbaar.length === 0 && (
+          <p className={styles.muted}>Geen zichtbare projecten.</p>
+        )}
+        <AccountProjects projecten={zichtbaar} />
+        <HiddenProjects projecten={verborgen} />
+      </section>
+
       <section className={styles.section} aria-labelledby="jira">
         <h2 id="jira" className={styles.sectionTitle}>
-          Jira
+          Jira en support
         </h2>
         <div className={styles.grid}>
           {jira.map(({ key, result }) => (
@@ -105,19 +90,14 @@ export default async function AccountPage({
           <SupportOverview result={support} headingLevel="h3" />
         </div>
       </section>
-      <section className={styles.section} aria-labelledby="projecten">
-        <h2 id="projecten" className={styles.sectionTitle}>
-          Projecten
+
+      <section className={styles.section} aria-labelledby="links">
+        <h2 id="links" className={styles.sectionTitle}>
+          Links
         </h2>
-        {zichtbaar.length === 0 && (
-          <p className={styles.muted}>Geen zichtbare projecten.</p>
-        )}
-        {zichtbaar.length > 0 && (
-          <Card title={`${zichtbaar.length} open`} headingLevel="h3">
-            <ProjectList projecten={zichtbaar} />
-          </Card>
-        )}
-        <HiddenProjects projecten={verborgen} />
+        <Card title="Account" headingLevel="h3">
+          <LinkList links={account.links} />
+        </Card>
       </section>
     </>
   );

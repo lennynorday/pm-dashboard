@@ -3,20 +3,15 @@
 import NextLink from "next/link";
 import { useState } from "react";
 import { ChevronIcon } from "@/components/icons";
-import type { NavAccount } from "@/lib/navigation";
+import { NavAccount, projectHref } from "@/lib/navigation";
 import styles from "./Sidebar.module.css";
 
 type Props = {
   accounts: NavAccount[];
   currentAccount: string | null;
-  currentProject: string | null;
 };
 
-export function AccountNav({
-  accounts,
-  currentAccount,
-  currentProject,
-}: Props) {
+export function AccountNav({ accounts, currentAccount }: Props) {
   const [open, setOpen] = useState<string[]>(
     currentAccount ? [currentAccount] : [],
   );
@@ -34,8 +29,7 @@ export function AccountNav({
       {accounts.map((account) => {
         const expanded =
           open.includes(account.slug) || account.slug === currentAccount;
-        const isCurrent =
-          account.slug === currentAccount && currentProject === null;
+        const isCurrent = account.slug === currentAccount;
         const listId = `projecten-${account.slug}`;
         return (
           <li key={account.slug}>
@@ -71,11 +65,8 @@ export function AccountNav({
                 {account.projecten.map((project) => (
                   <li key={project.number}>
                     <NextLink
-                      href={`/projecten/${project.number}`}
+                      href={projectHref(account.slug, project.number)}
                       className={styles.project}
-                      aria-current={
-                        project.number === currentProject ? "page" : undefined
-                      }
                     >
                       {project.naam}
                     </NextLink>

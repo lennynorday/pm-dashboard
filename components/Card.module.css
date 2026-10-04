@@ -6,11 +6,6 @@
   min-width: 0;
 }
 
-.accent {
-  border-color: transparent;
-  background: var(--color-surface-accent);
-}
-
 .title {
   font: var(--type-ui-heading-2);
   text-transform: uppercase;

@@ -27,18 +27,8 @@ type Props = {
   initialThema: Thema;
 };
 
-function currentFromPath(pathname: string, accounts: NavAccount[]) {
-  const accountMatch = /^\/accounts\/([^/]+)/.exec(pathname);
-  if (accountMatch) return { account: accountMatch[1], project: null };
-
-  const projectMatch = /^\/projecten\/([^/]+)/.exec(pathname);
-  if (!projectMatch) return { account: null, project: null };
-
-  const project = projectMatch[1];
-  const account = accounts.find((item) =>
-    item.projecten.some((p) => p.number === project),
-  );
-  return { account: account?.slug ?? null, project };
+function currentAccount(pathname: string): string | null {
+  return /^\/accounts\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
 export function Sidebar({
@@ -49,7 +39,7 @@ export function Sidebar({
   initialThema,
 }: Props) {
   const pathname = usePathname();
-  const current = currentFromPath(pathname, accounts);
+  const current = currentAccount(pathname);
   const [stand, setStand] = useState<MenuStand>(initialStand);
   // Het mobiele menu is open voor de pagina waarop je het opende; navigeren sluit het.
   const [openOn, setOpenOn] = useState<string | null>(null);
@@ -68,6 +58,12 @@ export function Sidebar({
   function closeMobile() {
     setOpenOn(null);
     menuButton.current?.focus();
+  }
+
+  // Een projectlink springt binnen dezelfde pagina; sluit dan ook het mobiele menu.
+  function closeOnLinkClick(event: React.MouseEvent) {
+    if (event.target instanceof Element && event.target.closest("a"))
+      setOpenOn(null);
   }
 
   function toggleStand() {
@@ -119,7 +115,12 @@ export function Sidebar({
         />
       )}
 
-      <div ref={panel} id="zijmenu" className={styles.panel}>
+      <div
+        ref={panel}
+        id="zijmenu"
+        className={styles.panel}
+        onClick={closeOnLinkClick}
+      >
         <div className={styles.panelHeader}>
           <NextLink href="/" className={styles.brandPanel}>
             <span className={styles.brandShort} aria-hidden="true">
@@ -198,11 +199,7 @@ export function Sidebar({
           {accounts.length === 0 && (
             <p className={styles.empty}>Geen accounts geladen.</p>
           )}
-          <AccountNav
-            accounts={accounts}
-            currentAccount={current.account}
-            currentProject={current.project}
-          />
+          <AccountNav accounts={accounts} currentAccount={current} />
         </nav>
 
         <div className={styles.footer}>
