@@ -1,6 +1,6 @@
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-02);
   margin: 0 0 var(--space-05);
   padding: 0;
@@ -58,59 +58,6 @@
   color: var(--color-text);
   font-weight: 600;
   text-transform: none;
-}
-
-.tableWrap {
-  overflow-x: auto;
-  margin-bottom: var(--space-04);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font: var(--type-label-small);
-}
-
-.table th,
-.table td {
-  padding: var(--space-01) var(--space-02);
-  border-top: 1px solid var(--color-line-subtle);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.table th:first-child {
-  padding-left: 0;
-  text-align: left;
-  font-weight: 400;
-  white-space: normal;
-}
-
-.table thead th {
-  border-top: 0;
-  color: var(--color-text-muted);
-  font-weight: 400;
-  text-transform: uppercase;
-}
-
-.table tfoot th,
-.table tfoot td {
-  border-top: 1px solid var(--color-line);
-  font-weight: 600;
-}
-
-.total {
-  font-weight: 600;
-}
-
-.blocked th:first-child {
-  font-weight: 600;
-}
-
-.blocked td:last-child {
-  background: var(--norday-yellow);
-  color: var(--norday-dark);
 }
 
 .footer {

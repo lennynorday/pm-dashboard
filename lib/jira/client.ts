@@ -1,6 +1,3 @@
-export const STATUS_CATEGORIES = ["new", "indeterminate", "done"] as const;
-export type StatusCategory = (typeof STATUS_CATEGORIES)[number];
-
 export const SPRINT_STATES = ["active", "future", "closed"] as const;
 export type SprintState = (typeof SPRINT_STATES)[number];
 
@@ -12,9 +9,6 @@ export type JiraSprint = {
 
 export type JiraIssue = {
   key: string;
-  status: string;
-  statusCategory: StatusCategory;
-  type: string;
   sprints: JiraSprint[];
 };
 
@@ -46,12 +40,6 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function parseCategory(value: unknown): StatusCategory {
-  return (
-    STATUS_CATEGORIES.find((category) => category === value) ?? "indeterminate"
-  );
-}
-
 function parseSprint(data: unknown): JiraSprint | null {
   const sprint = record(data);
   const state = SPRINT_STATES.find((item) => item === sprint.state);
@@ -63,20 +51,14 @@ function parseSprint(data: unknown): JiraSprint | null {
   };
 }
 
-/** Parst één issue uit de Jira-zoekresultaten; onvolledige issues worden overgeslagen. */
+/** Parst één issue uit de Jira-zoekresultaten; issues zonder key worden overgeslagen. */
 function parseIssue(data: unknown): JiraIssue | null {
   const issue = record(data);
-  const fields = record(issue.fields);
-  const status = record(fields.status);
-  const type = record(fields.issuetype);
-  if (typeof issue.key !== "string" || typeof status.name !== "string")
-    return null;
+  if (typeof issue.key !== "string") return null;
+  const sprints = record(issue.fields)[SPRINT_FIELD];
   return {
     key: issue.key,
-    status: status.name,
-    statusCategory: parseCategory(record(status.statusCategory).key),
-    type: typeof type.name === "string" ? type.name : "Onbekend",
-    sprints: (Array.isArray(fields[SPRINT_FIELD]) ? fields[SPRINT_FIELD] : [])
+    sprints: (Array.isArray(sprints) ? sprints : [])
       .map(parseSprint)
       .filter((sprint): sprint is JiraSprint => sprint !== null),
   };
@@ -85,7 +67,7 @@ function parseIssue(data: unknown): JiraIssue | null {
 const PAGE_SIZE = 100;
 const MAX_PAGES = 20;
 
-/** Haalt alle issues op die bij de JQL horen, met alleen status, type en sprints. */
+/** Haalt alle issues op die bij de JQL horen, met alleen hun sprints. */
 export async function searchIssues(jql: string): Promise<JiraIssue[]> {
   const { baseUrl, authorization } = settings();
   const issues: JiraIssue[] = [];
@@ -101,7 +83,7 @@ export async function searchIssues(jql: string): Promise<JiraIssue[]> {
       },
       body: JSON.stringify({
         jql,
-        fields: ["status", "issuetype", SPRINT_FIELD],
+        fields: [SPRINT_FIELD],
         maxResults: PAGE_SIZE,
         nextPageToken,
       }),

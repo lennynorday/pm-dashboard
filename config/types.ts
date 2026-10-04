@@ -29,8 +29,6 @@ export type DashboardConfig = {
   eigenaar: string;
   jiraSite: string;
   orbitSite: string;
-  /** Statussen die tellen als "op QA". */
-  jiraQaStatussen: string[];
   links: { inbox: string; todo: string };
   /** Sleutel: de klantnaam uit Orbit als slug, bijvoorbeeld "centraal-museum-utrecht". */
   accounts: Record<string, AccountConfig>;

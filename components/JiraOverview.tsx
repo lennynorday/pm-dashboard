@@ -15,10 +15,6 @@ type Props = {
   headingLevel?: "h2" | "h3";
 };
 
-function isBlocked(status: string): boolean {
-  return /blocked|geblokkeerd/i.test(status);
-}
-
 function isVerlopen(sprint: ActieveSprint, nu: Date): boolean {
   return sprint.einddatum !== null && new Date(sprint.einddatum) < nu;
 }
@@ -71,8 +67,6 @@ export function JiraOverview({ jiraKey, result, headingLevel = "h2" }: Props) {
     { label: "Actieve sprint", ...overzicht.perBak.actief },
     { label: "Gepland", ...overzicht.perBak.gepland },
     { label: "Backlog", ...overzicht.perBak.backlog },
-    { label: "Open bugs", ...overzicht.openBugs },
-    { label: "Op QA", ...overzicht.opQa },
   ];
 
   return (
@@ -88,64 +82,6 @@ export function JiraOverview({ jiraKey, result, headingLevel = "h2" }: Props) {
           </li>
         ))}
       </ul>
-
-      {overzicht.perStatus.length === 0 && (
-        <p className={styles.muted}>Geen open tickets.</p>
-      )}
-      {overzicht.perStatus.length > 0 && (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <caption className="visually-hidden">
-              Open tickets in {jiraKey} per status en per sprintbak
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Status</th>
-                <th scope="col">Sprint</th>
-                <th scope="col">Gepland</th>
-                <th scope="col">Backlog</th>
-                <th scope="col">Totaal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overzicht.perStatus.map((status) => (
-                <tr
-                  key={status.status}
-                  className={
-                    isBlocked(status.status) ? styles.blocked : undefined
-                  }
-                >
-                  <th scope="row">
-                    <ExternalLink href={status.url}>
-                      {isBlocked(status.status) && (
-                        <span aria-hidden="true">⚠ </span>
-                      )}
-                      {status.status}
-                    </ExternalLink>
-                  </th>
-                  <td>{status.perBak.actief}</td>
-                  <td>{status.perBak.gepland}</td>
-                  <td>{status.perBak.backlog}</td>
-                  <td className={styles.total}>{status.aantal}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">
-                  <ExternalLink href={overzicht.totaal.url}>
-                    Alle open tickets
-                  </ExternalLink>
-                </th>
-                <td>{overzicht.perBak.actief.aantal}</td>
-                <td>{overzicht.perBak.gepland.aantal}</td>
-                <td>{overzicht.perBak.backlog.aantal}</td>
-                <td className={styles.total}>{overzicht.totaal.aantal}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
 
       <p className={styles.footer}>
         <span>
