@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { config } from "@/config/accounts";
@@ -13,6 +14,13 @@ import {
 } from "@/lib/preferences";
 import "./globals.css";
 import styles from "./layout.module.css";
+
+/** Terugval voor Apercu Condensed Pro tot de lettertypebestanden er zijn. */
+const barlow = Barlow_Condensed({
+  weight: "700",
+  subsets: ["latin"],
+  variable: "--font-barlow",
+});
 
 export const metadata: Metadata = {
   title: "PM-dashboard",
@@ -32,7 +40,7 @@ export default async function RootLayout({
     dashboard.status === "ok" ? toNavAccounts(dashboard.accounts) : [];
 
   return (
-    <html lang="nl" data-theme={dataTheme(thema)}>
+    <html lang="nl" data-theme={dataTheme(thema)} className={barlow.variable}>
       <body>
         <a className={styles.skipLink} href="#inhoud">
           Naar de inhoud

@@ -2,8 +2,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-01) var(--space-06);
-  margin: var(--space-03) 0 0;
-  font: var(--type-label);
+  margin: 0;
+  font: var(--type-label-small);
 }
 
 .people div {
@@ -12,6 +12,8 @@
 }
 
 .people dt {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-text-muted);
 }
 

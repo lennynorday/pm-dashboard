@@ -26,6 +26,8 @@ export type StatusTelling = Telling & { status: string };
 export type SupportOverzicht = {
   organizations: string[];
   open: Telling;
+  /** Open tickets waarbij de bal bij Norday ligt. */
+  opNorday: Telling;
   perStatus: StatusTelling[];
   fetchedAt: Date;
 };
@@ -157,6 +159,13 @@ export function fetchJiraOverzicht(
   });
 }
 
+/** ponytail: statusnamen uit de SUPP-workflow; pas aan als die workflow verandert. */
+const WACHT_OP_NORDAY = [
+  "Waiting for first response",
+  "Wachtend op support",
+  "Response from customer",
+];
+
 /** Open supporttickets in SUPP voor de Organizations van een account. */
 export function fetchSupportOverzicht(
   organizations: string[],
@@ -170,6 +179,13 @@ export function fetchSupportOverzicht(
     return {
       organizations,
       open: { aantal: issues.length, url: jqlUrl(jql) },
+      opNorday: {
+        aantal: issues.filter((issue) => WACHT_OP_NORDAY.includes(issue.status))
+          .length,
+        url: jqlUrl(
+          `${jql} AND status in (${WACHT_OP_NORDAY.map(quote).join(", ")})`,
+        ),
+      },
       perStatus: statuses
         .map((status) => ({
           status,
@@ -180,4 +196,29 @@ export function fetchSupportOverzicht(
       fetchedAt,
     };
   });
+}
+
+export type AccountJira = {
+  jira: { key: string; result: JiraResult<JiraOverzicht> }[];
+  /** null: geen Organization in SUPP ingesteld. */
+  support: JiraResult<SupportOverzicht> | null;
+};
+
+/** Jira-projecten en support van één account, tegelijk opgehaald. */
+export async function fetchAccountJira(account: {
+  jiraKeys: string[];
+  supportOrganizations: string[];
+}): Promise<AccountJira> {
+  const [jira, support] = await Promise.all([
+    Promise.all(
+      account.jiraKeys.map(async (key) => ({
+        key,
+        result: await fetchJiraOverzicht(key),
+      })),
+    ),
+    account.supportOrganizations.length > 0
+      ? fetchSupportOverzicht(account.supportOrganizations)
+      : null,
+  ]);
+  return { jira, support };
 }

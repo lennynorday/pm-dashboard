@@ -4,10 +4,11 @@ import type {
   JiraResult,
 } from "@/lib/jira/overview";
 import { formatDate, formatTime } from "@/lib/format";
+import { isVerlopen } from "@/lib/signals";
 import { Card } from "./Card";
 import { ExternalLink } from "./ExternalLink";
 import { JiraMessage } from "./JiraMessage";
-import { Melding } from "./Melding";
+import { ClockIcon } from "./icons";
 import styles from "./JiraOverview.module.css";
 
 type Props = {
@@ -15,10 +16,6 @@ type Props = {
   result: JiraResult<JiraOverzicht>;
   headingLevel?: "h2" | "h3";
 };
-
-function isVerlopen(sprint: ActieveSprint, nu: Date): boolean {
-  return sprint.einddatum !== null && new Date(sprint.einddatum) < nu;
-}
 
 function SprintRegel({ sprints }: { sprints: ActieveSprint[] }) {
   if (sprints.length === 0) {
@@ -31,19 +28,17 @@ function SprintRegel({ sprints }: { sprints: ActieveSprint[] }) {
         const datum = sprint.einddatum
           ? formatDate(sprint.einddatum.slice(0, 10))
           : null;
-        if (isVerlopen(sprint, nu)) {
-          return (
-            <li key={sprint.naam} className={styles.sprintMelding}>
-              <Melding titel={`Sprint "${sprint.naam}" is verlopen`}>
-                Einddatum {datum}. De sprint is nog niet afgesloten in Jira.
-              </Melding>
-            </li>
-          );
-        }
         return (
           <li key={sprint.naam} className={styles.sprint}>
-            {sprint.naam}
-            {datum && `, eindigt ${datum}`}
+            <span className={styles.sprintNaam}>{sprint.naam}</span>
+            {isVerlopen(sprint, nu) ? (
+              <span className={styles.verlopen}>
+                <ClockIcon className={styles.verlopenIcoon} />
+                Verlopen op {datum}
+              </span>
+            ) : (
+              datum && <span>Eindigt {datum}</span>
+            )}
           </li>
         );
       })}
@@ -62,9 +57,9 @@ export function JiraOverview({ jiraKey, result, headingLevel = "h2" }: Props) {
 
   const overzicht = result.data;
   const tegels = [
-    { label: "Actieve sprint", ...overzicht.perBak.actief },
-    { label: "Gepland", ...overzicht.perBak.gepland },
-    { label: "Backlog", ...overzicht.perBak.backlog },
+    { label: "Actieve sprint", live: true, ...overzicht.perBak.actief },
+    { label: "Gepland", live: false, ...overzicht.perBak.gepland },
+    { label: "Backlog", live: false, ...overzicht.perBak.backlog },
   ];
 
   return (
@@ -72,7 +67,10 @@ export function JiraOverview({ jiraKey, result, headingLevel = "h2" }: Props) {
       <SprintRegel sprints={overzicht.actieveSprints} />
       <ul className={styles.stats}>
         {tegels.map((tegel) => (
-          <li key={tegel.label}>
+          <li
+            key={tegel.label}
+            className={tegel.live ? styles.live : undefined}
+          >
             <ExternalLink href={tegel.url} className={styles.statLink}>
               <span className={styles.number}>{tegel.aantal}</span>
               <span className={styles.statLabel}>{tegel.label}</span>

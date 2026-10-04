@@ -1,0 +1,131 @@
+/* Het lila veld loopt door tot de randen van het werkgebied. */
+.band {
+  margin: 0 calc(var(--main-padding) * -1) var(--space-10);
+  padding: var(--space-06) var(--main-padding) var(--space-04);
+  background: var(--field-attention);
+  color: var(--field-ink);
+}
+
+.kop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-03);
+  margin: 0 0 var(--space-04);
+  font: var(--type-ui-heading-2);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+.aantal {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.35em;
+  background: var(--field-ink);
+  color: var(--field-attention);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.lijst {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signaal {
+  display: grid;
+  grid-template-columns: 9.5rem 16rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-01) var(--space-06);
+  padding: var(--space-03) 0;
+  border-top: 1px solid var(--field-ink);
+}
+
+.zonderAccount .signaal {
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+}
+
+.soort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  font: var(--type-label-small);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+
+.icoon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.25;
+}
+
+.account {
+  font: var(--type-body-2);
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.account:hover {
+  text-decoration: underline;
+}
+
+.wat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-01) var(--space-04);
+  min-width: 0;
+}
+
+.titel {
+  font: var(--type-body-2);
+  font-weight: 500;
+}
+
+.detail {
+  font: var(--type-label-small);
+  color: var(--field-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.band :focus-visible {
+  outline-color: var(--field-ink);
+}
+
+.rustig {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  margin: 0 0 var(--space-10);
+  padding: var(--space-03) 0;
+  border-block: 1px solid var(--color-line-subtle);
+}
+
+.rustigIcoon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.rustigTekst {
+  margin: 0;
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 899px) {
+  .signaal,
+  .zonderAccount .signaal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .soort {
+    align-self: start;
+  }
+}

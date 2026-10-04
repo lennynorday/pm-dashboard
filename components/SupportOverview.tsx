@@ -27,14 +27,20 @@ export function SupportOverview({ result, headingLevel = "h2" }: Props) {
     );
   }
 
-  const { open, perStatus, organizations, fetchedAt } = result.data;
+  const { open, opNorday, perStatus, organizations, fetchedAt } = result.data;
   return (
     <Card title="Beheer & Support" headingLevel={headingLevel}>
       <ul className={styles.stats}>
         <li>
           <ExternalLink href={open.url} className={styles.statLink}>
             <span className={styles.number}>{open.aantal}</span>
-            <span className={styles.statLabel}>Open supporttickets</span>
+            <span className={styles.statLabel}>Open</span>
+          </ExternalLink>
+        </li>
+        <li className={opNorday.aantal > 0 ? styles.wacht : undefined}>
+          <ExternalLink href={opNorday.url} className={styles.statLink}>
+            <span className={styles.number}>{opNorday.aantal}</span>
+            <span className={styles.statLabel}>Wacht op ons</span>
           </ExternalLink>
         </li>
       </ul>

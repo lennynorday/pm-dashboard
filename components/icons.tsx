@@ -119,3 +119,28 @@ export function AlertIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </Icon>
+  );
+}
+
+export function MessageIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 5h16v11H9l-5 4z" />
+    </Icon>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </Icon>
+  );
+}

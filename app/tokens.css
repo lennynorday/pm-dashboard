@@ -31,7 +31,7 @@
 
   /* Lettertypes met terugval tot de bestanden er zijn */
   --font-heading:
-    "Apercu Condensed Pro", "Barlow Condensed", "Arial Narrow", sans-serif;
+    "Apercu Condensed Pro", var(--font-barlow), "Arial Narrow", sans-serif;
   --font-text: "Suisse Intl", "Inter", "Helvetica Neue", Arial, sans-serif;
 
   /* Typografie (mobiel eerst) */

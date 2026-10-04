@@ -1,7 +1,6 @@
 .main {
-  max-width: var(--content-max-width);
   min-width: 0;
-  padding: var(--space-08) var(--space-04) var(--space-11);
+  padding: var(--space-06) var(--main-padding) var(--space-11);
 }
 
 .skipLink {
@@ -26,6 +25,6 @@
 
   .main {
     flex: 1;
-    padding-inline: var(--space-08);
+    padding-top: var(--space-08);
   }
 }

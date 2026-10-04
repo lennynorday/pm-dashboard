@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AccountPeople } from "@/components/AccountPeople";
 import { AccountProjects } from "@/components/AccountProjects";
-import { Card } from "@/components/Card";
+import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
 import { JiraOverview } from "@/components/JiraOverview";
 import { LinkList } from "@/components/LinkList";
@@ -10,10 +10,11 @@ import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { SupportOverview } from "@/components/SupportOverview";
 import { loadDashboard } from "@/lib/dashboard";
-import { fetchJiraOverzicht, fetchSupportOverzicht } from "@/lib/jira/overview";
+import { fetchAccountJira } from "@/lib/jira/overview";
+import { accountSignalen } from "@/lib/signals";
 import styles from "../../grid.module.css";
 
-const HOME = { label: "Mijn accounts", href: "/" };
+const HOME = { label: "Overzicht", href: "/" };
 
 export default async function AccountPage({
   params,
@@ -34,18 +35,8 @@ export default async function AccountPage({
   const account = dashboard.accounts.find((item) => item.slug === slug);
   if (!account) notFound();
 
-  const [jira, support] = await Promise.all([
-    Promise.all(
-      account.jiraKeys.map(async (key) => ({
-        key,
-        result: await fetchJiraOverzicht(key),
-      })),
-    ),
-    account.supportOrganizations.length > 0
-      ? fetchSupportOverzicht(account.supportOrganizations)
-      : null,
-  ]);
-
+  const data = await fetchAccountJira(account);
+  const signalen = accountSignalen(account, data, new Date());
   const zichtbaar = account.projecten.filter(
     (p) => p.zichtbaarheid === "zichtbaar",
   );
@@ -55,13 +46,17 @@ export default async function AccountPage({
 
   return (
     <>
-      <PageHeading title={account.naam} crumbs={[HOME]}>
+      <PageHeading
+        title={account.naam}
+        crumbs={[HOME]}
+        aside={<OrbitStatus dashboard={dashboard} />}
+      >
         <AccountPeople
           am={account.am}
           contactpersonen={account.contactpersonen}
         />
       </PageHeading>
-      <OrbitStatus dashboard={dashboard} />
+      <AttentionBand signalen={signalen} toonAccount={false} />
 
       <section className={styles.section} aria-labelledby="projecten">
         <h2 id="projecten" className={styles.sectionTitle}>
@@ -79,7 +74,7 @@ export default async function AccountPage({
           Jira en support
         </h2>
         <div className={styles.grid}>
-          {jira.map(({ key, result }) => (
+          {data.jira.map(({ key, result }) => (
             <JiraOverview
               key={key}
               jiraKey={key}
@@ -87,7 +82,7 @@ export default async function AccountPage({
               headingLevel="h3"
             />
           ))}
-          <SupportOverview result={support} headingLevel="h3" />
+          <SupportOverview result={data.support} headingLevel="h3" />
         </div>
       </section>
 
@@ -95,9 +90,7 @@ export default async function AccountPage({
         <h2 id="links" className={styles.sectionTitle}>
           Links
         </h2>
-        <Card title="Account" headingLevel="h3">
-          <LinkList links={account.links} />
-        </Card>
+        <LinkList links={account.links} />
       </section>
     </>
   );
