@@ -1,0 +1,70 @@
+{
+  "accounts": {
+    "c-centraal-museum-utrecht": {
+      "am": "",
+      "links": [
+        {
+          "id": "cmuslack",
+          "label": "CMU-kanaal",
+          "url": "https://norday-agency.slack.com/archives/C08NTBTUXAA"
+        },
+        {
+          "id": "cmudocs",
+          "label": "CMU intern",
+          "url": "https://docs.superhuman.com/d/_dsOpoo6eGAx"
+        },
+        {
+          "id": "cmusite",
+          "label": "Website",
+          "url": "https://www.centraalmuseum.nl"
+        }
+      ],
+      "name": "",
+      "supportOrgs": []
+    },
+    "c-stichting-kunsthal-rotterdam": {
+      "am": "",
+      "links": [
+        {
+          "id": "khsite",
+          "label": "Website",
+          "url": "https://www.kunsthal.nl"
+        },
+        {
+          "id": "khacc",
+          "label": "CMS acceptatie",
+          "url": "https://admin-acc.kunsthal.nl"
+        },
+        {
+          "id": "khprod",
+          "label": "CMS productie",
+          "url": "https://admin.kunsthal.nl"
+        }
+      ],
+      "name": "",
+      "supportOrgs": []
+    }
+  },
+  "extraOrbitIds": [],
+  "hiddenOrbitIds": [],
+  "links": {
+    "inbox": "https://mail.google.com/mail/u/0/#inbox",
+    "todo": ""
+  },
+  "manualAccounts": [],
+  "manualProjects": [],
+  "ownerName": "Lennart Ter Haar",
+  "projects": {
+    "o862777": {
+      "jiraKey": "CMU",
+      "jql": "",
+      "links": []
+    },
+    "o922891": {
+      "jiraKey": "KH",
+      "jql": "",
+      "links": []
+    }
+  },
+  "version": 2
+}

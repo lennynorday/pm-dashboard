@@ -1,0 +1,21 @@
+# Dependencies en build
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Geheimen
+.env*
+!.env.example
+
+# Teamleader-data (budgetten en factuurbedragen)
+data/teamleader.json
+
+# Betaalde lettertypes (licentie)
+docs/huisstijl/fonts/
+public/fonts/
+
+# Systeem
+.DS_Store
+npm-debug.log*

@@ -1,0 +1,1464 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PM-dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F6F2FB;
+  --surface: #FFFFFF;
+  --ink: #24163A;
+  --muted: #5E5373;
+  --line: #E2D8EF;
+  --rail: #EBDBFF;
+  --rail-ink: #24163A;
+  --accent: #5B2DA6;
+  --accent-ink: #FFFFFF;
+  --bad: #B42318;
+  --bad-bg: #FDE8E6;
+  --warn: #8A4500;
+  --warn-bg: #FFF1DC;
+  --st-new: #D9C6F5;
+  --st-active: #7C4DCC;
+  --focus: #5B2DA6;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --text: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #140D1D; --surface: #1E1529; --ink: #EFE7FA; --muted: #B3A6C6; --line: #33264A;
+    --rail: #2B1E40; --rail-ink: #EFE7FA; --accent: #C9A9FF; --accent-ink: #1B1028;
+    --bad: #FF9A8F; --bad-bg: #3D1715; --warn: #F2B66D; --warn-bg: #3A2610;
+    --st-new: #4A3670; --st-active: #A77BF0; --focus: #C9A9FF;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #140D1D; --surface: #1E1529; --ink: #EFE7FA; --muted: #B3A6C6; --line: #33264A;
+  --rail: #2B1E40; --rail-ink: #EFE7FA; --accent: #C9A9FF; --accent-ink: #1B1028;
+  --bad: #FF9A8F; --bad-bg: #3D1715; --warn: #F2B66D; --warn-bg: #3A2610;
+  --st-new: #4A3670; --st-active: #A77BF0; --focus: #C9A9FF;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 16px; line-height: 1.5; }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 1rem; top: 1rem; background: var(--surface); padding: .5rem 1rem; z-index: 10; }
+
+.app { display: grid; grid-template-columns: 17rem 1fr; min-height: 100%; }
+.rail { background: var(--rail); color: var(--rail-ink); padding: 1.75rem 1.25rem; position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; overflow-y: auto; }
+.rail-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; margin: 0 0 1.5rem; }
+.rail-title a { color: inherit; text-decoration: none; }
+.rail nav ul { list-style: none; margin: 0; padding: 0; }
+.rail .acc { margin-bottom: 1.1rem; }
+.rail .acc > a { font-family: var(--display); font-weight: 700; font-size: 1.15rem; line-height: 1.2; color: inherit; text-decoration: none; display: block; padding: .15rem 0; }
+.rail .acc > a:hover { text-decoration: underline; }
+.rail .proj a { color: inherit; text-decoration: none; font-size: .92rem; display: block; padding: .15rem 0 .15rem .75rem; border-left: 2px solid transparent; }
+.rail .proj a:hover { text-decoration: underline; }
+.rail a[aria-current="page"] { border-left-color: currentColor; font-weight: 600; }
+.rail .acc > a[aria-current="page"] { text-decoration: underline; text-underline-offset: 4px; }
+.rail-foot { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid color-mix(in srgb, var(--rail-ink) 20%, transparent); font-size: .92rem; }
+.rail-foot a { color: inherit; }
+
+main { padding: 2.5rem clamp(1rem, 4vw, 3.5rem) 4rem; max-width: 72rem; width: 100%; }
+main:focus { outline: none; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.02; letter-spacing: -0.02em; margin: 0 0 .4rem; }
+h1:focus { outline: none; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 1.35rem; margin: 0 0 .75rem; }
+h3 { font-family: var(--display); font-weight: 500; font-size: 1.15rem; margin: 0 0 .5rem; }
+.lede { color: var(--muted); margin: 0 0 2rem; max-width: 60ch; }
+.crumb { font-size: .92rem; margin: 0 0 .75rem; color: var(--muted); }
+.crumb a { color: var(--muted); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 0 0 2rem; }
+.btn { font: inherit; font-weight: 600; font-size: .95rem; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); border-radius: 999px; padding: .45rem 1rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.5rem; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--ink)); }
+.btn.small { font-size: .85rem; padding: .25rem .7rem; min-height: 2rem; }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.stamp { color: var(--muted); font-size: .85rem; }
+
+.quick { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0 0 2.5rem; }
+.quick a { display: flex; flex-direction: column; min-width: 12rem; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: var(--ink); }
+.quick a:hover { border-color: var(--accent); }
+.quick strong { font-family: var(--display); font-size: 1.2rem; }
+.quick span { color: var(--muted); font-size: .9rem; }
+
+.section { margin: 0 0 2.75rem; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem 1.4rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
+
+.signals { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.signal { display: flex; gap: .75rem; align-items: baseline; padding: .7rem 1rem; border-radius: 10px; background: var(--warn-bg); color: var(--ink); }
+.signal.bad { background: var(--bad-bg); }
+.signal b { font-weight: 600; }
+.signal .tag { font-size: .8rem; font-weight: 600; color: var(--warn); white-space: nowrap; }
+.signal.bad .tag { color: var(--bad); }
+.calm { color: var(--muted); margin: 0; }
+
+.issues { list-style: none; margin: 0; padding: 0; }
+.issues li { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: .75rem; align-items: baseline; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.issues li:last-child { border-bottom: 0; }
+.issues .key { font-weight: 600; font-size: .9rem; }
+.issues .sum { overflow-wrap: anywhere; }
+.pill { font-size: .78rem; font-weight: 600; padding: .1rem .55rem; border-radius: 999px; white-space: nowrap; background: var(--st-new); color: var(--ink); }
+.pill.active { background: var(--st-active); color: #fff; }
+.pill.blocked { background: var(--bad); color: #fff; }
+:root[data-theme="dark"] .pill.blocked, :root[data-theme="dark"] .pill.active { color: #1B1028; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.blocked, :root:not([data-theme="light"]) .pill.active { color: #1B1028; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: .6rem; }
+.card h3 a { color: var(--ink); text-decoration: none; }
+.card h3 a:hover { text-decoration: underline; }
+.card .projects { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.card .projects a { color: var(--ink); font-weight: 500; }
+.counts { color: var(--muted); font-size: .9rem; }
+.counts .b { color: var(--bad); font-weight: 600; }
+
+.bar { display: flex; height: .55rem; border-radius: 999px; overflow: hidden; background: var(--line); margin: .35rem 0; }
+.bar span { display: block; height: 100%; }
+.bar .new { background: var(--st-new); }
+.bar .active { background: var(--st-active); }
+.bar .blocked { background: var(--bad); }
+
+.status-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.status-table th, .status-table td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--line); }
+.status-table td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.status-table th { color: var(--muted); font-weight: 500; }
+
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.links li { display: flex; align-items: center; gap: .35rem; }
+.links a { display: inline-flex; align-items: center; gap: .5rem; padding: .45rem .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--ink); text-decoration: none; font-weight: 500; }
+.links a:hover { border-color: var(--accent); }
+.links .kind { font-size: .75rem; color: var(--muted); font-weight: 600; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.kv { display: grid; grid-template-columns: minmax(8rem, auto) 1fr; gap: .25rem 1rem; margin: 0; font-size: .93rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.record + .record { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.scroll-x { overflow-x: auto; }
+pre.raw { white-space: pre-wrap; font-size: .85rem; margin: 0; max-height: 24rem; overflow: auto; }
+
+.notice { padding: .8rem 1rem; border-radius: 10px; background: var(--warn-bg); margin: 0 0 1rem; }
+.notice.bad { background: var(--bad-bg); }
+.loading { color: var(--muted); }
+
+form.edit { display: grid; gap: .75rem; background: var(--surface); border: 1.5px dashed var(--accent); border-radius: 14px; padding: 1.2rem; margin: 0 0 1rem; }
+form.edit .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem; }
+label { display: grid; gap: .25rem; font-weight: 600; font-size: .9rem; }
+label small { font-weight: 400; color: var(--muted); }
+input { font: inherit; padding: .55rem .7rem; border: 1.5px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); min-height: 2.5rem; }
+input:focus-visible { border-color: var(--focus); }
+.edit-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.edit-list li { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--line); }
+
+.toast { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: .7rem 1.1rem; border-radius: 10px; max-width: 90vw; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .rail { position: static; height: auto; padding: 1rem; }
+  .rail nav > ul { display: flex; gap: 1rem; overflow-x: auto; }
+  .rail .acc { margin: 0; flex: 0 0 auto; }
+  .rail .proj { display: none; }
+  .rail-title { margin-bottom: .75rem; }
+  .rail-foot { margin-top: .75rem; padding-top: .5rem; }
+  .two { grid-template-columns: 1fr; }
+  .issues li { grid-template-columns: 1fr; gap: .15rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .quick a, .links a { transition: border-color .15s, background-color .15s; }
+}
+
+
+.signal a { color: inherit; }
+.meter { height: .5rem; border-radius: 999px; background: var(--line); overflow: hidden; margin: .35rem 0 .15rem; }
+.meter span { display: block; height: 100%; background: var(--accent); }
+.meter.warn span { background: var(--warn); }
+.meter.bad span { background: var(--bad); }
+.big { font-family: var(--display); font-weight: 700; font-size: 2.6rem; line-height: 1; margin: 0; }
+.weeks { list-style: none; margin: .5rem 0 1.25rem; padding: 0; display: grid; gap: .3rem; }
+.weeks li { display: grid; grid-template-columns: 5rem 1fr 4.5rem; gap: .6rem; align-items: center; font-size: .9rem; }
+.wbar { height: .55rem; background: var(--line); border-radius: 999px; overflow: hidden; }
+.wbar span { display: block; height: 100%; background: var(--st-active); }
+.wv { text-align: right; font-variant-numeric: tabular-nums; }
+.saved { list-style: none; margin: 0; padding: 0; }
+.saved li { padding: .7rem 0; border-bottom: 1px solid var(--line); }
+.saved li:last-child { border-bottom: 0; }
+.saved-meta { margin: 0 0 .2rem; font-size: .9rem; }
+.saved-text { margin: 0 0 .3rem; overflow-wrap: anywhere; }
+details.adder { margin-top: 1.25rem; }
+details.adder > summary { cursor: pointer; font-weight: 600; color: var(--accent); padding: .4rem 0; }
+details.adder form { margin-top: .75rem; }
+.two .panel h3 { font-size: 1rem; }
+
+.signal { flex-wrap: wrap; }
+.signal a { flex: 1 1 16rem; }
+.sig-actions { display: flex; gap: .4rem; margin-left: auto; }
+.signal.muted { opacity: .75; }
+.linkish { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Naar de inhoud</a>
+<div class="app">
+  <aside class="rail" id="rail" aria-label="Accounts"></aside>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div id="toast-host"></div>
+<script>
+"use strict";
+
+const JIRA = {
+  server: "Atlassian Rovo",
+  tool: "searchJiraIssuesUsingJql",
+  cloudId: "3b405f8d-a35c-4c99-a490-3d1372f29921",
+  site: "https://in10-rotterdam.atlassian.net",
+  fields: ["summary", "status", "priority", "assignee", "updated", "project"],
+  suppFields: ["summary", "status", "priority", "assignee", "updated", "customfield_10700", "customfield_11521"],
+};
+const TL = { server: "orbit.teamleader", list: "ListProjects", fin: "GetProjectFinancials", offers: "ListOffers" };
+const ORBIT = { server: "Teamleader Orbit MCP", sheets: "get_project_timesheets" };
+const SLACK = { server: "Slack", tool: "slack_search_public_and_private" };
+const TODO = {
+  server: "Superhuman Docs",
+  tool: "table_rows_manage",
+  table: "superhuman://docs/bn7xvJsaKk/pages/section-lCGI2ra91w/tables/grid-Fj07UGmlob",
+  page: "https://docs.superhuman.com/d/_dbn7xvJsaKk/_su2ra91w",
+  cols: { title: "c-xXcyksywHy", status: "c-fWacf_uN54", since: "c-_5J7Fs6bii", account: "c-KVgP9QKQbM", project: "c-x3IbkPU5by", source: "c-VI83AqI3uu", sourceId: "c-NsIiHnModt" },
+};
+const GMAIL_INBOX = "https://mail.google.com/mail/u/0/#inbox";
+const LOCAL_KEY = "pm-dashboard-config-v2";
+const TL_CACHE_KEY = "pm-dashboard-tl-v1";
+const HOURS_WEEKS = 8;
+const STOP = new Set(("stichting museum beheer gemeente holding corporate website websites identiteit implementatie sprint " +
+  "onderzoek technische livegang optimalisatie aansluiting server toegankelijkheid trailer vanaf oktober science rotterdam " +
+  "amsterdam utrecht delft breda nederland herinneringscentrum doorontwikkeling change incident uren podcast fase design " +
+  "content campagne strippenkaart onderhoud project projecten audit wcag inclusief resturen nacalculatie offertefase kans").split(" "));
+
+const state = {
+  config: null,
+  source: "loading",
+  docRef: null,
+  mcp: undefined,
+  tl: { status: "idle", mine: [], all: [], error: null, fetchedAt: null, cached: false },
+  fin: {},
+  offers: { status: "idle", items: [], error: null },
+  jira: { status: "idle", issues: [], error: null, fetchedAt: null, truncated: false },
+  supp: { status: "idle", issues: [], error: null, truncated: false },
+  mine: { status: "idle", issues: [], error: null },
+  slack: { status: "idle", items: [], error: null },
+  custom: {},
+  hours: {},
+  edit: false,
+  showDismissed: false,
+  route: { name: "home" },
+};
+
+/* ---------- Data boundaries ---------- */
+
+function str(v) { return typeof v === "string" ? v : ""; }
+function num(v) { return typeof v === "number" && Number.isFinite(v) ? v : null; }
+function uid() { return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())).replace(/[^a-z0-9]/gi, "").slice(0, 8); }
+function strArr(a) { return Array.isArray(a) ? a.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()) : []; }
+function numArr(a) { return Array.isArray(a) ? a.map(Number).filter(Number.isFinite) : []; }
+function obj(v) { return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+
+function parseLink(raw) {
+  const r = obj(raw);
+  const url = str(r.url).trim();
+  if (!url) return null;
+  return { id: str(r.id) || uid(), label: str(r.label).trim() || url, url };
+}
+function parseLinks(a) { return (Array.isArray(a) ? a : []).map(parseLink).filter(Boolean); }
+
+function emptyConfig() {
+  return { version: 2, ownerName: "Lennart Ter Haar", links: { inbox: GMAIL_INBOX, todo: "" }, extraOrbitIds: [], hiddenOrbitIds: [], accounts: {}, projects: {}, manualProjects: [], manualAccounts: [], dismissed: [] };
+}
+function parseConfig(raw) {
+  const r = obj(raw);
+  const links = obj(r.links);
+  const accounts = {};
+  Object.entries(obj(r.accounts)).forEach(([k, v]) => {
+    const a = obj(v);
+    accounts[k] = { name: str(a.name).trim(), am: str(a.am).trim(), supportOrgs: strArr(a.supportOrgs), links: parseLinks(a.links) };
+  });
+  const projects = {};
+  Object.entries(obj(r.projects)).forEach(([k, v]) => {
+    const p = obj(v);
+    projects[k] = { jiraKey: str(p.jiraKey).trim().toUpperCase(), jql: str(p.jql).trim(), links: parseLinks(p.links) };
+  });
+  const manualProjects = (Array.isArray(r.manualProjects) ? r.manualProjects : []).map((x) => {
+    const p = obj(x);
+    if (!str(p.name).trim() || !str(p.accKey)) return null;
+    return { id: str(p.id) || "m" + uid(), accKey: p.accKey, name: p.name.trim(), jiraKey: str(p.jiraKey).trim().toUpperCase(), jql: str(p.jql).trim(), links: parseLinks(p.links) };
+  }).filter(Boolean);
+  const manualAccounts = (Array.isArray(r.manualAccounts) ? r.manualAccounts : []).map((x) => {
+    const a = obj(x);
+    return str(a.name).trim() ? { key: str(a.key) || "m-" + uid(), name: a.name.trim() } : null;
+  }).filter(Boolean);
+  return {
+    version: 2,
+    ownerName: str(r.ownerName).trim() || "Lennart Ter Haar",
+    links: { inbox: str(links.inbox) || GMAIL_INBOX, todo: str(links.todo) },
+    extraOrbitIds: numArr(r.extraOrbitIds),
+    hiddenOrbitIds: numArr(r.hiddenOrbitIds),
+    accounts, projects, manualProjects, manualAccounts,
+    dismissed: (Array.isArray(r.dismissed) ? r.dismissed : []).map((x) => {
+      const d = obj(x);
+      return str(d.id) ? { id: d.id, sig: typeof d.sig === "number" ? d.sig : str(d.sig), at: num(d.at) || 0 } : null;
+    }).filter(Boolean),
+  };
+}
+
+function unwrap(payload) {
+  let p = payload;
+  if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) { return {}; } }
+  return obj(p);
+}
+
+function textOf(res) {
+  const r = obj(res);
+  const blocks = Array.isArray(r.content) ? r.content.filter((b) => b && b.type === "text").map((b) => str(b.text)) : [];
+  if (blocks.length) return blocks.join("\n");
+  return typeof r.payload === "string" ? r.payload : "";
+}
+function enNum(s) { const n = Number(String(s).replace(/[,\s*]/g, "")); return String(s).trim() !== "" && Number.isFinite(n) ? n : null; }
+function tableRows(text, kind) {
+  return text.split("\n").filter((l) => l.startsWith("| [") && l.indexOf("jump:" + kind + ":") !== -1)
+    .map((l) => l.replace(/^\|\s*/, "").replace(/\s*\|\s*$/, "").split(/\s*\|\s*/));
+}
+function foundCount(text) { const m = /Found (\d+)/.exec(text); return m ? Number(m[1]) : null; }
+function parseProjects(text) {
+  return tableRows(text, "PROJECT").map((c) => {
+    const m = /\[(\d+)\]\(jump:PROJECT:(\d+)\)/.exec(c[0] || "");
+    if (!m || c.length < 10) return null;
+    const end = (c[9] || "").trim();
+    return { id: Number(m[2]), number: m[1], name: c[1].trim(), client: c[2].trim() || "Onbekende klant", owner: c[3].trim(),
+      state: c[4].trim(), billing: c[5].trim(), budget: enNum(c[6]), invoiced: enNum(c[7]), remaining: enNum(c[8]), end: /^\d{4}-\d{2}-\d{2}$/.test(end) ? end : "" };
+  }).filter(Boolean);
+}
+function parseFinancials(text) {
+  const g = (re) => { const m = re.exec(text); return m ? enNum(m[1]) : null; };
+  const work = /Work total: (-?[\d,.]+)h, delivered: (-?[\d,.]+)h, planned: (-?[\d,.]+)h, remaining: (-?[\d,.]+)h/.exec(text);
+  const margin = /Margin: (-?[\d,.]+) \((-?\d+)%\)/.exec(text);
+  return {
+    budget: g(/Budget: (-?[\d,.]+)/), totalValue: g(/Total value: (-?[\d,.]+)/), delivered: g(/Delivered value: (-?[\d,.]+)/),
+    invoiced: g(/Invoiced: (-?[\d,.]+)/), unbilled: g(/Unbilled[^:]*:\s*\**(-?[\d,.]+)/),
+    workTotal: work ? enNum(work[1]) : null, workDelivered: work ? enNum(work[2]) : null, workPlanned: work ? enNum(work[3]) : null, workRemaining: work ? enNum(work[4]) : null,
+    marginPct: margin ? Number(margin[2]) : null,
+  };
+}
+function parseOffers(text) {
+  return tableRows(text, "OFFER").map((c) => {
+    const m = /\[(\d+)\]\(jump:OFFER:(\d+)\)/.exec(c[0] || "");
+    if (!m || c.length < 8) return null;
+    const st = /^([A-Z]+)(?:\s*\((\d+)d\))?/.exec((c[4] || "").trim()) || [];
+    const pm = /jump:PROJECT:(\d+)/.exec(c[8] || "");
+    return { id: Number(m[2]), number: m[1], name: c[1].trim(), client: c[2].trim(), owner: c[3].trim(), state: st[1] || (c[4] || "").trim(),
+      days: st[2] ? Number(st[2]) : null, value: enNum(c[5]), weighted: enNum(c[6]), due: (c[7] || "").trim(), projectId: pm ? Number(pm[1]) : null };
+  }).filter(Boolean);
+}
+function parseOrbitDate(s) {
+  const m = /^(\d{4})(\d{2})(\d{2})/.exec(s);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+function parseSheets(payload) {
+  const d = obj(unwrap(payload).data);
+  const lines = (Array.isArray(d.lines) ? d.lines : []).map((x) => {
+    const l = obj(x);
+    if (num(l.hours) === null) return null;
+    return { date: parseOrbitDate(str(l.date)), hours: l.hours, user: str(l.user) || "Onbekend", task: str(l.task) || "Zonder taak" };
+  }).filter(Boolean);
+  return { lines, total: num(d.totalHours) };
+}
+
+function nameOf(v, key) { return typeof v === "string" ? v : str(obj(v)[key || "name"]); }
+function toIssue(raw) {
+  const r = obj(raw);
+  const key = str(r.key) || str(r.issueKey);
+  if (!key) return null;
+  const f = r.fields && typeof r.fields === "object" ? r.fields : r;
+  const status = typeof f.status === "string" ? { name: f.status } : obj(f.status);
+  const cat = obj(status.statusCategory);
+  const name = str(status.name);
+  const sc = f.statusCategory;
+  const catKey = str(cat.key) || (typeof sc === "string" ? sc : str(obj(sc).key));
+  const kind = /block/i.test(name) ? "blocked" : (catKey === "indeterminate" ? "active" : "new");
+  const orgs = Array.isArray(f.customfield_10700) ? f.customfield_10700.map((o) => nameOf(o)).filter(Boolean) : [];
+  const cycle = obj(obj(f.customfield_11521).ongoingCycle);
+  return {
+    key, summary: str(f.summary), status: name || "Onbekend", kind,
+    assignee: nameOf(f.assignee, "displayName"), updated: str(f.updated),
+    project: nameOf(f.project, "key") || key.split("-")[0],
+    orgs, slaBreached: cycle.breached === true, slaRemaining: str(obj(cycle.remainingTime).friendly),
+  };
+}
+function tryJson(v) { if (typeof v !== "string") return v; try { return JSON.parse(v); } catch (e) { return null; } }
+function findIssues(x, depth) {
+  if (!x || typeof x !== "object" || depth > 4) return null;
+  if (Array.isArray(x.issues)) return x;
+  if (Array.isArray(x) && x.length && x.every((i) => i && typeof i === "object" && (i.key || i.issueKey))) return { issues: x };
+  for (const v of Object.values(x)) {
+    const hit = findIssues(tryJson(v), depth + 1);
+    if (hit) return hit;
+  }
+  return null;
+}
+function describeShape(x) {
+  const p = tryJson(x);
+  if (p && typeof p === "object") return Object.keys(p).slice(0, 8).join(", ") || "leeg object";
+  return typeof x === "string" ? "tekst: " + x.slice(0, 80) : typeof x;
+}
+function parseSearchResult(res) {
+  const r = obj(res);
+  const texts = Array.isArray(r.content) ? r.content.filter((b) => b && b.type === "text").map((b) => b.text) : [];
+  const candidates = [r.payload, r.structuredContent].concat(texts);
+  for (const c of candidates) {
+    const hit = findIssues(tryJson(c), 0);
+    if (hit) return { issues: hit.issues, nextPageToken: str(hit.nextPageToken), isLast: hit.isLast !== false };
+  }
+  throw { code: "parse_error", message: "Onverwacht antwoord van Jira (" + describeShape(r.structuredContent || r.payload || texts[0]) + ")" };
+}
+
+function cleanSlackText(t) {
+  return t
+    .replace(/<@[A-Z0-9]+\|([^>]+)>/g, "@$1")
+    .replace(/<#[A-Z0-9]+\|([^>]+)>/g, "#$1")
+    .replace(/<(https?:[^|>]+)\|([^>]+)>/g, "$2")
+    .replace(/<(https?:[^>]+)>/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function parseSlack(payload) {
+  const p = unwrap(payload);
+  const text = str(p.results) || (typeof payload === "string" ? payload : "");
+  return text.split(/^### Result \d+ of \d+\s*$/m).slice(1).map((block) => {
+    const channel = (/^Channel: (.+?)(?: \(ID: [^)]+\))?\s*$/m.exec(block) || [])[1] || "";
+    const parts = (/^Participants: (.+)$/m.exec(block) || [])[1] || "";
+    const from = ((/^From: ([^<\n]+)/m.exec(block) || [])[1] || "").trim();
+    const time = ((/^Time: (.+)$/m.exec(block) || [])[1] || "").trim();
+    const link = (((/^Permalink: \[link\]\((.+?)\)\s*$/m.exec(block) || [])[1]) || "").replace(/\\\//g, "/");
+    const body = block.split(/^Text:\s*$/m)[1] || "";
+    const msg = cleanSlackText(body.replace(/\n---\s*$/m, ""));
+    let where = channel;
+    if (channel === "DM" || /^DM/.test(channel)) {
+      const names = parts.split(/,\s*/).map((s) => s.replace(/\s*\(ID:.*$/, "").trim()).filter((n) => n && !/lennart/i.test(n));
+      where = names.length ? "DM met " + names.join(", ") : "DM";
+    }
+    if (!msg) return null;
+    return { where, from, time, link: /^https:\/\//.test(link) ? link : "", text: msg.length > 260 ? msg.slice(0, 257) + "…" : msg };
+  }).filter(Boolean);
+}
+
+/* ---------- Model ---------- */
+
+function slugify(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "x";
+}
+function accKeyFor(client) { return "c-" + slugify(client); }
+function prettyClient(c) {
+  let s = c.trim();
+  if (s === s.toUpperCase()) s = s.toLowerCase().replace(/(^|[\s(-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+  s = s.replace(/^stichting\s+(tot\s+beheer\s+)?/i, "").replace(/\s+(b\.?v\.?|n\.?v\.?)$/i, "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function sameName(a, b) { return a.toLowerCase().replace(/\s+/g, " ").trim() === b.toLowerCase().replace(/\s+/g, " ").trim(); }
+function tokens(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !STOP.has(t) && !/^\d+$/.test(t));
+}
+function allOrgs() { return Array.from(new Set(state.supp.issues.flatMap((i) => i.orgs))).sort(); }
+
+function buildModel() {
+  const cfg = state.config;
+  const accs = new Map();
+  if (!cfg) return { accounts: [], byKey: accs };
+  const ensure = (key, client) => {
+    if (!accs.has(key)) {
+      const m = cfg.accounts[key] || {};
+      accs.set(key, { key, client, name: m.name || (client ? prettyClient(client) : "Account"), am: m.am || "", orgsManual: m.supportOrgs || [], links: m.links || [], projects: [], manual: false });
+    }
+    return accs.get(key);
+  };
+  const mineIds = new Set(state.tl.mine.map((p) => p.id));
+  const pool = state.tl.mine.concat(state.tl.all.filter((p) => !mineIds.has(p.id) && cfg.extraOrbitIds.includes(p.id)));
+  pool.forEach((op) => {
+    if (cfg.hiddenOrbitIds.includes(op.id)) return;
+    const a = ensure(accKeyFor(op.client), op.client);
+    const pm = cfg.projects["o" + op.id] || {};
+    a.projects.push({ key: "o" + op.id, orbit: op, name: op.name, jiraKey: pm.jiraKey || "", jql: pm.jql || "", links: pm.links || [], isSla: /\bSLA\b/i.test(op.name), manual: false, extra: !mineIds.has(op.id) });
+  });
+  cfg.manualAccounts.forEach((ma) => {
+    const a = ensure(ma.key, "");
+    a.manual = true;
+    if (!(cfg.accounts[ma.key] && cfg.accounts[ma.key].name)) a.name = ma.name;
+  });
+  cfg.manualProjects.forEach((mp) => {
+    const a = accs.get(mp.accKey);
+    if (!a) return;
+    a.projects.push({ key: mp.id, orbit: null, name: mp.name, jiraKey: mp.jiraKey, jql: mp.jql, links: mp.links, isSla: /\bSLA\b/i.test(mp.name), manual: true, extra: false });
+  });
+  const orgs = allOrgs();
+  const accounts = Array.from(accs.values()).map((a) => {
+    a.projects.sort((x, y) => Number(x.isSla) - Number(y.isSla) || x.name.localeCompare(y.name, "nl"));
+    a.sla = a.projects.filter((p) => p.isSla).sort((x, y) => (y.orbit ? y.orbit.id : 0) - (x.orbit ? x.orbit.id : 0))[0] || null;
+    if (a.orgsManual.length) { a.orgs = a.orgsManual; a.orgsAuto = false; }
+    else {
+      const mine = new Set([].concat(tokens(a.client), tokens(a.name), ...a.projects.map((p) => tokens(p.name))));
+      a.orgs = orgs.filter((o) => tokens(o).some((t) => mine.has(t)));
+      a.orgsAuto = true;
+    }
+    a.support = state.supp.issues.filter((i) => i.orgs.some((o) => a.orgs.includes(o)));
+    return a;
+  }).sort((x, y) => x.name.localeCompare(y.name, "nl"));
+  return { accounts, byKey: accs };
+}
+
+/* ---------- Store ---------- */
+
+function loadLocal() { try { return parseConfig(JSON.parse(localStorage.getItem(LOCAL_KEY) || "null")); } catch (e) { return emptyConfig(); } }
+function saveLocal(cfg) { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(cfg)); } catch (e) { /* unavailable */ } }
+function loadTlCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(TL_CACHE_KEY) || "null");
+    if (c && Array.isArray(c.mine)) {
+      const clean = (arr) => (Array.isArray(arr) ? arr : []).filter((p) => p && Number.isFinite(p.id) && typeof p.name === "string" && typeof p.client === "string");
+      state.tl = { status: "ok", mine: clean(c.mine), all: clean(c.all), error: null, fetchedAt: num(c.at), cached: true };
+    }
+  } catch (e) { /* no cache */ }
+}
+function saveTlCache() {
+  try { localStorage.setItem(TL_CACHE_KEY, JSON.stringify({ at: state.tl.fetchedAt, mine: state.tl.mine, all: state.tl.all })); } catch (e) { /* unavailable */ }
+}
+
+let writeChain = Promise.resolve();
+function saveConfig(next) {
+  state.config = next;
+  render();
+  loadJiraIfNeeded(false);
+  writeChain = writeChain.then(async () => {
+    if (!state.docRef) { saveLocal(next); return; }
+    try { await state.docRef.set(JSON.parse(JSON.stringify(next))); }
+    catch (e) { toast("Opslaan lukte niet (" + (e && e.code ? e.code : "onbekend") + "). Probeer het opnieuw."); }
+  });
+}
+
+async function useCap(name) {
+  if (!window.claude || typeof window.claude.use !== "function") return null;
+  try { return await window.claude.use(name); } catch (e) { return null; }
+}
+
+async function initStore() {
+  const db = await useCap("db");
+  const user = await useCap("user");
+  const id = user ? await user.id().catch(() => null) : null;
+  if (!db || !id) {
+    state.source = "local";
+    state.config = loadLocal();
+    render();
+    loadJiraIfNeeded(false);
+    return;
+  }
+  state.docRef = db.doc("data/users/" + id + "/config");
+  state.docRef.onSnapshot(
+    (snap) => {
+      state.config = snap.exists ? parseConfig(snap.data()) : emptyConfig();
+      state.source = "db";
+      render();
+      loadJiraIfNeeded(false);
+    },
+    () => { state.source = "local"; state.config = loadLocal(); render(); }
+  );
+}
+
+/* ---------- Connectors ---------- */
+
+function errorText(e, server) {
+  const code = e && e.code ? e.code : "upstream_error";
+  const msg = e && e.message ? e.message : "";
+  switch (code) {
+    case "needs_reauth": return server + " moet opnieuw gekoppeld worden. Ga in claude.ai naar Instellingen, Connectors.";
+    case "server_not_connected": return server + " is niet gekoppeld. Voeg hem toe in claude.ai bij Instellingen, Connectors.";
+    case "selection_required": return "Kies welke " + server + "-koppeling deze pagina mag gebruiken.";
+    case "not_in_manifest": return "Je hebt " + server + " niet toegestaan voor deze pagina. Pas dat aan via Rechten in Instellingen.";
+    case "blocked_by_policy":
+    case "approval_required": return "Je organisatie staat " + server + " hier niet toe.";
+    case "server_unavailable": return server + " reageert nu niet. Probeer het zo opnieuw met Verversen.";
+    case "tool_error":
+      return server + " gaf een fout: " + msg + (server === ORBIT.server || server === TL.server ? " Meestal is de Teamleader-sessie verlopen. Koppel de connector opnieuw en klik op Verversen." : "");
+    case "not_granted":
+    case "capability_disabled":
+    case "capability_removed": return "Live data is in deze weergave niet beschikbaar.";
+    case "parse_error": return msg + ". Stuur deze melding naar Claude, dan pas ik het inlezen aan.";
+    default: return server + " gaf een onverwachte fout (" + code + ").";
+  }
+}
+function isDenial(e) { return e && ["needs_reauth", "server_not_connected", "not_in_manifest", "blocked_by_policy", "approval_required"].includes(e.code); }
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function call(server, tool, input, force, staleTime) {
+  const opts = { cache: force ? { staleTime, refresh: true } : { staleTime } };
+  try { return await state.mcp.callTool(server, tool, input, opts); }
+  catch (e) {
+    if (!e || !e.retryable) throw e;
+    await sleep((e.retryAfterMs || 0) + 400 + Math.random() * 800);
+    return await state.mcp.callTool(server, tool, input, opts);
+  }
+}
+
+async function searchAll(jql, maxPages, force, fields) {
+  let token = "";
+  let issues = [];
+  let pages = 0;
+  let last = true;
+  let storedAt = null;
+  do {
+    const input = { cloudId: JIRA.cloudId, jql, fields: fields || JIRA.fields, maxResults: 100 };
+    if (token) input.nextPageToken = token;
+    const res = await call(JIRA.server, JIRA.tool, input, force, 120000);
+    const page = parseSearchResult(res);
+    issues = issues.concat(page.issues.map(toIssue).filter(Boolean));
+    if (res.cache && storedAt === null) storedAt = res.cache.storedAt;
+    token = page.nextPageToken;
+    last = page.isLast || !token;
+    pages += 1;
+  } while (!last && pages < maxPages);
+  return { issues, truncated: !last, fetchedAt: storedAt || Date.now() };
+}
+
+function modelProjects() { return buildModel().accounts.flatMap((a) => a.projects.map((p) => ({ account: a, project: p }))); }
+function jiraKeys() {
+  return Array.from(new Set(modelProjects().map((x) => x.project).filter((p) => !p.jql && /^[A-Z][A-Z0-9_]+$/.test(p.jiraKey)).map((p) => p.jiraKey))).sort();
+}
+
+let jiraSig = null;
+function loadJiraIfNeeded(force) {
+  if (!state.mcp || !state.config) return;
+  const sig = jiraKeys().join(",") + "|" + modelProjects().map((x) => x.project.jql).join("|");
+  if (!force && sig === jiraSig) return;
+  jiraSig = sig;
+  loadJira(force);
+  modelProjects().filter((x) => x.project.jql).forEach((x) => loadCustom(x.project, force));
+}
+
+async function listAllProjects(input, force) {
+  let page = 1;
+  let rows = [];
+  let total = null;
+  do {
+    const res = await call(TL.server, TL.list, Object.assign({}, input, { page, pageSize: 100 }), force, 300000);
+    const text = textOf(res);
+    const got = parseProjects(text);
+    rows = rows.concat(got);
+    total = foundCount(text);
+    page += 1;
+    if (!got.length) break;
+  } while (total !== null && rows.length < total && page <= 5);
+  return rows;
+}
+async function loadTl(force) {
+  if (!state.mcp) return;
+  state.tl = Object.assign({}, state.tl, { status: state.tl.mine.length ? "ok" : "loading" });
+  render();
+  try {
+    const mine = await listAllProjects({ mine: true, states: "OPEN" }, force);
+    state.tl = Object.assign({}, state.tl, { status: "ok", mine, error: null, fetchedAt: Date.now(), cached: false });
+    saveTlCache();
+  } catch (e) {
+    const keep = state.tl.mine.length && !isDenial(e);
+    state.tl = Object.assign({}, state.tl, { status: keep ? "ok" : "error", error: e, mine: keep ? state.tl.mine : [] });
+  }
+  render();
+  loadJiraIfNeeded(false);
+  loadFinancials(force);
+  loadOffers(force);
+  try {
+    const all = await listAllProjects({ states: "OPEN" }, force);
+    state.tl = Object.assign({}, state.tl, { all });
+    saveTlCache();
+    render();
+    loadFinancials(false);
+  } catch (e) { /* the picker stays limited to cached projects */ }
+}
+async function loadFinancials(force) {
+  const projects = buildModel().accounts.flatMap((a) => a.projects).filter((p) => p.orbit && (force || !state.fin[p.orbit.id] || state.fin[p.orbit.id].status === "error"));
+  const queue = Array.from(new Map(projects.map((p) => [p.orbit.id, p.orbit])).values());
+  if (!queue.length) return;
+  queue.forEach((o) => { state.fin[o.id] = Object.assign({}, state.fin[o.id], { status: state.fin[o.id] && state.fin[o.id].data ? "ok" : "loading" }); });
+  render();
+  const worker = async () => {
+    while (queue.length) {
+      const o = queue.shift();
+      try {
+        const res = await call(TL.server, TL.fin, { projectId: o.number }, force, 300000);
+        state.fin[o.id] = { status: "ok", data: parseFinancials(textOf(res)) };
+      } catch (e) {
+        state.fin[o.id] = { status: "error", error: e };
+      }
+      render();
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+}
+async function loadOffers(force) {
+  try {
+    const res = await call(TL.server, TL.offers, { mine: true, pageSize: 100 }, force, 300000);
+    state.offers = { status: "ok", items: parseOffers(textOf(res)), error: null };
+  } catch (e) {
+    state.offers = { status: "error", items: [], error: e };
+  }
+  render();
+}
+async function loadJira(force) {
+  const keys = jiraKeys();
+  if (!keys.length) { state.jira = { status: "ok", issues: [], error: null, fetchedAt: Date.now(), truncated: false }; render(); return; }
+  state.jira = Object.assign({}, state.jira, { status: state.jira.issues.length ? "ok" : "loading" });
+  render();
+  try {
+    const r = await searchAll("project in (" + keys.join(",") + ") AND statusCategory != Done ORDER BY updated DESC", 6, force);
+    state.jira = { status: "ok", issues: r.issues, error: null, fetchedAt: r.fetchedAt, truncated: r.truncated };
+  } catch (e) {
+    state.jira = { status: "error", issues: [], error: e, fetchedAt: null, truncated: false };
+  }
+  render();
+}
+async function loadSupp(force) {
+  try {
+    const r = await searchAll("project = SUPP AND statusCategory != Done ORDER BY updated DESC", 4, force, JIRA.suppFields);
+    state.supp = { status: "ok", issues: r.issues, error: null, truncated: r.truncated };
+  } catch (e) {
+    state.supp = { status: "error", issues: [], error: e, truncated: false };
+  }
+  render();
+}
+async function loadMine(force) {
+  try {
+    const r = await searchAll("assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC", 1, force);
+    state.mine = { status: "ok", issues: r.issues, error: null };
+  } catch (e) {
+    state.mine = { status: "error", issues: [], error: e };
+  }
+  render();
+}
+async function loadCustom(p, force) {
+  state.custom[p.key] = { status: "loading", issues: [], error: null };
+  try {
+    const r = await searchAll(p.jql, 2, force);
+    state.custom[p.key] = { status: "ok", issues: r.issues, error: null, truncated: r.truncated };
+  } catch (e) {
+    state.custom[p.key] = { status: "error", issues: [], error: e };
+  }
+  render();
+}
+async function loadSlack(force) {
+  try {
+    const res = await call(SLACK.server, SLACK.tool, { filters: "is:saved", include_context: false, limit: 20, natural_language_query: "", response_format: "detailed", sort: "timestamp" }, force, 120000);
+    state.slack = { status: "ok", items: parseSlack(res.payload), error: null };
+  } catch (e) {
+    state.slack = { status: "error", items: [], error: e };
+  }
+  render();
+}
+function isoDay(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+async function loadHours(p, force) {
+  if (!state.mcp || !p.orbit) return;
+  state.hours[p.key] = { status: "loading" };
+  render();
+  const to = new Date();
+  const from = new Date(to.getTime() - HOURS_WEEKS * 7 * 86400000);
+  try {
+    const res = await call(ORBIT.server, ORBIT.sheets, { projectId: p.orbit.id, from: isoDay(from), to: isoDay(to) }, force, 300000);
+    state.hours[p.key] = Object.assign({ status: "ok" }, parseSheets(res.payload));
+  } catch (e) {
+    state.hours[p.key] = { status: "error", error: e };
+  }
+  render();
+}
+
+function issuesFor(p) {
+  if (p.jql) return (state.custom[p.key] || { issues: [] }).issues;
+  if (!p.jiraKey) return [];
+  return state.jira.issues.filter((i) => i.project === p.jiraKey);
+}
+function jiraStateFor(p) { return p.jql ? (state.custom[p.key] || { status: "idle" }) : state.jira; }
+
+/* ---------- Rendering helpers ---------- */
+
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+const nlNum = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 1 });
+const nlEur = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+function h(n) { return nlNum.format(n) + " u"; }
+function fmtTime(ms) { return ms ? new Date(ms).toLocaleString("nl-NL", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : ""; }
+function kindOfLink(url) {
+  if (/slack/i.test(url)) return "Slack";
+  if (/superhuman|coda\.io/i.test(url)) return "Superhuman";
+  if (/drive\.google|docs\.google/i.test(url)) return "Drive";
+  if (/mail\.google/i.test(url)) return "Gmail";
+  if (/atlassian/i.test(url)) return "Jira";
+  if (/teamleader/i.test(url)) return "Teamleader";
+  if (/figma/i.test(url)) return "Figma";
+  return "Web";
+}
+function issueUrl(key) { return JIRA.site + "/browse/" + encodeURIComponent(key); }
+function projectJiraUrl(p) { return p.jql ? JIRA.site + "/issues/?jql=" + encodeURIComponent(p.jql) : JIRA.site + "/browse/" + encodeURIComponent(p.jiraKey); }
+function suppUrl(a) {
+  const jql = "project = SUPP AND organizations in (" + a.orgs.map((o) => '"' + o.replace(/"/g, '\\"') + '"').join(", ") + ") AND statusCategory != Done ORDER BY updated DESC";
+  return JIRA.site + "/issues/?jql=" + encodeURIComponent(jql);
+}
+function pctClass(p) { return p >= 100 ? "bad" : p >= 85 ? "warn" : "ok"; }
+const eur = (n) => nlEur.format(n || 0);
+function finOf(p) { return p.orbit ? state.fin[p.orbit.id] : null; }
+function pctOf(f) { return f && f.data && f.data.workTotal > 0 && f.data.workDelivered !== null ? Math.round(f.data.workDelivered / f.data.workTotal * 100) : null; }
+function overHours(f) { return f && f.data && f.data.workTotal !== null && f.data.workDelivered !== null ? f.data.workDelivered - f.data.workTotal : 0; }
+function meterHtml(pct) { return '<div class="meter ' + pctClass(pct) + '" aria-hidden="true"><span style="width:' + Math.min(pct, 100) + '%"></span></div>'; }
+function budgetLine(p) {
+  const f = finOf(p);
+  if (!f || f.status === "loading") return '<div class="counts">Budget laden…</div>';
+  if (f.status === "error") return '<div class="counts">Budget niet beschikbaar</div>';
+  const pct = pctOf(f);
+  if (pct === null) return '<div class="counts">Geen urenbudget in Teamleader</div>';
+  const over = overHours(f);
+  return meterHtml(pct) + '<div class="counts">Uren ' + nlNum.format(f.data.workDelivered) + " / " + h(f.data.workTotal) + " (" + pct + "%)" +
+    (over > 0 ? ', <span class="b">' + h(over) + " over budget</span>" : "") + "</div>";
+}
+const OFFER_STATE = { DRAFT: "Concept", VALIDATION: "Ter goedkeuring", WAIT: "Wacht op klant", OK: "Akkoord", NOK: "Afgewezen" };
+function offersFor(filterFn) {
+  const open = (o) => ["DRAFT", "VALIDATION", "WAIT"].includes(o.state);
+  return state.offers.items.filter(filterFn).sort((a, b) => Number(open(b)) - Number(open(a)) || b.id - a.id);
+}
+function offerList(items) {
+  if (state.offers.status === "error") return '<p class="notice bad">' + esc(errorText(state.offers.error, TL.server)) + "</p>";
+  if (state.offers.status !== "ok") return '<p class="loading">Offertes laden…</p>';
+  if (!items.length) return '<p class="calm">Geen offertes op jouw naam.</p>';
+  return '<ul class="issues">' + items.map((o) => '<li><span class="key">' + esc(o.number) + '</span><span class="sum">' + esc(o.name) +
+    ' <span class="stamp">' + eur(o.value) + (o.due ? ", vervalt " + esc(o.due) : "") + "</span></span>" +
+    '<span class="pill' + (o.state === "WAIT" && o.days >= 30 ? " blocked" : o.state === "OK" ? "" : " active") + '">' + esc(OFFER_STATE[o.state] || o.state) + (o.days !== null ? " (" + o.days + " d)" : "") + "</span></li>").join("") + "</ul>";
+}
+function statusCounts(issues) {
+  const map = new Map();
+  issues.forEach((i) => { const c = map.get(i.status) || { status: i.status, kind: i.kind, n: 0 }; c.n += 1; map.set(i.status, c); });
+  const order = { blocked: 0, active: 1, new: 2 };
+  return Array.from(map.values()).sort((a, b) => order[a.kind] - order[b.kind] || b.n - a.n);
+}
+function barHtml(issues) {
+  const total = issues.length;
+  if (!total) return "";
+  return '<div class="bar" aria-hidden="true">' + ["blocked", "active", "new"].map((k) => ({ k, n: issues.filter((i) => i.kind === k).length })).filter((x) => x.n)
+    .map((x) => '<span class="' + x.k + '" style="width:' + (x.n / total * 100).toFixed(1) + '%"></span>').join("") + "</div>";
+}
+function countsLine(issues) {
+  const blocked = issues.filter((i) => i.kind === "blocked").length;
+  const active = issues.filter((i) => i.kind === "active").length;
+  return issues.length + " open, " + active + " in behandeling" + (blocked ? ', <span class="b">' + blocked + " blocked</span>" : "");
+}
+function supportLine(a) {
+  const breached = a.support.filter((i) => i.slaBreached).length;
+  return "Support: " + a.support.length + " open" + (breached ? ', <span class="b">' + breached + " over de reactietermijn</span>" : "");
+}
+function pill(i) {
+  return '<span class="pill ' + (i.kind === "new" ? "" : i.kind) + '">' + esc(i.status) + "</span>";
+}
+function issueList(issues, max, showSla) {
+  if (!issues.length) return '<p class="calm">Geen tickets.</p>';
+  return '<ul class="issues">' + issues.slice(0, max).map((i) =>
+    '<li><a class="key" href="' + issueUrl(i.key) + '" target="_blank" rel="noopener">' + esc(i.key) + "</a>" +
+    '<span class="sum">' + esc(i.summary) + (i.assignee ? ' <span class="stamp">' + esc(i.assignee) + "</span>" : ' <span class="stamp">Niet toegewezen</span>') + "</span>" +
+    "<span>" + pill(i) + (showSla && i.slaBreached ? ' <span class="pill blocked">Over termijn</span>' : "") + "</span></li>"
+  ).join("") + "</ul>";
+}
+function linksHtml(links, editable, scope) {
+  if (!links.length) return editable ? '<p class="calm">Nog geen links.</p>' : "";
+  return '<ul class="links">' + links.map((l) =>
+    '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener"><span class="kind">' + kindOfLink(l.url) + "</span>" + esc(l.label) + "</a>" +
+    (editable ? '<button class="btn small danger" data-action="remove-link" data-scope="' + scope + '" data-id="' + esc(l.id) + '">Verwijder<span class="sr"> ' + esc(l.label) + "</span></button>" : "") + "</li>"
+  ).join("") + "</ul>";
+}
+function sourceNotice(st, server, loadingText) {
+  if (state.mcp === undefined) return '<p class="loading">' + loadingText + "</p>";
+  if (state.mcp === null) return '<p class="notice">Live data werkt alleen als je deze pagina in Claude opent.</p>';
+  if (st.status === "error") return '<p class="notice bad">' + esc(errorText(st.error, server)) + "</p>";
+  if (st.status === "loading" || st.status === "idle") return '<p class="loading">' + loadingText + "</p>";
+  return "";
+}
+function linkForm(scope) {
+  return '<form class="edit" data-form="add-link" data-scope="' + scope + '"><h3>Link toevoegen</h3><div class="row">' +
+    '<label>Naam<input name="label" required autocomplete="off"></label>' +
+    '<label>Adres<input name="url" required inputmode="url" autocomplete="off"><small>Bijvoorbeeld een Superhuman-doc, Slack-kanaal of Drive-map</small></label>' +
+    '</div><div><button class="btn primary" type="submit">Link toevoegen</button></div></form>';
+}
+function orbitPickerForm() {
+  const model = buildModel();
+  const shown = new Set(model.accounts.flatMap((a) => a.projects.filter((p) => p.orbit).map((p) => p.orbit.id)));
+  const options = state.tl.all.filter((p) => !shown.has(p.id)).map((p) => '<option value="' + esc(p.name + " (" + p.client + ")") + '"></option>').join("");
+  return '<form class="edit" data-form="add-orbit"><h3>Teamleader-project toevoegen</h3>' +
+    '<label>Project<input name="orbit" list="orbit-options" required autocomplete="off"><small>Zoek op project- of klantnaam. Het project komt bij het account van die klant.</small></label>' +
+    '<datalist id="orbit-options">' + options + "</datalist>" +
+    '<div><button class="btn primary" type="submit">Project toevoegen</button></div></form>';
+}
+
+/* ---------- Views ---------- */
+
+function railHtml(model) {
+  const r = state.route;
+  return '<p class="rail-title"><a href="#/"' + (r.name === "home" ? ' aria-current="page"' : "") + ">PM-dashboard</a></p>" +
+    '<nav aria-label="Accounts en projecten"><ul>' +
+    model.accounts.map((a) => '<li class="acc"><a href="#/a/' + esc(a.key) + '"' + (r.name === "account" && r.accKey === a.key ? ' aria-current="page"' : "") + ">" + esc(a.name) + "</a>" +
+      (a.projects.length ? '<ul class="proj">' + a.projects.map((p) => '<li><a href="#/a/' + esc(a.key) + "/p/" + esc(p.key) + '"' + (r.name === "project" && r.projKey === p.key ? ' aria-current="page"' : "") + ">" + esc(p.name) + "</a></li>").join("") + "</ul>" : "") +
+      "</li>").join("") +
+    "</ul></nav>" +
+    '<div class="rail-foot"><a href="#/instellingen"' + (r.name === "settings" ? ' aria-current="page"' : "") + ">Instellingen</a></div>";
+}
+
+function signalsFor(model) {
+  const out = [];
+  model.accounts.forEach((a) => {
+    a.projects.forEach((p) => {
+      const href = "#/a/" + a.key + "/p/" + p.key;
+      const label = "<b>" + esc(a.name) + ", " + esc(p.name) + "</b>";
+      const f = finOf(p);
+      const pct = pctOf(f);
+      if (pct !== null && overHours(f) > 0) {
+        out.push({ account: a.name, project: p.name, id: "budget:" + p.key, sig: "over", level: 0, tag: "Budget", text: label + ": " + h(overHours(f)) + " boven het urenbudget (" + pct + "%)" + (pct > 120 ? ", meer dan 20%" : ""), href });
+      } else if (pct !== null && pct >= 85) {
+        out.push({ account: a.name, project: p.name, id: "budget:" + p.key, sig: "85", level: 1, tag: "Budget", text: label + ": " + pct + "% van de begrote uren geschreven", href });
+      }
+      const iss = issuesFor(p);
+      const blocked = iss.filter((i) => i.kind === "blocked").length;
+      if (blocked) out.push({ account: a.name, project: p.name, link: (p.jiraKey || p.jql) ? projectJiraUrl(p) : "", id: "blocked:" + p.key, sig: blocked, level: 0, tag: "Blocked", text: label + ": " + blocked + " ticket" + (blocked === 1 ? "" : "s") + " op Blocked", href });
+      const client = iss.filter((i) => /accept|client|klant/i.test(i.status)).length;
+      if (client) out.push({ account: a.name, project: p.name, link: (p.jiraKey || p.jql) ? projectJiraUrl(p) : "", id: "client:" + p.key, sig: client, level: 1, tag: "Bij klant", text: label + ": " + client + " ticket" + (client === 1 ? " wacht" : "s wachten") + " op de klant", href });
+    });
+    offersFor((o) => o.client.toLowerCase() === a.client.toLowerCase() && o.state === "WAIT" && o.days >= 30).forEach((o) => {
+      out.push({ account: a.name, project: "", id: "offer:" + o.id, sig: o.state, level: 1, tag: "Offerte", text: "<b>" + esc(a.name) + "</b>: offerte " + esc(o.name) + " wacht al " + o.days + " dagen op de klant", href: "#/a/" + a.key });
+    });
+    const breached = a.support.filter((i) => i.slaBreached).length;
+    if (breached) out.push({ account: a.name, project: a.sla ? a.sla.name : "", link: a.orgs.length ? suppUrl(a) : "", id: "support:" + a.key, sig: breached, level: 0, tag: "Support", text: "<b>" + esc(a.name) + "</b>: " + breached + " supportticket" + (breached === 1 ? "" : "s") + " over de reactietermijn", href: "#/a/" + a.key + (a.sla ? "/p/" + a.sla.key : "") });
+  });
+  return out.sort((x, y) => x.level - y.level);
+}
+
+function isDismissed(sig) {
+  const d = state.config.dismissed.find((x) => x.id === sig.id);
+  if (!d) return false;
+  if (typeof sig.sig === "number" && typeof d.sig === "number") return sig.sig <= d.sig;
+  return String(sig.sig) === String(d.sig);
+}
+function signalItem(s, dismissed) {
+  return '<li class="signal' + (s.level === 0 ? " bad" : "") + (dismissed ? " muted" : "") + '"><span class="tag">' + s.tag + '</span><a href="' + s.href + '">' + s.text + "</a>" +
+    '<span class="sig-actions">' + (dismissed
+      ? '<button class="btn small" data-action="restore-signal" data-id="' + esc(s.id) + '">Terugzetten</button>'
+      : '<button class="btn small" data-action="todo-signal" data-id="' + esc(s.id) + '">To-do maken</button>' +
+        '<button class="btn small" data-action="dismiss-signal" data-id="' + esc(s.id) + '" data-sig="' + esc(String(s.sig)) + '" data-num="' + (typeof s.sig === "number") + '">Negeren</button>') +
+    "</span></li>";
+}
+function homeView(model) {
+  const cfg = state.config;
+  const today = new Date().toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
+  const nProj = model.accounts.reduce((s, a) => s + a.projects.length, 0);
+  const allSignals = signalsFor(model);
+  const signals = allSignals.filter((x) => !isDismissed(x));
+  const hiddenSignals = allSignals.filter((x) => isDismissed(x));
+  const todo = '<a href="' + esc(cfg.links.todo || TODO.page) + '" target="_blank" rel="noopener"><strong>To-do\'s</strong><span>Kanbanbord in Superhuman</span></a>';
+  const stamp = state.tl.fetchedAt ? '<span class="stamp">Teamleader ' + (state.tl.cached ? "uit cache, " : "") + esc(fmtTime(state.tl.fetchedAt)) + "</span>" : "";
+
+  const slackBody = sourceNotice(state.slack, SLACK.server, "Slack laden…") || (state.slack.items.length
+    ? '<ul class="saved">' + state.slack.items.map((s) =>
+      "<li><p class=\"saved-meta\"><b>" + esc(s.where) + "</b>" + (s.from && s.where.indexOf(s.from) === -1 ? ", " + esc(s.from) : "") + (s.time ? ' <span class="stamp">' + esc(s.time.replace(/ CES?T$/, "")) + "</span>" : "") + "</p>" +
+      '<p class="saved-text">' + esc(s.text) + "</p>" + (s.link ? '<a href="' + esc(s.link) + '" target="_blank" rel="noopener">Open in Slack</a>' : "") + "</li>").join("") + "</ul>"
+    : '<p class="calm">Geen bewaarde berichten.</p>');
+
+  return '<h1 tabindex="-1">' + esc(today.charAt(0).toUpperCase() + today.slice(1)) + "</h1>" +
+    '<p class="lede">' + model.accounts.length + (model.accounts.length === 1 ? " account, " : " accounts, ") + nProj + (nProj === 1 ? " project." : " projecten.") + "</p>" +
+    '<div class="quick"><a href="' + esc(cfg.links.inbox) + '" target="_blank" rel="noopener"><strong>Inbox</strong><span>Gmail</span></a>' + todo +
+      '<a href="https://app.slack.com/client" target="_blank" rel="noopener"><strong>Slack</strong><span>' + (state.slack.items.length ? state.slack.items.length + " bewaard" : "Bewaard voor later") + "</span></a></div>" +
+    '<div class="toolbar"><button class="btn" data-action="refresh">Verversen</button>' + stamp + "</div>" +
+
+    '<section class="section" aria-labelledby="h-sig"><h2 id="h-sig">Vraagt aandacht</h2>' +
+      (sourceNotice(state.tl, TL.server, "Teamleader laden…")) +
+      (state.tl.status === "ok" && state.tl.error ? '<p class="notice">Teamleader kon niet worden ververst, je ziet de laatst bekende stand. ' + esc(errorText(state.tl.error, TL.server)) + "</p>" : "") +
+      (state.jira.status === "error" ? '<p class="notice bad">' + esc(errorText(state.jira.error, JIRA.server)) + "</p>" : "") +
+      (signals.length ? '<ul class="signals">' + signals.map((x) => signalItem(x, false)).join("") + "</ul>"
+        : (state.tl.status === "ok" && state.jira.status === "ok" ? '<p class="calm">' + (hiddenSignals.length ? "Geen nieuwe signalen." : "Geen projecten boven 85% van de uren, niets op Blocked, geen wachtende offertes en geen supporttickets over de termijn.") + "</p>" : "")) +
+      (hiddenSignals.length ? '<p class="stamp" style="margin-top:.75rem">' + hiddenSignals.length + " genegeerd" + (hiddenSignals.length === 1 ? " signaal" : "e signalen") + '. <button class="linkish" data-action="toggle-dismissed" aria-expanded="' + state.showDismissed + '">' + (state.showDismissed ? "Verbergen" : "Toon ze") + "</button></p>" +
+        (state.showDismissed ? '<ul class="signals">' + hiddenSignals.map((x) => signalItem(x, true)).join("") + "</ul>" : "") : "") +
+    "</section>" +
+
+    '<div class="two section">' +
+      '<section class="panel" aria-labelledby="h-slack"><h2 id="h-slack">Bewaard in Slack</h2>' + slackBody + "</section>" +
+      '<section class="panel" aria-labelledby="h-mine"><h2 id="h-mine">Op mijn naam in Jira</h2>' +
+        (sourceNotice(state.mine, JIRA.server, "Jira laden…") || issueList(state.mine.issues, 10, true) + (state.mine.issues.length > 10 ? '<p class="stamp">En nog ' + (state.mine.issues.length - 10) + " meer.</p>" : "")) +
+      "</section>" +
+    "</div>" +
+
+    '<section class="section" aria-labelledby="h-acc"><h2 id="h-acc">Accounts</h2>' +
+      (model.accounts.length ? '<div class="grid">' + model.accounts.map(accountCard).join("") + "</div>" : '<p class="calm">Nog geen accounts. Zodra Teamleader geladen is, verschijnen hier de projecten waar jij eigenaar van bent.</p>') +
+      '<details class="adder"><summary>Project of account toevoegen</summary>' + orbitPickerForm() +
+        '<form class="edit" data-form="add-account"><h3>Account zonder Teamleader-project</h3><div class="row"><label>Naam klant<input name="name" required autocomplete="off"></label></div><div><button class="btn primary" type="submit">Account toevoegen</button></div></form>' +
+      "</details>" +
+    "</section>";
+}
+
+function accountCard(a) {
+  return '<article class="card"><h3><a href="#/a/' + esc(a.key) + '">' + esc(a.name) + "</a></h3>" +
+    (a.projects.length ? '<ul class="projects">' + a.projects.map((p) => projectSummary(a, p)).join("") + "</ul>" : '<p class="calm">Nog geen projecten.</p>') +
+    (!a.sla && a.support.length ? '<div class="counts">' + supportLine(a) + "</div>" : "") +
+    "</article>";
+}
+function projectSummary(a, p) {
+  const iss = issuesFor(p);
+  const js = jiraStateFor(p);
+  return '<li><a href="#/a/' + esc(a.key) + "/p/" + esc(p.key) + '">' + esc(p.name) + "</a>" +
+    (p.orbit ? budgetLine(p) : "") +
+    ((p.jiraKey || p.jql) && js.status === "ok" ? '<div class="counts">Jira: ' + countsLine(iss) + "</div>" : "") +
+    (a.sla === p && state.supp.status === "ok" ? '<div class="counts">' + supportLine(a) + "</div>" : "") +
+    "</li>";
+}
+
+function supportSection(a) {
+  const body = sourceNotice(state.supp, JIRA.server, "Supporttickets laden…") || (
+    !a.orgs.length ? '<p class="calm">Geen supportorganisatie gevonden voor dit account. Vul er een in via Bewerken op de accountpagina.</p>'
+      : '<p class="counts">' + supportLine(a) + ". Organisatie" + (a.orgs.length === 1 ? "" : "s") + ": " + esc(a.orgs.join(", ")) + (a.orgsAuto ? " (automatisch gekoppeld)" : "") + ".</p>" +
+        issueList(a.support.slice().sort((x, y) => Number(y.slaBreached) - Number(x.slaBreached)), 20, true) +
+        '<p style="margin:.75rem 0 0"><a href="' + suppUrl(a) + '" target="_blank" rel="noopener">Open in Jira</a></p>');
+  return '<section class="section" aria-labelledby="h-supp"><h2 id="h-supp">Beheer &amp; Support</h2><div class="panel">' + body + "</div></section>";
+}
+
+function accountView(a) {
+  const edit = state.edit;
+  return '<p class="crumb"><a href="#/">Overzicht</a></p>' +
+    '<h1 tabindex="-1">' + esc(a.name) + "</h1>" +
+    '<p class="lede">' + (a.am ? "Account manager: " + esc(a.am) + "." : "Nog geen account manager ingevuld.") + (a.client && a.client !== a.name ? " In Teamleader: " + esc(a.client) + "." : "") + "</p>" +
+    '<div class="toolbar"><button class="btn" data-action="refresh">Verversen</button><button class="btn" data-action="toggle-edit" aria-pressed="' + edit + '">' + (edit ? "Klaar met bewerken" : "Bewerken") + "</button></div>" +
+    (edit ? '<form class="edit" data-form="account-meta"><h3>Account</h3><div class="row">' +
+      '<label>Naam<input name="name" required value="' + esc(a.name) + '" autocomplete="off"></label>' +
+      '<label>Account manager<input name="am" value="' + esc(a.am) + '" autocomplete="off"></label></div>' +
+      '<label>Supportorganisaties in Jira<input name="orgs" value="' + esc(a.orgsAuto ? "" : a.orgs.join(", ")) + '" autocomplete="off"><small>Komma-gescheiden. Leeg laten om automatisch te koppelen' + (a.orgsAuto && a.orgs.length ? " (nu: " + esc(a.orgs.join(", ")) + ")" : "") + ". Bekende organisaties: " + esc(allOrgs().join(", ") || "nog niet geladen") + "</small></label>" +
+      '<div><button class="btn primary" type="submit">Opslaan</button></div></form>' : "") +
+
+    '<section class="section" aria-labelledby="h-links"><h2 id="h-links">Links</h2>' + linksHtml(a.links, edit, "account") + (edit ? linkForm("account") : "") + "</section>" +
+
+    '<section class="section" aria-labelledby="h-proj"><h2 id="h-proj">Projecten</h2>' +
+      (a.projects.length ? '<div class="grid">' + a.projects.map((p) => '<article class="card"><h3><a href="#/a/' + esc(a.key) + "/p/" + esc(p.key) + '">' + esc(p.name) + "</a></h3>" +
+        (p.orbit ? budgetLine(p) : '<div class="counts">Niet gekoppeld aan Teamleader</div>') +
+        ((p.jiraKey || p.jql) && jiraStateFor(p).status === "ok" ? barHtml(issuesFor(p)) + '<div class="counts">Jira: ' + countsLine(issuesFor(p)) + "</div>" : "") +
+        (a.sla === p && state.supp.status === "ok" ? '<div class="counts">' + supportLine(a) + "</div>" : "") +
+        (p.extra ? '<div class="counts">Zelf toegevoegd, eigenaar ' + esc(p.orbit.owner) + "</div>" : "") +
+        "</article>").join("") + "</div>" : '<p class="calm">Nog geen projecten.</p>') +
+      (edit ? '<form class="edit" data-form="add-manual" style="margin-top:1rem"><h3>Project zonder Teamleader</h3><div class="row">' +
+        '<label>Projectnaam<input name="name" required autocomplete="off"></label>' +
+        '<label>Jira-projectkey<input name="jiraKey" autocomplete="off"></label></div>' +
+        '<div><button class="btn primary" type="submit">Project toevoegen</button></div></form>' : "") +
+    "</section>" +
+    '<section class="section" aria-labelledby="h-off"><h2 id="h-off">Offertes</h2><div class="panel">' + offerList(offersFor((x) => x.client.toLowerCase() === a.client.toLowerCase())) + "</div></section>" +
+    (!a.sla ? supportSection(a) : "") +
+    (edit && a.manual ? '<section class="section"><button class="btn danger" data-action="remove-account">Account verwijderen</button></section>' : "");
+}
+
+function budgetPanel(p) {
+  const o = p.orbit;
+  if (!o) return '<p class="calm">Dit project is niet gekoppeld aan Teamleader.</p>';
+  const f = finOf(p);
+  if (!f || f.status === "loading") return '<p class="loading">Budget laden…</p>';
+  if (f.status === "error") return '<p class="notice bad">' + esc(errorText(f.error, TL.server)) + "</p>";
+  const d = f.data;
+  const pct = pctOf(f);
+  const billing = { OFFER: "Offerte", HOURS: "Nacalculatie", FIXED: "Vaste prijs", NONE: "Niet factureerbaar", ESTIMATE: "Schatting", SUBSCRIPTION: "Abonnement" }[o.billing] || o.billing || "Onbekend";
+  const rows = [
+    ["Projectnummer", o.number],
+    ["Budget", d.budget !== null ? eur(d.budget) : "Onbekend"],
+    ["Uren", d.workTotal !== null ? nlNum.format(d.workDelivered || 0) + " van " + h(d.workTotal) + ", nog " + h(d.workRemaining || 0) : "Onbekend"],
+    ["Gefactureerd", d.invoiced !== null ? eur(d.invoiced) : "Nog niets"],
+    ["Geleverde waarde", d.delivered !== null ? eur(d.delivered) + " (tegen uurtarieven)" : "Onbekend"],
+    ["Geleverd min gefactureerd", d.unbilled !== null ? eur(d.unbilled) : "Onbekend"],
+    ["Marge", d.marginPct !== null ? d.marginPct + "%" : "Onbekend"],
+    ["Einddatum", o.end || "Geen"],
+    ["Afrekening", billing],
+    ["Eigenaar", o.owner || "Onbekend"],
+  ];
+  const over = overHours(f);
+  return (pct !== null ? '<p class="big">' + pct + "%</p>" + meterHtml(pct) + '<p class="counts">van de begrote uren geschreven' + (over > 0 ? ', <span class="b">' + h(over) + " erboven</span>" : "") + "</p>" : "") +
+    '<dl class="kv">' + rows.map(([k, v]) => "<dt>" + k + "</dt><dd>" + esc(v) + "</dd>").join("") + "</dl>" +
+    '<p class="stamp">Het percentage is gebaseerd op uren. De geleverde waarde rekent met uurtarieven en kan daardoor hoger liggen dan het offertebudget, zonder dat er een overschrijding is.</p>';
+}
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y) / 86400000 + 1) / 7);
+}
+function sumBy(lines, keyFn) {
+  const m = new Map();
+  lines.forEach((l) => { const k = keyFn(l); m.set(k, (m.get(k) || 0) + l.hours); });
+  return Array.from(m.entries());
+}
+function hoursPanel(p) {
+  if (!p.orbit) return '<p class="calm">Geen Teamleader-project gekoppeld.</p>';
+  const s = state.hours[p.key];
+  const notice = sourceNotice(s || { status: "loading" }, ORBIT.server, "Uren laden…");
+  if (notice) return notice;
+  if (!s.lines.length) return '<p class="calm">Geen uren geschreven in de afgelopen ' + HOURS_WEEKS + " weken.</p>";
+  const total = s.lines.reduce((t, l) => t + l.hours, 0);
+  const byTask = sumBy(s.lines, (l) => l.task).sort((a, b) => b[1] - a[1]);
+  const byUser = sumBy(s.lines, (l) => l.user).sort((a, b) => b[1] - a[1]);
+  const weeks = sumBy(s.lines.filter((l) => l.date), (l) => isoWeek(l.date)).sort((a, b) => a[0] - b[0]);
+  const max = Math.max(...weeks.map((w) => w[1]), 1);
+  const table = (rows, label) => '<div class="scroll-x"><table class="status-table"><thead><tr><th scope="col">' + label + '</th><th scope="col" style="text-align:right">Uren</th></tr></thead><tbody>' +
+    rows.slice(0, 8).map(([k, v]) => "<tr><td>" + esc(k) + '</td><td class="n">' + nlNum.format(v) + "</td></tr>").join("") + "</tbody></table></div>";
+  return '<p class="counts">' + h(total) + " in de afgelopen " + HOURS_WEEKS + " weken.</p>" +
+    '<ul class="weeks">' + weeks.map(([w, v]) => '<li><span class="wk">Week ' + w + '</span><span class="wbar" aria-hidden="true"><span style="width:' + (v / max * 100).toFixed(0) + '%"></span></span><span class="wv">' + h(v) + "</span></li>").join("") + "</ul>" +
+    "<h3>Per taak</h3>" + table(byTask, "Taak") + '<h3 style="margin-top:1rem">Per persoon</h3>' + table(byUser, "Wie");
+}
+
+function projectView(a, p) {
+  const edit = state.edit;
+  const iss = issuesFor(p);
+  const js = jiraStateFor(p);
+  const blocked = iss.filter((i) => i.kind === "blocked");
+  const hasJira = p.jiraKey || p.jql;
+  const jiraBody = !hasJira ? '<p class="calm">Geen Jira gekoppeld. Voeg een projectkey toe via Bewerken.</p>'
+    : (sourceNotice(js, JIRA.server, "Jira laden…") || (
+      barHtml(iss) + '<p class="counts">' + countsLine(iss) + (js.truncated ? ". Niet alle tickets zijn geladen." : "") + "</p>" +
+      '<div class="scroll-x"><table class="status-table"><thead><tr><th scope="col">Status</th><th scope="col" style="text-align:right">Tickets</th></tr></thead><tbody>' +
+      statusCounts(iss).map((c) => '<tr><td><span class="pill ' + (c.kind === "new" ? "" : c.kind) + '">' + esc(c.status) + '</span></td><td class="n">' + c.n + "</td></tr>").join("") +
+      '</tbody></table></div><p style="margin:.75rem 0 0"><a href="' + projectJiraUrl(p) + '" target="_blank" rel="noopener">Open in Jira</a></p>'));
+
+  return '<p class="crumb"><a href="#/">Overzicht</a> / <a href="#/a/' + esc(a.key) + '">' + esc(a.name) + "</a></p>" +
+    '<h1 tabindex="-1">' + esc(p.name) + "</h1>" +
+    '<p class="lede">' + esc(a.name) + (p.jiraKey && !p.jql ? ". Jira-project " + esc(p.jiraKey) : "") + ".</p>" +
+    '<div class="toolbar"><button class="btn" data-action="refresh">Verversen</button><button class="btn" data-action="toggle-edit" aria-pressed="' + edit + '">' + (edit ? "Klaar met bewerken" : "Bewerken") + "</button></div>" +
+    (edit ? '<form class="edit" data-form="project-meta"><h3>Project</h3><div class="row">' +
+      (p.manual ? '<label>Projectnaam<input name="name" required value="' + esc(p.name) + '" autocomplete="off"></label>' : "") +
+      '<label>Jira-projectkey<input name="jiraKey" value="' + esc(p.jiraKey) + '" autocomplete="off"><small>Bijvoorbeeld CMU of KH</small></label></div>' +
+      '<label>Eigen Jira-filter<input name="jql" value="' + esc(p.jql) + '" autocomplete="off"><small>Optioneel. Vervangt de projectkey.</small></label>' +
+      '<div class="toolbar" style="margin:0"><button class="btn primary" type="submit">Opslaan</button>' +
+      (p.manual ? '<button class="btn danger" type="button" data-action="remove-project">Project verwijderen</button>' : '<button class="btn danger" type="button" data-action="hide-project">Verbergen uit dashboard</button>') +
+      "</div></form>" : "") +
+
+    '<section class="section" aria-labelledby="h-links"><h2 id="h-links">Links</h2>' + linksHtml(p.links, edit, "project") + (edit ? linkForm("project") : "") +
+      (a.links.length ? '<h3 style="margin-top:1.25rem">Van het account</h3>' + linksHtml(a.links, false, "account") : (!p.links.length && !edit ? '<p class="calm">Nog geen links. Voeg ze toe via Bewerken.</p>' : "")) + "</section>" +
+
+    '<div class="two section">' +
+      '<section class="panel" aria-labelledby="h-bud"><h2 id="h-bud">Budget</h2>' + budgetPanel(p) + "</section>" +
+      '<section class="panel" aria-labelledby="h-hrs"><h2 id="h-hrs">Uren</h2>' + hoursPanel(p) + "</section>" +
+    "</div>" +
+    '<section class="section panel" aria-labelledby="h-jira"><h2 id="h-jira">Jira</h2>' + jiraBody + "</section>" +
+    (p.orbit ? '<section class="section panel" aria-labelledby="h-off"><h2 id="h-off">Offertes</h2>' + offerList(offersFor((x) => x.projectId === p.orbit.id)) + "</section>" : "") +
+    (a.sla === p ? supportSection(a) : "") +
+    (hasJira && js.status === "ok" ? (
+      (blocked.length ? '<section class="section" aria-labelledby="h-bl"><h2 id="h-bl">Blocked</h2><div class="panel">' + issueList(blocked, 25) + "</div></section>" : "") +
+      '<section class="section" aria-labelledby="h-rec"><h2 id="h-rec">Recent bijgewerkt</h2><div class="panel">' + issueList(iss, 10) + "</div></section>") : "");
+}
+
+function settingsView() {
+  const cfg = state.config;
+  const known = new Map(state.tl.all.concat(state.tl.mine).map((p) => [p.id, p]));
+  const hidden = cfg.hiddenOrbitIds.map((id) => known.get(id)).filter(Boolean);
+  return '<p class="crumb"><a href="#/">Overzicht</a></p><h1 tabindex="-1">Instellingen</h1>' +
+    '<p class="lede">Je instellingen worden opgeslagen ' + (state.source === "db" ? "bij deze pagina en zijn alleen voor jou zichtbaar." : "in deze browser.") + "</p>" +
+    '<form class="edit" data-form="settings"><h2>Algemeen</h2><div class="row">' +
+    '<label>Inbox<input name="inbox" value="' + esc(cfg.links.inbox) + '" inputmode="url" autocomplete="off"></label>' +
+    '<label>To-do-lijst<input name="todo" value="' + esc(cfg.links.todo) + '" inputmode="url" autocomplete="off"><small>Link naar je to-do-dashboard in Superhuman</small></label>' +
+    '</div><div><button class="btn primary" type="submit">Opslaan</button></div></form>' +
+    orbitPickerForm() +
+    '<section class="section"><h2>Verborgen projecten</h2>' + (hidden.length ? '<ul class="edit-list">' + hidden.map((p) => "<li><span>" + esc(p.name) + '</span><button class="btn small" data-action="unhide" data-id="' + p.id + '">Weer tonen<span class="sr"> ' + esc(p.name) + "</span></button></li>").join("") + "</ul>" : '<p class="calm">Geen verborgen projecten.</p>') + "</section>" +
+    '<section class="section"><h2>Koppelingen</h2><p>Deze pagina leest Teamleader (projecten, budget en offertes via de officiële connector, uren via de Norday-connector), Jira en je bewaarde Slack-berichten met jouw eigen login. Er wordt niets verstuurd of gewijzigd.</p><button class="btn" data-action="perms">Rechten beheren</button></section>';
+}
+
+function notFoundView() {
+  const waiting = state.tl.status !== "ok";
+  return '<h1 tabindex="-1">' + (waiting ? "Even geduld" : "Niet gevonden") + '</h1><p class="lede">' + (waiting ? "Teamleader wordt nog geladen." : "Dit account of project bestaat niet (meer) in je dashboard.") + '</p><p><a class="btn" href="#/">Naar het overzicht</a></p>';
+}
+
+/* ---------- Render with form preservation ---------- */
+
+function captureForms() {
+  const saved = {};
+  document.querySelectorAll("#main form[data-form]").forEach((f, idx) => {
+    saved[f.dataset.form + (f.dataset.scope || "") + idx] = Array.from(f.elements).filter((el) => el.name).map((el) => [el.name, el.value]);
+  });
+  const det = Array.from(document.querySelectorAll("#main details")).map((d) => d.open);
+  const a = document.activeElement;
+  const focus = a && a.name && a.form ? { form: a.form.dataset.form + (a.form.dataset.scope || ""), name: a.name, start: a.selectionStart, end: a.selectionEnd } : null;
+  return { saved, focus, det };
+}
+function restoreForms(snap) {
+  document.querySelectorAll("#main details").forEach((d, i) => { if (snap.det[i]) d.open = true; });
+  document.querySelectorAll("#main form[data-form]").forEach((f, idx) => {
+    const vals = snap.saved[f.dataset.form + (f.dataset.scope || "") + idx];
+    if (vals) vals.forEach(([n, v]) => { const el = f.elements.namedItem(n); if (el) el.value = v; });
+    if (snap.focus && snap.focus.form === f.dataset.form + (f.dataset.scope || "")) {
+      const el = f.elements.namedItem(snap.focus.name);
+      if (el) { el.focus(); try { el.setSelectionRange(snap.focus.start, snap.focus.end); } catch (e) { /* not text */ } }
+    }
+  });
+}
+
+function current(model) {
+  const a = model.byKey.get(state.route.accKey) ? model.accounts.find((x) => x.key === state.route.accKey) : null;
+  const p = a ? a.projects.find((x) => x.key === state.route.projKey) : null;
+  return { a, p };
+}
+
+function render() {
+  const main = document.getElementById("main");
+  const model = buildModel();
+  document.getElementById("rail").innerHTML = railHtml(model);
+  if (!state.config) { main.innerHTML = '<h1 tabindex="-1">PM-dashboard</h1><p class="loading">Laden…</p>'; return; }
+  const snap = captureForms();
+  const r = state.route;
+  const { a, p } = current(model);
+  let html;
+  if (r.name === "home") html = homeView(model);
+  else if (r.name === "settings") html = settingsView();
+  else if (!a) html = notFoundView();
+  else if (r.name === "account") html = accountView(a);
+  else html = p ? projectView(a, p) : notFoundView();
+  main.innerHTML = html;
+  restoreForms(snap);
+  maybeLoadHours(false);
+}
+
+/* ---------- Routing ---------- */
+
+function parseRoute() {
+  const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+  if (parts[0] === "instellingen") return { name: "settings" };
+  if (parts[0] === "a" && parts[1] && parts[2] === "p" && parts[3]) return { name: "project", accKey: parts[1], projKey: parts[3] };
+  if (parts[0] === "a" && parts[1]) return { name: "account", accKey: parts[1] };
+  return { name: "home" };
+}
+function onRoute() {
+  state.route = parseRoute();
+  state.edit = false;
+  render();
+  const h1 = document.querySelector("#main h1");
+  if (h1) h1.focus();
+  window.scrollTo(0, 0);
+}
+function maybeLoadHours(force) {
+  if (state.route.name !== "project" || !state.mcp) return;
+  const { p } = current(buildModel());
+  if (p && p.orbit && (force || !state.hours[p.key])) loadHours(p, force);
+}
+
+/* ---------- Mutations ---------- */
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function normUrl(u) { const t = u.trim(); return !t ? "" : /^(https?:|slack:|mailto:)/i.test(t) ? t : "https://" + t; }
+function accountMeta(next, a) {
+  if (!next.accounts[a.key]) next.accounts[a.key] = { name: "", am: "", supportOrgs: [], links: [] };
+  return next.accounts[a.key];
+}
+function projectMeta(next, p) {
+  if (p.manual) return next.manualProjects.find((x) => x.id === p.key);
+  if (!next.projects[p.key]) next.projects[p.key] = { jiraKey: "", jql: "", links: [] };
+  return next.projects[p.key];
+}
+function withCurrent(fn) {
+  const { a, p } = current(buildModel());
+  if (!a) return;
+  const next = clone(state.config);
+  fn(next, a, p);
+  saveConfig(next);
+}
+
+function onSubmit(ev) {
+  const f = ev.target.closest("form[data-form]");
+  if (!f) return;
+  ev.preventDefault();
+  const v = (n) => { const el = f.elements.namedItem(n); return el ? el.value.trim() : ""; };
+  const kind = f.dataset.form;
+  if (kind === "add-orbit") {
+    const op = state.tl.all.find((p) => p.name + " (" + p.client + ")" === v("orbit"));
+    if (!op) { toast("Kies een project uit de lijst."); return; }
+    const next = clone(state.config);
+    if (!next.extraOrbitIds.includes(op.id)) next.extraOrbitIds.push(op.id);
+    next.hiddenOrbitIds = next.hiddenOrbitIds.filter((id) => id !== op.id);
+    f.reset();
+    saveConfig(next);
+    toast(op.name + " toegevoegd.");
+  } else if (kind === "add-account") {
+    if (!v("name")) return;
+    const next = clone(state.config);
+    const key = "m-" + uid();
+    next.manualAccounts.push({ key, name: v("name") });
+    f.reset();
+    saveConfig(next);
+    location.hash = "#/a/" + key;
+  } else if (kind === "account-meta") {
+    withCurrent((next, a) => {
+      const m = accountMeta(next, a);
+      m.name = v("name") === prettyClient(a.client || "") ? "" : v("name");
+      m.am = v("am");
+      m.supportOrgs = v("orgs").split(",").map((s) => s.trim()).filter(Boolean);
+    });
+    toast("Account opgeslagen.");
+  } else if (kind === "add-link") {
+    const link = { id: uid(), label: v("label"), url: normUrl(v("url")) };
+    if (!link.url) return;
+    f.reset();
+    withCurrent((next, a, p) => {
+      if (f.dataset.scope === "project" && p) projectMeta(next, p).links.push(link);
+      else accountMeta(next, a).links.push(link);
+    });
+    toast("Link toegevoegd.");
+  } else if (kind === "add-manual") {
+    if (!v("name")) return;
+    withCurrent((next, a) => next.manualProjects.push({ id: "m" + uid(), accKey: a.key, name: v("name"), jiraKey: v("jiraKey").toUpperCase(), jql: "", links: [] }));
+    f.reset();
+    toast("Project toegevoegd.");
+  } else if (kind === "project-meta") {
+    withCurrent((next, a, p) => {
+      if (!p) return;
+      const m = projectMeta(next, p);
+      if (p.manual && v("name")) m.name = v("name");
+      m.jiraKey = v("jiraKey").toUpperCase();
+      m.jql = v("jql");
+    });
+    toast("Project opgeslagen.");
+  } else if (kind === "settings") {
+    const next = clone(state.config);
+    next.ownerName = v("ownerName") || next.ownerName;
+    next.links.inbox = normUrl(v("inbox")) || GMAIL_INBOX;
+    next.links.todo = normUrl(v("todo"));
+    saveConfig(next);
+    toast("Instellingen opgeslagen.");
+  }
+}
+
+async function onClick(ev) {
+  const b = ev.target.closest("[data-action]");
+  if (!b) return;
+  const action = b.dataset.action;
+  if (action === "refresh") {
+    toast("Bezig met verversen.");
+    loadTl(true); loadSupp(true); loadMine(true); loadSlack(true);
+    loadJiraIfNeeded(true);
+    maybeLoadHours(true);
+  } else if (action === "toggle-edit") {
+    state.edit = !state.edit;
+    render();
+    const t = document.querySelector('#main [data-action="toggle-edit"]');
+    if (t) t.focus();
+  } else if (action === "remove-link") {
+    const id = b.dataset.id;
+    withCurrent((next, a, p) => {
+      const m = b.dataset.scope === "project" && p ? projectMeta(next, p) : accountMeta(next, a);
+      m.links = m.links.filter((l) => l.id !== id);
+    });
+  } else if (action === "hide-project") {
+    const { a, p } = current(buildModel());
+    if (!p || !p.orbit || !confirm("Dit project verbergen? Je kunt het terugzetten via Instellingen.")) return;
+    const next = clone(state.config);
+    next.hiddenOrbitIds.push(p.orbit.id);
+    next.extraOrbitIds = next.extraOrbitIds.filter((id) => id !== p.orbit.id);
+    saveConfig(next);
+    location.hash = "#/a/" + a.key;
+  } else if (action === "remove-project") {
+    const { a, p } = current(buildModel());
+    if (!p || !confirm("Dit project uit het dashboard verwijderen? Jira en Teamleader blijven ongewijzigd.")) return;
+    const next = clone(state.config);
+    next.manualProjects = next.manualProjects.filter((x) => x.id !== p.key);
+    saveConfig(next);
+    location.hash = "#/a/" + a.key;
+  } else if (action === "remove-account") {
+    if (!confirm("Dit account uit het dashboard verwijderen?")) return;
+    const key = state.route.accKey;
+    const next = clone(state.config);
+    next.manualAccounts = next.manualAccounts.filter((x) => x.key !== key);
+    next.manualProjects = next.manualProjects.filter((x) => x.accKey !== key);
+    delete next.accounts[key];
+    saveConfig(next);
+    location.hash = "#/";
+  } else if (action === "todo-signal") {
+    const sig = signalsFor(buildModel()).find((x) => x.id === b.dataset.id);
+    if (!sig || !state.mcp) return;
+    b.disabled = true;
+    b.textContent = "Bezig…";
+    const plain = sig.text.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    const c = TODO.cols;
+    try {
+      await state.mcp.callTool(TODO.server, TODO.tool, {
+        uri: TODO.table,
+        data: { action: "add", columnIds: [c.title, c.status, c.since, c.account, c.project, c.source, c.sourceId],
+          rows: [[sig.tag + ": " + plain, "Inbox", isoDay(new Date()), sig.account || "", sig.project || "", sig.link || "", sig.id]] },
+      }, { cache: false });
+      const next = clone(state.config);
+      next.dismissed = next.dismissed.filter((d) => d.id !== sig.id).concat([{ id: sig.id, sig: sig.sig, at: Date.now() }]);
+      saveConfig(next);
+      toast("Toegevoegd aan je to-do's in Superhuman.");
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "To-do maken";
+      toast(e && (e.code === "server_unavailable" || e.code === "upstream_error")
+        ? "Onzeker of de to-do is aangemaakt. Kijk eerst in je to-do's voordat je het opnieuw probeert."
+        : errorText(e, TODO.server));
+    }
+  } else if (action === "dismiss-signal") {
+    const next = clone(state.config);
+    const sig = b.dataset.num === "true" ? Number(b.dataset.sig) : b.dataset.sig;
+    next.dismissed = next.dismissed.filter((d) => d.id !== b.dataset.id).concat([{ id: b.dataset.id, sig, at: Date.now() }]);
+    saveConfig(next);
+    toast("Signaal genegeerd. Het komt terug als de situatie verslechtert.");
+  } else if (action === "restore-signal") {
+    const next = clone(state.config);
+    next.dismissed = next.dismissed.filter((d) => d.id !== b.dataset.id);
+    saveConfig(next);
+  } else if (action === "toggle-dismissed") {
+    state.showDismissed = !state.showDismissed;
+    render();
+  } else if (action === "unhide") {
+    const id = Number(b.dataset.id);
+    const next = clone(state.config);
+    next.hiddenOrbitIds = next.hiddenOrbitIds.filter((x) => x !== id);
+    saveConfig(next);
+  } else if (action === "perms") {
+    const perms = await useCap("permissions");
+    if (!perms) { toast("Open het menu Rechten van deze pagina in Claude."); return; }
+    try { await perms.manage(); } catch (e) { toast("Open het menu Rechten van deze pagina in Claude."); }
+  }
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const host = document.getElementById("toast-host");
+  host.innerHTML = '<div class="toast" role="status">' + esc(msg) + "</div>";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { host.innerHTML = ""; }, 3500);
+}
+
+/* ---------- Boot ---------- */
+
+document.addEventListener("submit", onSubmit);
+document.addEventListener("click", onClick);
+window.addEventListener("hashchange", onRoute);
+state.route = parseRoute();
+loadTlCache();
+render();
+initStore();
+useCap("mcp").then((mcp) => {
+  state.mcp = mcp;
+  render();
+  if (!mcp) return;
+  loadTl(false);
+  loadSupp(false);
+  loadMine(false);
+  loadSlack(false);
+  loadJiraIfNeeded(false);
+  maybeLoadHours(false);
+});
+
+</script>
+</body>
+</html>
