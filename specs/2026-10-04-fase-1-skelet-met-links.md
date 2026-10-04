@@ -15,7 +15,7 @@
 
 ## Acceptatiecriteria
 
-1. De homepage toont alle open Orbit-projecten waar ik eigenaar van ben, gegroepeerd per account (de Orbit-klant), alfabetisch.
+1. De homepage toont alle open Orbit-projecten waar ik eigenaar van ben, gegroepeerd per account (de Orbit-klant), in orde van budget - groot naar klein. SLA projecten zijn een aparte categorie, die alfabetisch geordend zijn. De budgetstatus wordt per project aangegeven.
 2. De homepage heeft snelkoppelingen naar mijn Gmail-inbox en mijn to-do-pagina in Superhuman.
 3. Elk account en elk project op de homepage is een link naar de eigen pagina; vanaf home bereik ik elk project in maximaal twee klikken.
 4. De accountpagina toont naam, AM, contactpersonen, de projecten van het account en de account-links.

@@ -6,6 +6,8 @@
   --radius-card: 16px;
   --radius-pill: 999px;
   --content-max-width: 1280px;
+  --type-nav: 400 15px/1.35 var(--font-text);
+  --type-nav-small: 400 14px/1.35 var(--font-text);
 }
 
 *,
