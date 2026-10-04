@@ -7,6 +7,7 @@ import { formatDate, formatTime } from "@/lib/format";
 import { Card } from "./Card";
 import { ExternalLink } from "./ExternalLink";
 import { JiraMessage } from "./JiraMessage";
+import { Melding } from "./Melding";
 import styles from "./JiraOverview.module.css";
 
 type Props = {
@@ -32,13 +33,10 @@ function SprintRegel({ sprints }: { sprints: ActieveSprint[] }) {
           : null;
         if (isVerlopen(sprint, nu)) {
           return (
-            <li
-              key={sprint.naam}
-              className={`${styles.sprint} ${styles.verlopen}`}
-            >
-              <span aria-hidden="true">⚠ </span>
-              {sprint.naam}: einddatum {datum} verstreken, sprint nog niet
-              afgesloten
+            <li key={sprint.naam} className={styles.sprintMelding}>
+              <Melding titel={`Sprint "${sprint.naam}" is verlopen`}>
+                Einddatum {datum}. De sprint is nog niet afgesloten in Jira.
+              </Melding>
             </li>
           );
         }

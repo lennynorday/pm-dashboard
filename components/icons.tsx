@@ -110,3 +110,12 @@ export function ExternalIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 8v5" />
+      <path d="M12 16.5h.01" />
+    </Icon>
+  );
+}

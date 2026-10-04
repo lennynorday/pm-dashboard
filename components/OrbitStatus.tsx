@@ -1,6 +1,7 @@
 import { refreshData } from "@/app/actions";
 import type { Dashboard } from "@/lib/dashboard";
 import { formatTime } from "@/lib/format";
+import { Melding } from "./Melding";
 import styles from "./OrbitStatus.module.css";
 
 type Props = { dashboard: Dashboard };
@@ -9,31 +10,31 @@ type Props = { dashboard: Dashboard };
 export function OrbitStatus({ dashboard }: Props) {
   if (dashboard.status === "niet-verbonden") {
     return (
-      <div className={styles.message} role="status">
-        <p className={styles.text}>
-          <span aria-hidden="true">⚠ </span>
-          De app is niet verbonden met Teamleader Orbit. De links uit je config
-          werken wel.
-        </p>
-        <a className={styles.button} href="/api/orbit/login">
-          Inloggen bij Orbit
-        </a>
+      <div className={styles.melding}>
+        <Melding
+          titel="Niet verbonden met Teamleader Orbit"
+          actie={<a href="/api/orbit/login">Inloggen bij Orbit</a>}
+        >
+          De links uit je config werken wel.
+        </Melding>
       </div>
     );
   }
 
   if (dashboard.status === "fout") {
     return (
-      <div className={styles.message} role="alert">
-        <p className={styles.text}>
-          <span aria-hidden="true">⚠ </span>
-          Ophalen uit Orbit is mislukt: {dashboard.message}
-        </p>
-        <form action={refreshData}>
-          <button className={styles.button} type="submit">
-            Opnieuw proberen
-          </button>
-        </form>
+      <div className={styles.melding}>
+        <Melding
+          titel="Ophalen uit Orbit is mislukt"
+          role="alert"
+          actie={
+            <form action={refreshData}>
+              <button type="submit">Opnieuw proberen</button>
+            </form>
+          }
+        >
+          {dashboard.message}
+        </Melding>
       </div>
     );
   }

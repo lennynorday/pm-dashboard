@@ -41,6 +41,10 @@
   text-transform: uppercase;
 }
 
+.sprintMelding {
+  margin-bottom: var(--space-03);
+}
+
 .sprints {
   margin: 0 0 var(--space-03);
   padding: 0;
@@ -54,10 +58,28 @@
   color: var(--color-text-muted);
 }
 
-.verlopen {
-  color: var(--color-text);
+.statusList {
+  margin: 0 0 var(--space-04);
+  padding: 0;
+  list-style: none;
+  font: var(--type-label-small);
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-03);
+  padding: var(--space-01) 0;
+  border-top: 1px solid var(--color-line-subtle);
+}
+
+.statusRow:first-child {
+  border-top: 0;
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  text-transform: none;
 }
 
 .footer {
@@ -73,11 +95,4 @@
 .muted {
   margin: 0;
   color: var(--color-text-muted);
-}
-
-.message {
-  margin: 0;
-  padding: var(--space-03);
-  border: 2px solid var(--color-accent);
-  border-radius: var(--radius-small);
 }

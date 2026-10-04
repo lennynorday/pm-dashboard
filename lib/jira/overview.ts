@@ -1,5 +1,10 @@
 import { config } from "@/config/accounts";
-import { JiraIssue, JiraNotConfiguredError, searchIssues } from "./client";
+import {
+  findBoardId,
+  JiraIssue,
+  JiraNotConfiguredError,
+  searchIssues,
+} from "./client";
 
 export const SPRINT_BAKKEN = ["actief", "gepland", "backlog"] as const;
 export type SprintBak = (typeof SPRINT_BAKKEN)[number];
@@ -16,9 +21,12 @@ export type JiraOverzicht = {
   fetchedAt: Date;
 };
 
+export type StatusTelling = Telling & { status: string };
+
 export type SupportOverzicht = {
   organizations: string[];
   open: Telling;
+  perStatus: StatusTelling[];
   fetchedAt: Date;
 };
 
@@ -75,6 +83,33 @@ const BAK_JQL: Record<SprintBak, string> = {
     "(sprint is EMPTY OR (sprint not in openSprints() AND sprint not in futureSprints()))",
 };
 
+const boards = new Map<string, number | null>();
+
+/** Het board blijft gelijk, dus dit hoeft maar één keer per project. */
+async function cachedBoardId(key: string): Promise<number | null> {
+  if (!boards.has(key)) boards.set(key, await findBoardId(key));
+  return boards.get(key) ?? null;
+}
+
+type BoardLinks = { board: string; backlog: string };
+
+/** Links naar het board en de backlog van een team-managed project. */
+function boardLinks(key: string, boardId: number): BoardLinks {
+  const board = `${config.jiraSite}/jira/software/projects/${encodeURIComponent(key)}/boards/${boardId}`;
+  return { board, backlog: `${board}/backlog` };
+}
+
+/**
+ * Actieve sprint linkt naar het board, gepland en backlog naar de backlogpagina.
+ * Jira heeft geen ankers per onderdeel van de backlog. Zonder board vallen we
+ * terug op een zoekopdracht in Jira.
+ */
+function bakUrl(bak: SprintBak, links: BoardLinks | null, jql: string): string {
+  if (!links) return jqlUrl(jql);
+  if (bak === "actief") return links.board;
+  return links.backlog;
+}
+
 /** Lopende sprints van de tickets die Jira in een open sprint ziet. */
 function actieveSprints(actief: JiraIssue[]): ActieveSprint[] {
   const sprints = actief
@@ -93,18 +128,23 @@ export function fetchJiraOverzicht(
 ): Promise<JiraResult<JiraOverzicht>> {
   return toResult(async () => {
     const baseJql = `project = ${quote(key)} AND statusCategory != Done`;
-    const [actief, gepland, backlog] = await Promise.all(
-      SPRINT_BAKKEN.map((bak) =>
-        cachedSearch(`${baseJql} AND ${BAK_JQL[bak]}`),
+    const [[actief, gepland, backlog], boardId] = await Promise.all([
+      Promise.all(
+        SPRINT_BAKKEN.map((bak) =>
+          cachedSearch(`${baseJql} AND ${BAK_JQL[bak]}`),
+        ),
       ),
-    );
+      cachedBoardId(key),
+    ]);
+    const links = boardId === null ? null : boardLinks(key, boardId);
     const telling = (bak: SprintBak, issues: JiraIssue[]): Telling => ({
       aantal: issues.length,
-      url: jqlUrl(`${baseJql} AND ${BAK_JQL[bak]}`),
+      url: bakUrl(bak, links, `${baseJql} AND ${BAK_JQL[bak]}`),
     });
     return {
       key,
-      boardUrl: `${config.jiraSite}/browse/${encodeURIComponent(key)}`,
+      boardUrl:
+        links?.board ?? `${config.jiraSite}/browse/${encodeURIComponent(key)}`,
       perBak: {
         actief: telling("actief", actief.issues),
         gepland: telling("gepland", gepland.issues),
@@ -125,9 +165,17 @@ export function fetchSupportOverzicht(
       .map(quote)
       .join(", ")})`;
     const { issues, fetchedAt } = await cachedSearch(jql);
+    const statuses = [...new Set(issues.map((issue) => issue.status))];
     return {
       organizations,
       open: { aantal: issues.length, url: jqlUrl(jql) },
+      perStatus: statuses
+        .map((status) => ({
+          status,
+          aantal: issues.filter((issue) => issue.status === status).length,
+          url: jqlUrl(`${jql} AND status = ${quote(status)}`),
+        }))
+        .sort((a, b) => b.aantal - a.aantal),
       fetchedAt,
     };
   });

@@ -1,4 +1,4 @@
-import styles from "./JiraOverview.module.css";
+import { Melding } from "./Melding";
 
 type Props = {
   result: { status: "niet-ingesteld" } | { status: "fout"; message: string };
@@ -8,16 +8,14 @@ type Props = {
 export function JiraMessage({ result }: Props) {
   if (result.status === "niet-ingesteld") {
     return (
-      <p className={styles.message} role="status">
-        <span aria-hidden="true">⚠ </span>
-        Jira is nog niet ingesteld. Zet het token in .env.local.
-      </p>
+      <Melding titel="Jira is nog niet ingesteld">
+        Zet het token in .env.local.
+      </Melding>
     );
   }
   return (
-    <p className={styles.message} role="alert">
-      <span aria-hidden="true">⚠ </span>
-      Ophalen uit Jira is mislukt: {result.message}
-    </p>
+    <Melding titel="Ophalen uit Jira is mislukt" role="alert">
+      {result.message}
+    </Melding>
   );
 }

@@ -27,7 +27,7 @@ export function SupportOverview({ result, headingLevel = "h2" }: Props) {
     );
   }
 
-  const { open, organizations, fetchedAt } = result.data;
+  const { open, perStatus, organizations, fetchedAt } = result.data;
   return (
     <Card title="Beheer & Support" headingLevel={headingLevel}>
       <ul className={styles.stats}>
@@ -38,6 +38,19 @@ export function SupportOverview({ result, headingLevel = "h2" }: Props) {
           </ExternalLink>
         </li>
       </ul>
+      {perStatus.length > 0 && (
+        <ul
+          className={styles.statusList}
+          aria-label="Open supporttickets per status"
+        >
+          {perStatus.map((status) => (
+            <li key={status.status} className={styles.statusRow}>
+              <ExternalLink href={status.url}>{status.status}</ExternalLink>
+              <span className={styles.count}>{status.aantal}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       <p className={styles.footer}>
         <span>Organization: {organizations.join(", ")}</span>
         <span>
