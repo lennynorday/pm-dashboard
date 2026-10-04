@@ -6,7 +6,7 @@ import { LinkList } from "@/components/LinkList";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { VisibilityButton } from "@/components/VisibilityButton";
-import { jiraBoardUrl, loadDashboard } from "@/lib/dashboard";
+import { jiraBoardUrl, loadDashboard, orbitProjectUrl } from "@/lib/dashboard";
 import {
   BILLING_MODE_LABELS,
   formatDate,
@@ -50,7 +50,12 @@ export default async function ProjectPage({
         <Card title="Gegevens" accent>
           <dl className={styles.facts}>
             <dt>Projectnummer</dt>
-            <dd>{project.number}</dd>
+            <dd>
+              {project.number}{" "}
+              <ExternalLink href={orbitProjectUrl(project.number)}>
+                Openen in Orbit
+              </ExternalLink>
+            </dd>
             <dt>Status</dt>
             <dd>{PROJECT_STATE_LABELS[project.status]}</dd>
             <dt>Afrekenwijze</dt>

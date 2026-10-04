@@ -63,6 +63,10 @@ export function displayName(client: string): string {
   return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 }
 
+export function orbitProjectUrl(number: string): string {
+  return `${config.orbitSite}/project/${encodeURIComponent(number)}`;
+}
+
 export function jiraBoardUrl(key: string): string {
   return `${config.jiraSite}/browse/${encodeURIComponent(key)}`;
 }
