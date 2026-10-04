@@ -8,6 +8,7 @@ import type { DashboardConfig } from "./types";
 export const config: DashboardConfig = {
   eigenaar: "Lennart Ter Haar",
   jiraSite: "https://in10-rotterdam.atlassian.net",
+  orbitSite: "https://norday.orbit.teamleader.eu",
   links: {
     inbox: "https://mail.google.com/mail/u/0/#inbox",
     todo: "https://docs.superhuman.com/d/_dbn7xvJsaKk/_su2ra91w",
