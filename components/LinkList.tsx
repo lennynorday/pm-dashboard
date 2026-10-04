@@ -2,18 +2,12 @@ import { groupLinks, Link, LINK_TYPE_LABELS } from "@/lib/links";
 import { ExternalLink } from "./ExternalLink";
 import styles from "./LinkList.module.css";
 
-type Props = {
-  links: Link[];
-  emptyText?: string;
-};
+type Props = { links: Link[] };
 
-export function LinkList({
-  links,
-  emptyText = "Nog geen links ingesteld.",
-}: Props) {
+export function LinkList({ links }: Props) {
   const groups = groupLinks(links);
   if (groups.length === 0) {
-    return <p className={styles.empty}>{emptyText}</p>;
+    return <p className={styles.empty}>Nog geen links ingesteld.</p>;
   }
 
   return (

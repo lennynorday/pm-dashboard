@@ -8,16 +8,17 @@ export async function GET(request: NextRequest) {
   const verifier = request.cookies.get("orbit_verifier")?.value;
   const expectedState = request.cookies.get("orbit_state")?.value;
 
-  if (!code || !verifier || !state || state !== expectedState) {
-    return new NextResponse(
-      "Inloggen bij Orbit is mislukt. Probeer het opnieuw.",
-      {
-        status: 400,
-      },
-    );
-  }
+  const failed = new NextResponse(
+    "Inloggen bij Orbit is mislukt. Probeer het opnieuw.",
+    { status: 400 },
+  );
+  if (!code || !verifier || !state || state !== expectedState) return failed;
 
-  await saveToken(await exchangeCode(code, verifier));
+  try {
+    await saveToken(await exchangeCode(code, verifier));
+  } catch {
+    return failed;
+  }
 
   const response = NextResponse.redirect(new URL("/", request.url));
   response.cookies.delete({ name: "orbit_verifier", path: "/api/orbit" });

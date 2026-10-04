@@ -31,7 +31,7 @@ export function SupportOverview({ result, headingLevel = "h2" }: Props) {
   return (
     <Card title="Beheer & Support" headingLevel={headingLevel}>
       <ul className={styles.stats}>
-        <li className={styles.stat}>
+        <li>
           <ExternalLink href={open.url} className={styles.statLink}>
             <span className={styles.number}>{open.aantal}</span>
             <span className={styles.statLabel}>Open supporttickets</span>
