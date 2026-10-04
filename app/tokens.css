@@ -1,0 +1,113 @@
+/* Norday design tokens, uit Figma "Norday Website" > Handoff > Foundation (4 oktober 2026). */
+
+/* Lettertypebestanden: plaats ze in public/fonts zodra het Brand-team ze levert, en zet de @font-face-regels aan.
+@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Apercu Condensed Pro"; src: url("/fonts/ApercuCondensedPro-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+*/
+
+:root {
+  /* Merkkleuren */
+  --norday-dark: #3d1028;
+  --norday-pink: #ff0d4a;
+  --norday-yellow: #fff355;
+  --norday-lilac: #d5b3ff;
+  --norday-white: #ffffff;
+
+  /* Gebruik (lichte modus) */
+  --color-bg: var(--norday-white);
+  --color-surface: var(--norday-white);
+  --color-surface-accent: rgb(213 179 255 / 0.4); /* Lilac 40% */
+  --color-text: var(--norday-dark);
+  --color-text-muted: rgb(61 16 40 / 0.7);
+  --color-line: var(--norday-dark);
+  --color-line-subtle: rgb(61 16 40 / 0.5);
+  --color-accent: var(
+    --norday-pink
+  ); /* alleen grote tekst, randen en iconen, niet voor lopende tekst */
+  --color-highlight: var(--norday-yellow);
+  --color-focus: var(--norday-pink);
+
+  /* Lettertypes met terugval tot de bestanden er zijn */
+  --font-heading:
+    "Apercu Condensed Pro", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-text: "Suisse Intl", "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  /* Typografie (mobiel eerst) */
+  --type-h5: 700 28px/1 var(--font-heading);
+  --type-ui-heading-1: 600 20px/1.5 var(--font-text);
+  --type-ui-heading-2: 700 20px/1 var(--font-heading);
+  --type-body-1: 400 16px/1.35 var(--font-text);
+  --type-body-2: 400 14px/1.35 var(--font-text);
+  --type-label: 400 14px/1.35 var(--font-text);
+  --type-label-small: 400 12px/1.35 var(--font-text);
+  --type-big-numbers: 700 50px/1 var(--font-heading);
+  --heading-letter-spacing: -0.03em; /* koppen in Apercu: altijd hoofdletters */
+
+  /* Spacing-schaal */
+  --space-01: 4px;
+  --space-02: 8px;
+  --space-03: 12px;
+  --space-04: 16px;
+  --space-05: 20px;
+  --space-06: 24px;
+  --space-07: 28px;
+  --space-08: 32px;
+  --space-09: 36px;
+  --space-10: 48px;
+  --space-11: 64px;
+  --space-12: 72px;
+  --space-13: 96px;
+  --space-14: 120px;
+  --space-15: 144px;
+
+  /* Grid (mobiel) */
+  --grid-columns: 6;
+  --grid-gutter: 12px;
+  --grid-margin: 16px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --type-h5: 700 40px/1 var(--font-heading);
+    --type-ui-heading-1: 500 28px/1.2 var(--font-text);
+    --type-ui-heading-2: 700 25px/1 var(--font-heading);
+    --type-body-1: 400 22px/1.5 var(--font-text);
+    --type-body-2: 400 17px/1.5 var(--font-text);
+    --type-label: 400 17px/1.5 var(--font-text);
+    --type-label-small: 400 12px/1.5 var(--font-text);
+    --grid-columns: 12;
+    --grid-gutter: 40px;
+    --grid-margin: 80px;
+  }
+}
+
+/* Donkere modus: de donkere secties van de website als uitgangspunt */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: var(--norday-dark);
+    --color-surface: #4a1a33;
+    --color-surface-accent: rgb(213 179 255 / 0.15);
+    --color-text: var(--norday-white);
+    --color-text-muted: rgb(255 255 255 / 0.75);
+    --color-line: var(--norday-white);
+    --color-line-subtle: rgb(255 255 255 / 0.5);
+    --color-focus: var(--norday-yellow);
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg: var(--norday-dark);
+  --color-surface: #4a1a33;
+  --color-surface-accent: rgb(213 179 255 / 0.15);
+  --color-text: var(--norday-white);
+  --color-text-muted: rgb(255 255 255 / 0.75);
+  --color-line: var(--norday-white);
+  --color-line-subtle: rgb(255 255 255 / 0.5);
+  --color-focus: var(--norday-yellow);
+}
+
+.heading {
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}

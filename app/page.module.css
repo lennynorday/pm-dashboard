@@ -1,0 +1,10 @@
+.main {
+  padding: var(--space-08) var(--grid-margin);
+}
+
+.title {
+  font: var(--type-h5);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  margin: 0 0 var(--space-04);
+}
