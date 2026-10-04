@@ -1,0 +1,22 @@
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-04);
+  margin: 0;
+}
+
+.type {
+  font: var(--type-label-small);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-01);
+}
+
+.item {
+  margin: 0 0 var(--space-01);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}

@@ -1,5 +1,13 @@
 @import "./tokens.css";
 
+/* Aanvullende tokens voor het dashboard */
+:root {
+  --radius-small: 8px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+  --content-max-width: 1280px;
+}
+
 *,
 *::before,
 *::after {
@@ -13,7 +21,36 @@ body {
   font: var(--type-body-2);
 }
 
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

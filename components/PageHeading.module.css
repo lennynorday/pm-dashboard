@@ -1,0 +1,27 @@
+.heading {
+  margin-bottom: var(--space-06);
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02);
+  margin: 0 0 var(--space-03);
+  padding: 0;
+  list-style: none;
+  font: var(--type-label);
+  color: var(--color-text-muted);
+}
+
+.crumbs li + li::before {
+  content: "/";
+  margin-right: var(--space-02);
+}
+
+.title {
+  font: var(--type-h5);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
