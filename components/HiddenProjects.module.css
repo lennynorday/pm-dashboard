@@ -1,0 +1,11 @@
+.details {
+  margin-top: var(--space-10);
+  padding-top: var(--space-04);
+  border-top: 1px solid var(--color-line-subtle);
+}
+
+.summary {
+  font: var(--type-label);
+  cursor: pointer;
+  margin-bottom: var(--space-03);
+}

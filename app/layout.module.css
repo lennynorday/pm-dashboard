@@ -1,0 +1,24 @@
+.main {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-08) var(--space-04) var(--space-11);
+}
+
+.skipLink {
+  position: absolute;
+  left: var(--space-04);
+  top: -100px;
+  padding: var(--space-02) var(--space-04);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
+
+.skipLink:focus {
+  top: var(--space-02);
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding-inline: var(--space-08);
+  }
+}

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   await saveToken(await exchangeCode(code, verifier));
 
-  const response = NextResponse.redirect(new URL("/orbit-test", request.url));
+  const response = NextResponse.redirect(new URL("/", request.url));
   response.cookies.delete({ name: "orbit_verifier", path: "/api/orbit" });
   response.cookies.delete({ name: "orbit_state", path: "/api/orbit" });
   return response;

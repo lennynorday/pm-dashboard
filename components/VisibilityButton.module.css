@@ -1,0 +1,14 @@
+.button {
+  padding: var(--space-01) var(--space-03);
+  border: 1px solid var(--color-line-subtle);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: var(--type-label-small);
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--color-line);
+  color: var(--color-text);
+}
