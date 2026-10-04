@@ -19,8 +19,6 @@
   padding: 0;
   list-style: none;
   font: var(--type-label-small);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--color-text-muted);
 }
 

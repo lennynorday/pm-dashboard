@@ -32,7 +32,7 @@ export function accountSignalen(
         {
           ...basis,
           type: "bron-fout",
-          titel: `Jira ${key} niet opgehaald`,
+          titel: `Tickets van Jira ${key} konden niet worden opgehaald`,
           detail: result.message,
           url: `/accounts/${account.slug}`,
         },
@@ -44,8 +44,8 @@ export function accountSignalen(
       .map((sprint) => ({
         ...basis,
         type: "sprint-verlopen",
-        titel: `Sprint "${sprint.naam}" is verlopen`,
-        detail: `Einde ${formatDate((sprint.einddatum ?? "").slice(0, 10))}, nog open in Jira ${key}`,
+        titel: `Sprint "${sprint.naam}" is nog niet afgesloten`,
+        detail: `Einddatum was ${formatDate((sprint.einddatum ?? "").slice(0, 10))}, Jira ${key}`,
         url: result.data.boardUrl,
       }));
   });
@@ -56,7 +56,7 @@ export function accountSignalen(
       {
         ...basis,
         type: "bron-fout",
-        titel: "Support niet opgehaald",
+        titel: "Supporttickets konden niet worden opgehaald",
         detail: support.message,
         url: `/accounts/${account.slug}`,
       },
@@ -73,9 +73,9 @@ export function accountSignalen(
       type: "support-wacht",
       titel:
         aantal === 1
-          ? "1 supportticket wacht op ons"
-          : `${aantal} supporttickets wachten op ons`,
-      detail: `Beheer & Support, ${support.data.open.aantal} open in totaal`,
+          ? "1 supportticket wacht op een reactie van ons"
+          : `${aantal} supporttickets wachten op een reactie van ons`,
+      detail: `${support.data.open.aantal} open in Beheer & Support`,
       url: support.data.opNorday.url,
     },
   ];

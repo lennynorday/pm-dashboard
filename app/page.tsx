@@ -1,9 +1,9 @@
 import { connection } from "next/server";
-import { AccountTile } from "@/components/AccountTile";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
+import { TicketTable } from "@/components/TicketTable";
 import { loadDashboard } from "@/lib/dashboard";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { accountSignalen } from "@/lib/signals";
@@ -22,22 +22,22 @@ export default async function HomePage() {
     );
   }
 
-  const accounts = await Promise.all(
+  const rijen = await Promise.all(
     dashboard.accounts
       .map((account) => ({
         account,
-        zichtbaar: account.projecten.filter(
+        projecten: account.projecten.filter(
           (p) => p.zichtbaarheid === "zichtbaar",
         ),
       }))
-      .filter(({ zichtbaar }) => zichtbaar.length > 0)
+      .filter(({ projecten }) => projecten.length > 0)
       .map(async (item) => ({
         ...item,
         data: await fetchAccountJira(item.account),
       })),
   );
   const nu = new Date();
-  const signalen = accounts.flatMap(({ account, data }) =>
+  const signalen = rijen.flatMap(({ account, data }) =>
     accountSignalen(account, data, nu),
   );
   const verborgen = dashboard.accounts
@@ -53,18 +53,12 @@ export default async function HomePage() {
       <AttentionBand signalen={signalen} />
       <section aria-labelledby="accounts">
         <h2 id="accounts" className={styles.sectionTitle}>
-          Accounts
+          Mijn accounts
         </h2>
-        <div className={styles.grid}>
-          {accounts.map(({ account, zichtbaar, data }) => (
-            <AccountTile
-              key={account.slug}
-              account={account}
-              projecten={zichtbaar}
-              data={data}
-            />
-          ))}
-        </div>
+        <TicketTable
+          rijen={rijen}
+          caption="Mijn accounts met hun open tickets in Jira en Beheer & Support"
+        />
       </section>
       <HiddenProjects projecten={verborgen} />
     </>

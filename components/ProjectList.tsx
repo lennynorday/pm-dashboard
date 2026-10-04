@@ -20,13 +20,15 @@ export function ProjectList({ projecten }: Props) {
               {project.naam}
             </NextLink>
             <p className={styles.meta}>
-              <span>#{project.number}</span>
-              <span>{PROJECT_STATE_LABELS[project.status]}</span>
+              <span>Projectnummer {project.number}</span>
+              <span>
+                Status {PROJECT_STATE_LABELS[project.status].toLowerCase()}
+              </span>
               {project.einddatum && (
-                <span>Eind {formatDate(project.einddatum)}</span>
+                <span>Loopt tot {formatDate(project.einddatum)}</span>
               )}
               {project.jiraKeys.length > 0 && (
-                <span>Jira {project.jiraKeys.join(", ")}</span>
+                <span>Jira-project {project.jiraKeys.join(", ")}</span>
               )}
             </p>
           </div>

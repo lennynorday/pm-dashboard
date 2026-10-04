@@ -5,13 +5,7 @@ import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { config } from "@/config/accounts";
 import { loadDashboard } from "@/lib/dashboard";
 import { toNavAccounts } from "@/lib/navigation";
-import {
-  dataTheme,
-  MENU_COOKIE,
-  parseMenuStand,
-  parseThema,
-  THEMA_COOKIE,
-} from "@/lib/preferences";
+import { MENU_COOKIE, parseMenuStand } from "@/lib/preferences";
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -33,14 +27,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const thema = parseThema(cookieStore.get(THEMA_COOKIE)?.value);
   const stand = parseMenuStand(cookieStore.get(MENU_COOKIE)?.value);
   const dashboard = await loadDashboard();
   const accounts =
     dashboard.status === "ok" ? toNavAccounts(dashboard.accounts) : [];
 
   return (
-    <html lang="nl" data-theme={dataTheme(thema)} className={barlow.variable}>
+    <html lang="nl" className={barlow.variable}>
       <body>
         <a className={styles.skipLink} href="#inhoud">
           Naar de inhoud
@@ -51,7 +44,6 @@ export default async function RootLayout({
             inboxUrl={config.links.inbox}
             todoUrl={config.links.todo}
             initialStand={stand}
-            initialThema={thema}
           />
           <main id="inhoud" className={styles.main}>
             {children}

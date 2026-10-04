@@ -21,7 +21,7 @@ OWN-WORLD: Witte grond; zijbalk altijd een vol Dark-veld met witte tekst en een 
 
 STORY: Lenny ziet in een oogopslag of er iets is dat nu aandacht vraagt en bij welk account; hij klikt het signaal door naar Jira, of loopt de accounts langs om de stand te zien.
 
-FIRST VIEWPORT: Links de Dark-zijbalk (navigatie, accounts, thema). Rechts bovenaan de paginatitel OVERZICHT met daarnaast de versheid en Verversen. Daaronder de aandachtsband: een vol Lilac-veld over de hele breedte van het werkgebied, met de kop AANDACHT, het aantal, en per signaal een rij (icoon, account, wat, link). Bij nul signalen krimpt de band tot één rustige regel. Daaronder het accountgrid: per account een vierkant vlak met kop, Jira-aantallen in vaste kolommen, open support en de projecten.
+FIRST VIEWPORT: Links de Dark-zijbalk (navigatie, accounts, thema). Rechts bovenaan de paginatitel OVERZICHT met daarnaast de versheid en Verversen. Daaronder de aandachtsband: een vol Lilac-veld over de hele breedte van het werkgebied, met de kop AANDACHT, het aantal, en per signaal een rij (icoon, account, wat, link). Bij nul signalen krimpt de band tot één rustige regel. Daaronder MIJN ACCOUNTS als lijst: één tabelrij per account met de projecten onder de naam en kolommen voor Jira-project, actieve sprint (geel), gepland, backlog, open support en wachten op ons (lila). De accountpagina gebruikt dezelfde tabel onder de kop TICKETS.
 
 FORM: Norday-kleurvelden, positie 1 op de eigen lijst (gekozen als pick), seed 7c9e4774. Signature move: de aandachtsband als vol Lilac-veld dat meegroeit met het aantal signalen.
 

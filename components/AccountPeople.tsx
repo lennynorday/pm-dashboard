@@ -11,13 +11,13 @@ export function AccountPeople({ am, contactpersonen }: Props) {
   return (
     <dl className={styles.people}>
       <div>
-        <dt>AM</dt>
-        <dd>{am ?? "Nog niet ingesteld"}</dd>
+        <dt>Accountmanager</dt>
+        <dd>{am ?? "Nog niet ingevuld"}</dd>
       </div>
       <div>
-        <dt>Contact</dt>
+        <dt>Contactpersonen</dt>
         <dd>
-          {contactpersonen.length === 0 && "Nog niet ingesteld"}
+          {contactpersonen.length === 0 && "Nog niet ingevuld"}
           {contactpersonen.map((persoon, index) => (
             <span key={persoon.naam}>
               {index > 0 && ", "}

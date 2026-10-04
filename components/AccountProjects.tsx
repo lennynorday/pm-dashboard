@@ -22,16 +22,18 @@ export function AccountProjects({ projecten }: Props) {
             <VisibilityButton project={project} />
           </div>
           <p className={styles.meta}>
-            <span>#{project.number}</span>
-            <span>{PROJECT_STATE_LABELS[project.status]}</span>
+            <span>Projectnummer {project.number}</span>
+            <span>
+              Status {PROJECT_STATE_LABELS[project.status].toLowerCase()}
+            </span>
             {project.einddatum && (
-              <span>Eind {formatDate(project.einddatum)}</span>
+              <span>Loopt tot {formatDate(project.einddatum)}</span>
             )}
           </p>
           <ul className={styles.links}>
             <li>
               <ExternalLink href={orbitProjectUrl(project.number)}>
-                Openen in Orbit
+                Project in Orbit
               </ExternalLink>
             </li>
             {project.links.map((link) => (

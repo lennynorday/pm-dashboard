@@ -27,7 +27,7 @@ Een persoonlijk werkoverzicht dat Orbit, Jira en Beheer & Support (SUPP) samenbr
 
 ## Capabilities and Constraints
 
-- Nu beschikbaar: projecten per account (Orbit), Jira per project-key (actieve sprint, gepland, backlog, lopende sprints met einddatum), open supporttickets per status (SUPP), links per account uit de config, licht en donker thema.
+- Nu beschikbaar: projecten per account (Orbit), Jira per project-key (actieve sprint, gepland, backlog, lopende sprints met einddatum), open supporttickets per status (SUPP), links per account uit de config. Alleen een licht thema; dark mode is bewust geschrapt om op een werkende tool te focussen.
 - Nog niet beschikbaar (fase 3 en 4): budget, uren, offertes, to-do's en de signalen uit de briefing (budget-krap, geen-uren-deze-week, jira-blocker). Ontwerpen mogen er ruimte voor laten maar tonen geen verzonnen cijfers.
 - Next.js App Router, TypeScript, CSS Modules. Geen Tailwind.
 - Alle UI-teksten in het Nederlands, zonder em-dashes.

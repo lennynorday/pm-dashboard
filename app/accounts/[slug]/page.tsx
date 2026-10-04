@@ -4,11 +4,11 @@ import { AccountPeople } from "@/components/AccountPeople";
 import { AccountProjects } from "@/components/AccountProjects";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
-import { JiraOverview } from "@/components/JiraOverview";
 import { LinkList } from "@/components/LinkList";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
-import { SupportOverview } from "@/components/SupportOverview";
+import { TicketDetails } from "@/components/TicketDetails";
+import { TicketTable } from "@/components/TicketTable";
 import { loadDashboard } from "@/lib/dashboard";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { accountSignalen } from "@/lib/signals";
@@ -60,7 +60,7 @@ export default async function AccountPage({
 
       <section className={styles.section} aria-labelledby="projecten">
         <h2 id="projecten" className={styles.sectionTitle}>
-          Projecten
+          Projecten in Orbit
         </h2>
         {zichtbaar.length === 0 && (
           <p className={styles.muted}>Geen zichtbare projecten.</p>
@@ -71,24 +71,19 @@ export default async function AccountPage({
 
       <section className={styles.section} aria-labelledby="jira">
         <h2 id="jira" className={styles.sectionTitle}>
-          Jira en support
+          Tickets
         </h2>
-        <div className={styles.grid}>
-          {data.jira.map(({ key, result }) => (
-            <JiraOverview
-              key={key}
-              jiraKey={key}
-              result={result}
-              headingLevel="h3"
-            />
-          ))}
-          <SupportOverview result={data.support} headingLevel="h3" />
-        </div>
+        <TicketTable
+          rijen={[{ account, projecten: zichtbaar, data }]}
+          caption={`Open tickets van ${account.naam} in Jira en Beheer & Support`}
+          toonAccount={false}
+        />
+        <TicketDetails data={data} />
       </section>
 
       <section className={styles.section} aria-labelledby="links">
         <h2 id="links" className={styles.sectionTitle}>
-          Links
+          Links van dit account
         </h2>
         <LinkList links={account.links} />
       </section>

@@ -7,7 +7,7 @@
   --type-nav-small: 400 14px/1.35 var(--font-text);
   --main-padding: var(--space-04);
 
-  /* Kleurvelden: het zijmenu, aandacht en wat nu loopt. Ze blijven gelijk in beide thema's. */
+  /* Kleurvelden: het zijmenu, aandacht en wat nu loopt. */
   --field-shell: var(--norday-dark);
   --field-shell-hover: rgb(255 255 255 / 0.1);
   --field-attention: var(--norday-lilac);
@@ -23,17 +23,6 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --field-shell: #2a0a1b;
-    --color-hover: rgb(213 179 255 / 0.15);
-  }
-}
-:root[data-theme="dark"] {
-  --field-shell: #2a0a1b;
-  --color-hover: rgb(213 179 255 / 0.15);
-}
-
 *,
 *::before,
 *::after {
@@ -44,16 +33,6 @@ html {
   color-scheme: light;
   accent-color: var(--norday-pink);
   scrollbar-color: var(--color-line-subtle) transparent;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-  }
 }
 
 body {

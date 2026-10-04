@@ -13,10 +13,9 @@ import {
   TodoIcon,
 } from "@/components/icons";
 import type { NavAccount } from "@/lib/navigation";
-import { MENU_COOKIE, MenuStand, Thema } from "@/lib/preferences";
+import { MENU_COOKIE, MenuStand } from "@/lib/preferences";
 import { AccountNav } from "./AccountNav";
 import { setPreferenceCookie } from "./cookies";
-import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./Sidebar.module.css";
 
 type Props = {
@@ -24,20 +23,13 @@ type Props = {
   inboxUrl: string;
   todoUrl: string;
   initialStand: MenuStand;
-  initialThema: Thema;
 };
 
 function currentAccount(pathname: string): string | null {
   return /^\/accounts\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
-export function Sidebar({
-  accounts,
-  inboxUrl,
-  todoUrl,
-  initialStand,
-  initialThema,
-}: Props) {
+export function Sidebar({ accounts, inboxUrl, todoUrl, initialStand }: Props) {
   const pathname = usePathname();
   const current = currentAccount(pathname);
   const [stand, setStand] = useState<MenuStand>(initialStand);
@@ -161,14 +153,14 @@ export function Sidebar({
                 rel="noopener noreferrer"
               >
                 <InboxIcon />
-                <span className={styles.label}>Inbox</span>
+                <span className={styles.label}>Gmail-inbox</span>
                 <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
                 </span>
                 <span className={styles.tooltip} aria-hidden="true">
-                  Inbox
+                  Gmail-inbox
                 </span>
               </a>
             </li>
@@ -180,14 +172,14 @@ export function Sidebar({
                 rel="noopener noreferrer"
               >
                 <TodoIcon />
-                <span className={styles.label}>To-do&apos;s</span>
+                <span className={styles.label}>To-do&apos;s in Superhuman</span>
                 <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
                 </span>
                 <span className={styles.tooltip} aria-hidden="true">
-                  To-do&apos;s
+                  To-do&apos;s in Superhuman
                 </span>
               </a>
             </li>
@@ -195,15 +187,14 @@ export function Sidebar({
         </nav>
 
         <nav aria-label="Accounts" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Accounts</h2>
+          <h2 className={styles.sectionTitle}>Mijn accounts</h2>
           {accounts.length === 0 && (
-            <p className={styles.empty}>Geen accounts geladen.</p>
+            <p className={styles.empty}>Geen accounts uit Orbit geladen.</p>
           )}
           <AccountNav accounts={accounts} currentAccount={current} />
         </nav>
 
         <div className={styles.footer}>
-          <ThemeSwitch initialThema={initialThema} />
           <button
             type="button"
             className={styles.collapse}

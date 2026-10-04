@@ -11,9 +11,9 @@ type Props = {
 };
 
 const SOORT: Record<SignaalType, { label: string; Icon: typeof ClockIcon }> = {
-  "sprint-verlopen": { label: "Verlopen", Icon: ClockIcon },
-  "support-wacht": { label: "Wacht op ons", Icon: MessageIcon },
-  "bron-fout": { label: "Niet opgehaald", Icon: AlertIcon },
+  "sprint-verlopen": { label: "Sprint verlopen", Icon: ClockIcon },
+  "support-wacht": { label: "Support wacht", Icon: MessageIcon },
+  "bron-fout": { label: "Ophalen mislukt", Icon: AlertIcon },
 };
 
 /** Vol lila veld met wat nu aandacht vraagt; zonder signalen één rustige regel. */
@@ -22,10 +22,12 @@ export function AttentionBand({ signalen, toonAccount = true }: Props) {
     return (
       <section className={styles.rustig} aria-labelledby="aandacht">
         <h2 id="aandacht" className="visually-hidden">
-          Aandacht
+          Vraagt nu aandacht
         </h2>
         <CheckIcon className={styles.rustigIcoon} />
-        <p className={styles.rustigTekst}>Niets dat nu aandacht vraagt.</p>
+        <p className={styles.rustigTekst}>
+          Geen verlopen sprints en geen supporttickets die op ons wachten.
+        </p>
       </section>
     );
   }
@@ -36,7 +38,8 @@ export function AttentionBand({ signalen, toonAccount = true }: Props) {
       aria-labelledby="aandacht"
     >
       <h2 id="aandacht" className={styles.kop}>
-        Aandacht <span className={styles.aantal}>{signalen.length}</span>
+        Vraagt nu aandacht{" "}
+        <span className={styles.aantal}>{signalen.length}</span>
       </h2>
       <ul className={styles.lijst}>
         {signalen.map((signaal) => {

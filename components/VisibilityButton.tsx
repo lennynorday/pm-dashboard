@@ -11,7 +11,7 @@ export function VisibilityButton({ project }: Props) {
     <form action={hidden ? showProjectAction : hideProjectAction}>
       <input type="hidden" name="projectnummer" value={project.number} />
       <button type="submit" className={styles.button}>
-        {hidden ? "Terugzetten" : "Verbergen"}
+        {hidden ? "Weer tonen" : "Verbergen"}
         <span className="visually-hidden">: {project.naam}</span>
       </button>
     </form>
