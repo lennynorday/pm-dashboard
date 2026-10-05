@@ -29,6 +29,8 @@ export type Project = {
 export type Account = {
   slug: string;
   naam: string;
+  /** De klantnaam zoals Orbit die kent, ook als er een kortere naam is ingevuld. */
+  orbitNaam: string;
   /** Ik ben eigenaar van minstens één open project van dit account. */
   mijn: boolean;
   jiraKeys: string[];
@@ -96,10 +98,12 @@ function toAccount(
   projecten: Project[],
   mijn: boolean,
   accountConfig: AccountGegevens,
+  orbitNaam: string,
 ): Account {
   return {
     slug,
     naam: projecten[0].accountNaam,
+    orbitNaam,
     mijn,
     jiraKeys: accountConfig.jiraKeys,
     supportOrganizations: accountConfig.supportOrganizations,
@@ -124,10 +128,19 @@ export function buildAccounts(
   gegevens: AlleAccountGegevens,
 ): Account[] {
   const mijnNummers = new Set(mine.map((orbit) => orbit.number));
-  const projecten = [
+  const orbitProjecten = [
     ...mine,
     ...culture.filter((orbit) => !mijnNummers.has(orbit.number)),
-  ].map((orbit) => toProject(orbit, hidden, gegevens));
+  ];
+  const orbitNamen = new Map(
+    orbitProjecten.map((orbit) => [
+      slugify(orbit.client),
+      displayName(orbit.client),
+    ]),
+  );
+  const projecten = orbitProjecten.map((orbit) =>
+    toProject(orbit, hidden, gegevens),
+  );
   const slugs = [...new Set(projecten.map((project) => project.accountSlug))];
   return slugs
     .map((slug) => {
@@ -139,6 +152,7 @@ export function buildAccounts(
         vanAccount,
         vanAccount.some((project) => mijnNummers.has(project.number)),
         gegevens[slug] ?? LEGE_GEGEVENS,
+        orbitNamen.get(slug) ?? slug,
       );
     })
     .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));

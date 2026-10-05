@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
 import { parseExport, saveAccountGegevens } from "@/lib/accountgegevens";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -76,4 +77,20 @@ export async function importAccountGegevensAction(
   }
   revalidatePath("/", "layout");
   redirect(`/instellingen?${new URLSearchParams(uitkomst)}#accountgegevens`);
+}
+
+/** Slaat de gegevens van één account op; bij fouten blijft alles staan wat is ingevuld. */
+export async function saveAccountAction(
+  slug: string,
+  _vorige: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  if (!(await currentUser()) || !/^[a-z0-9-]+$/.test(slug)) redirect("/");
+  const waarden = readFormWaarden(formData);
+  const uitkomst = validateForm(waarden);
+  if ("fouten" in uitkomst) return { fouten: uitkomst.fouten, waarden };
+
+  saveAccountGegevens({ [slug]: uitkomst.gegevens });
+  revalidatePath("/", "layout");
+  redirect(`/accounts/${slug}`);
 }
