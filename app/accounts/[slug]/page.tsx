@@ -1,3 +1,4 @@
+import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AccountPeople } from "@/components/AccountPeople";
@@ -51,6 +52,12 @@ export default async function AccountPage({
         crumbs={[HOME]}
         aside={<OrbitStatus dashboard={dashboard} />}
       >
+        <NextLink
+          href={`/accounts/${account.slug}/bewerken`}
+          className={styles.bewerken}
+        >
+          Gegevens bewerken
+        </NextLink>
         <AccountPeople
           am={account.am}
           contactpersonen={account.contactpersonen}

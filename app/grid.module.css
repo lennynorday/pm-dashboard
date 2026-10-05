@@ -16,3 +16,21 @@
   margin: 0 0 var(--space-04);
   color: var(--color-text-muted);
 }
+
+.bewerken {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: var(--space-03);
+  padding: 0 var(--space-04);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  font: var(--type-label-small);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.bewerken:hover {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}

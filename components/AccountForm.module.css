@@ -1,0 +1,138 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-08);
+  max-width: 880px;
+}
+
+.groep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-04);
+  margin: 0;
+  padding: var(--space-05) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-02);
+  padding: 0;
+  font: var(--type-ui-heading-2);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+/* Contactpersoon of link: velden naast elkaar, op een smal scherm onder elkaar. */
+.rij {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-03) var(--space-04);
+  margin: 0;
+  padding: var(--space-04) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-line-subtle);
+}
+
+.rijLegend {
+  float: left;
+  grid-column: 1 / -1;
+  padding: 0;
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.veld {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-01);
+  min-width: 0;
+}
+
+.label {
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0;
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.input {
+  min-height: 40px;
+  padding: var(--space-02) var(--space-03);
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--type-body-2);
+}
+
+.input[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--color-accent);
+}
+
+.fout {
+  margin: 0;
+  font: var(--type-label-small);
+  font-weight: 600;
+}
+
+.fout::before {
+  content: "Fout: ";
+}
+
+.samenvatting {
+  padding: var(--space-05);
+  border: 2px solid var(--color-accent);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
+
+.samenvattingTitel {
+  margin: 0 0 var(--space-03);
+  font: var(--type-ui-heading-1);
+}
+
+.samenvatting ul {
+  margin: 0;
+  padding-left: var(--space-05);
+}
+
+.acties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-05);
+}
+
+.opslaan {
+  min-height: 44px;
+  padding: 0 var(--space-07);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+  font: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opslaan:hover {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.opslaan:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.annuleren {
+  font: var(--type-label);
+}
