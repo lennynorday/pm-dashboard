@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode } from "@/lib/orbit/oauth";
-import { saveToken } from "@/lib/orbit/token";
+import { saveKoppeling } from "@/lib/koppelingen";
 import { currentUser } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    saveToken(user.email, await exchangeCode(code, verifier));
+    saveKoppeling(user.email, "orbit", await exchangeCode(code, verifier));
   } catch {
     return failed;
   }

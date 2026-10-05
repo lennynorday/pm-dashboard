@@ -14,20 +14,28 @@ export function TicketDetails({ data }: Props) {
   const ok = data.jira.flatMap(({ key, result }) =>
     result.status === "ok" ? [{ key, overzicht: result.data }] : [],
   );
-  const problemen = data.jira.flatMap(({ key, result }) =>
-    result.status === "ok" ? [] : [{ key, result }],
+  const fouten = [
+    ...data.jira,
+    ...(data.support ? [{ key: "SUPP", result: data.support }] : []),
+  ].flatMap(({ key, result }) =>
+    result.status === "fout" ? [{ key, result }] : [],
   );
+  // Niet verbonden geldt voor alle Jira-projecten tegelijk: één melding.
+  const nietVerbonden = [
+    ...data.jira.map(({ result }) => result),
+    data.support,
+  ].some((result) => result?.status === "niet-verbonden");
   const support = data.support?.status === "ok" ? data.support.data : null;
   const opgehaald = ok[0]?.overzicht.fetchedAt ?? support?.fetchedAt;
 
   return (
     <div className={styles.details}>
-      {problemen.map(({ key, result }) => (
+      {nietVerbonden && (
+        <JiraMessage jiraKey="Jira" result={{ status: "niet-verbonden" }} />
+      )}
+      {fouten.map(({ key, result }) => (
         <JiraMessage key={key} jiraKey={key} result={result} />
       ))}
-      {data.support !== null && data.support.status !== "ok" && (
-        <JiraMessage jiraKey="SUPP" result={data.support} />
-      )}
 
       {ok.length > 0 && (
         <section aria-labelledby="sprints" className={styles.blok}>

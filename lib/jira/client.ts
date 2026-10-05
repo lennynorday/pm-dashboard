@@ -1,3 +1,6 @@
+import { validToken } from "@/lib/koppelingen";
+import { parseJiraToken, refreshJiraToken } from "./oauth";
+
 export const SPRINT_STATES = ["active", "future", "closed"] as const;
 export type SprintState = (typeof SPRINT_STATES)[number];
 
@@ -17,23 +20,11 @@ export type JiraIssue = {
 /** Het Sprint-veld in deze Jira-omgeving. */
 const SPRINT_FIELD = "customfield_10003";
 
-export class JiraNotConfiguredError extends Error {
+/** De gebruiker heeft Jira niet verbonden, of de koppeling is verlopen of ingetrokken. */
+export class JiraNietVerbondenError extends Error {
   constructor() {
-    super("Jira is nog niet ingesteld in .env.local");
+    super("Niet verbonden met Jira");
   }
-}
-
-type JiraSettings = { baseUrl: string; authorization: string };
-
-function settings(): JiraSettings {
-  const { JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN } = process.env;
-  if (!JIRA_BASE_URL || !JIRA_EMAIL || !JIRA_API_TOKEN) {
-    throw new JiraNotConfiguredError();
-  }
-  const credentials = Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString(
-    "base64",
-  );
-  return { baseUrl: JIRA_BASE_URL, authorization: `Basic ${credentials}` };
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -74,19 +65,28 @@ const PAGE_SIZE = 100;
 const MAX_PAGES = 20;
 
 async function postSearch(
+  email: string,
   body: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const { baseUrl, authorization } = settings();
-  const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+  const token = await validToken(
+    email,
+    "jira",
+    parseJiraToken,
+    refreshJiraToken,
+  );
+  if (!token) throw new JiraNietVerbondenError();
+  const url = `https://api.atlassian.com/ex/jira/${encodeURIComponent(token.cloudId)}/rest/api/3/search/jql`;
+  const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: authorization,
+      Authorization: `Bearer ${token.accessToken}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ fields: ["status", SPRINT_FIELD], ...body }),
     cache: "no-store",
   });
+  if (response.status === 401) throw new JiraNietVerbondenError();
   if (!response.ok) {
     throw new Error(`Jira gaf status ${response.status}`);
   }
@@ -101,12 +101,15 @@ function parseIssues(data: Record<string, unknown>): JiraIssue[] {
 }
 
 /** Haalt alle issues op die bij de JQL horen, met alleen status en sprints. */
-export async function searchIssues(jql: string): Promise<JiraIssue[]> {
+export async function searchIssues(
+  email: string,
+  jql: string,
+): Promise<JiraIssue[]> {
   const issues: JiraIssue[] = [];
   let nextPageToken: string | undefined;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const data = await postSearch({
+    const data = await postSearch(email, {
       jql,
       maxResults: PAGE_SIZE,
       nextPageToken,
@@ -120,8 +123,11 @@ export async function searchIssues(jql: string): Promise<JiraIssue[]> {
 }
 
 /** Het board van een Jira-project, afgeleid uit de sprint van een recent ticket. */
-export async function findBoardId(key: string): Promise<number | null> {
-  const data = await postSearch({
+export async function findBoardId(
+  email: string,
+  key: string,
+): Promise<number | null> {
+  const data = await postSearch(email, {
     jql: `project = "${key.replace(/"/g, '\\"')}" AND sprint is not EMPTY ORDER BY updated DESC`,
     maxResults: 1,
   });

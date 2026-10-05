@@ -2,9 +2,10 @@ import { config } from "@/config/accounts";
 import {
   findBoardId,
   JiraIssue,
-  JiraNotConfiguredError,
+  JiraNietVerbondenError,
   searchIssues,
 } from "./client";
+import { currentUser } from "@/lib/session";
 
 export const SPRINT_BAKKEN = ["actief", "gepland", "backlog"] as const;
 export type SprintBak = (typeof SPRINT_BAKKEN)[number];
@@ -34,7 +35,7 @@ export type SupportOverzicht = {
 
 export type JiraResult<T> =
   | { status: "ok"; data: T }
-  | { status: "niet-ingesteld" }
+  | { status: "niet-verbonden" }
   | { status: "fout"; message: string };
 
 const CACHE_MS = 15 * 60 * 1000;
@@ -45,13 +46,19 @@ export function clearJiraCache(): void {
   boards.clear();
 }
 
+/** De cache is per gebruiker: ieder ziet alleen wat de eigen Jira-rechten toestaan. */
 async function cachedSearch(
+  email: string,
   jql: string,
 ): Promise<{ issues: JiraIssue[]; fetchedAt: Date }> {
-  const hit = cache.get(jql);
+  const key = JSON.stringify([email, jql]);
+  const hit = cache.get(key);
   if (hit && Date.now() - hit.fetchedAt.getTime() < CACHE_MS) return hit;
-  const entry = { issues: await searchIssues(jql), fetchedAt: new Date() };
-  cache.set(jql, entry);
+  const entry = {
+    issues: await searchIssues(email, jql),
+    fetchedAt: new Date(),
+  };
+  cache.set(key, entry);
   return entry;
 }
 
@@ -59,8 +66,8 @@ async function toResult<T>(load: () => Promise<T>): Promise<JiraResult<T>> {
   try {
     return { status: "ok", data: await load() };
   } catch (error) {
-    if (error instanceof JiraNotConfiguredError)
-      return { status: "niet-ingesteld" };
+    if (error instanceof JiraNietVerbondenError)
+      return { status: "niet-verbonden" };
     const message = error instanceof Error ? error.message : String(error);
     return { status: "fout", message };
   }
@@ -89,9 +96,15 @@ const BAK_JQL: Record<SprintBak, string> = {
 const boards = new Map<string, number | null>();
 
 /** Het board blijft gelijk, dus dit hoeft maar één keer per project. */
-async function cachedBoardId(key: string): Promise<number | null> {
-  if (!boards.has(key)) boards.set(key, await findBoardId(key));
-  return boards.get(key) ?? null;
+async function cachedBoardId(
+  email: string,
+  key: string,
+): Promise<number | null> {
+  const cacheKey = JSON.stringify([email, key]);
+  if (!boards.has(cacheKey)) {
+    boards.set(cacheKey, await findBoardId(email, key));
+  }
+  return boards.get(cacheKey) ?? null;
 }
 
 type BoardLinks = { board: string; backlog: string };
@@ -126,7 +139,8 @@ function actieveSprints(actief: JiraIssue[]): ActieveSprint[] {
 }
 
 /** Open tickets van één Jira-project, verdeeld over actieve sprint, gepland en backlog. */
-export function fetchJiraOverzicht(
+function fetchJiraOverzicht(
+  email: string,
   key: string,
 ): Promise<JiraResult<JiraOverzicht>> {
   return toResult(async () => {
@@ -134,10 +148,10 @@ export function fetchJiraOverzicht(
     const [[actief, gepland, backlog], boardId] = await Promise.all([
       Promise.all(
         SPRINT_BAKKEN.map((bak) =>
-          cachedSearch(`${baseJql} AND ${BAK_JQL[bak]}`),
+          cachedSearch(email, `${baseJql} AND ${BAK_JQL[bak]}`),
         ),
       ),
-      cachedBoardId(key),
+      cachedBoardId(email, key),
     ]);
     const links = boardId === null ? null : boardLinks(key, boardId);
     const telling = (bak: SprintBak, issues: JiraIssue[]): Telling => ({
@@ -167,14 +181,15 @@ const WACHT_OP_NORDAY = [
 ];
 
 /** Open supporttickets in SUPP voor de Organizations van een account. */
-export function fetchSupportOverzicht(
+function fetchSupportOverzicht(
+  email: string,
   organizations: string[],
 ): Promise<JiraResult<SupportOverzicht>> {
   return toResult(async () => {
     const jql = `project = SUPP AND statusCategory != Done AND Organizations in (${organizations
       .map(quote)
       .join(", ")})`;
-    const { issues, fetchedAt } = await cachedSearch(jql);
+    const { issues, fetchedAt } = await cachedSearch(email, jql);
     const statuses = [...new Set(issues.map((issue) => issue.status))];
     return {
       organizations,
@@ -204,20 +219,21 @@ export type AccountJira = {
   support: JiraResult<SupportOverzicht> | null;
 };
 
-/** Jira-projecten en support van één account, tegelijk opgehaald. */
+/** Jira-projecten en support van één account, met de Jira-rechten van de gebruiker. */
 export async function fetchAccountJira(account: {
   jiraKeys: string[];
   supportOrganizations: string[];
 }): Promise<AccountJira> {
+  const email = (await currentUser())?.email ?? "";
   const [jira, support] = await Promise.all([
     Promise.all(
       account.jiraKeys.map(async (key) => ({
         key,
-        result: await fetchJiraOverzicht(key),
+        result: await fetchJiraOverzicht(email, key),
       })),
     ),
     account.supportOrganizations.length > 0
-      ? fetchSupportOverzicht(account.supportOrganizations)
+      ? fetchSupportOverzicht(email, account.supportOrganizations)
       : null,
   ]);
   return { jira, support };

@@ -1,44 +1,13 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ORBIT_MCP_URL } from "./config";
+import { parseStoredToken, validToken } from "@/lib/koppelingen";
 import { refreshToken } from "./oauth";
-import { OrbitToken, readToken, saveToken } from "./token";
 
 export type OrbitResult =
   | { status: "ok"; text: string }
   | { status: "niet-verbonden" }
   | { status: "fout"; message: string };
-
-const REFRESH_MARGIN_MS = 60_000;
-
-async function refresh(
-  email: string,
-  value: string,
-): Promise<OrbitToken | null> {
-  // Een verlopen refresh token betekent: opnieuw inloggen.
-  const refreshed = await refreshToken(value).catch(() => null);
-  if (refreshed) saveToken(email, refreshed);
-  return refreshed;
-}
-
-/**
- * Gelijktijdige aanroepen van één gebruiker delen één vernieuwing. Anders maakt
- * de tweede vernieuwing het token van de eerste ongeldig en geeft Orbit een 403.
- */
-const refreshing = new Map<string, Promise<OrbitToken | null>>();
-
-async function validToken(email: string): Promise<OrbitToken | null> {
-  const token = readToken(email);
-  if (!token) return null;
-  if (token.expiresAt - REFRESH_MARGIN_MS > Date.now()) return token;
-  if (!token.refreshToken) return null;
-
-  const pending =
-    refreshing.get(email) ??
-    refresh(email, token.refreshToken).finally(() => refreshing.delete(email));
-  refreshing.set(email, pending);
-  return pending;
-}
 
 /** Roept één tool van de officiële Orbit-connector aan met het token van de gebruiker. */
 export async function callOrbitTool(
@@ -47,7 +16,12 @@ export async function callOrbitTool(
   args: Record<string, unknown>,
 ): Promise<OrbitResult> {
   try {
-    const token = await validToken(email);
+    const token = await validToken(
+      email,
+      "orbit",
+      parseStoredToken,
+      (_, refresh) => refreshToken(refresh),
+    );
     if (!token) return { status: "niet-verbonden" };
 
     const transport = new StreamableHTTPClientTransport(

@@ -39,7 +39,7 @@
 13. "Verbinden met Jira" stuurt mij naar Atlassian; na toestemming haalt de app Jira-data op met mijn eigen rechten. `JIRA_EMAIL` en `JIRA_API_TOKEN` zijn verdwenen uit `.env.example`.
 14. De app vraagt bij Jira alleen leesrechten.
 15. Jira-tokens en de Jira-cache zijn per gebruiker, net als bij Orbit (criteria 9 en 10).
-16. Is de Jira-koppeling verlopen of ingetrokken, dan staat er in het Jira-blok "Opnieuw verbinden met Jira"; de rest van de pagina werkt door.
+16. Is Jira niet verbonden, of is de koppeling verlopen of ingetrokken, dan staat er in het Jira-blok "Verbinden met Jira"; de rest van de pagina werkt door.
 
 **Stap C: bewerkscherm**
 
