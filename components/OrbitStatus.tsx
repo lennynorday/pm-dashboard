@@ -12,10 +12,11 @@ export function OrbitStatus({ dashboard }: Props) {
     return (
       <div className={styles.melding}>
         <Melding
-          titel="Niet ingelogd bij Teamleader Orbit"
-          actie={<a href="/api/orbit/login">Inloggen bij Orbit</a>}
+          titel="Niet verbonden met Teamleader Orbit"
+          actie={<a href="/api/orbit/login">Verbinden met Orbit</a>}
         >
-          Zonder Orbit kan het dashboard je projecten niet ophalen.
+          Zonder Orbit kan het dashboard je projecten niet ophalen. Was je al
+          verbonden, dan is de koppeling verlopen of ingetrokken.
         </Melding>
       </div>
     );

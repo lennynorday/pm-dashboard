@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { pkce } from "@/lib/pkce";
 import {
   ORBIT_BASE_URL,
   ORBIT_MCP_URL,
@@ -14,9 +14,7 @@ export type PkceStart = {
 };
 
 export function startLogin(): PkceStart {
-  const verifier = randomBytes(32).toString("base64url");
-  const state = randomBytes(16).toString("base64url");
-  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  const { verifier, challenge, state } = pkce();
 
   const url = new URL(`${ORBIT_BASE_URL}/oauth2/Authorize`);
   url.search = new URLSearchParams({

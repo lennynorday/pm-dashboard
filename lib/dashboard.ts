@@ -5,6 +5,7 @@ import { readHiddenProjects } from "./hidden-projects";
 import { Link, toLink } from "./links";
 import { CULTURE_FOLDER_ID } from "./orbit/config";
 import { fetchProjects, OrbitProject, ProjectState } from "./orbit/projects";
+import { currentUser } from "./session";
 
 export type Zichtbaarheid = "zichtbaar" | "verborgen";
 
@@ -131,11 +132,13 @@ export function buildAccounts(
 
 /** Eén keer per request, ook al vragen layout en pagina het allebei op. */
 export const loadDashboard = cache(async (): Promise<Dashboard> => {
-  const [mine, culture, hidden] = await Promise.all([
-    fetchProjects({ mine: true }),
-    fetchProjects({ folderId: CULTURE_FOLDER_ID }),
-    readHiddenProjects(),
+  const user = await currentUser();
+  if (!user) return { status: "niet-verbonden" };
+  const [mine, culture] = await Promise.all([
+    fetchProjects(user.email, { mine: true }),
+    fetchProjects(user.email, { folderId: CULTURE_FOLDER_ID }),
   ]);
+  const hidden = readHiddenProjects(user.email);
   if (mine.status !== "ok") return mine;
   if (culture.status !== "ok") return culture;
   return {

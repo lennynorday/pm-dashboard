@@ -11,38 +11,43 @@ export type OrbitResult =
 
 const REFRESH_MARGIN_MS = 60_000;
 
-async function refresh(value: string): Promise<OrbitToken | null> {
+async function refresh(
+  email: string,
+  value: string,
+): Promise<OrbitToken | null> {
   // Een verlopen refresh token betekent: opnieuw inloggen.
   const refreshed = await refreshToken(value).catch(() => null);
-  if (refreshed) await saveToken(refreshed);
+  if (refreshed) saveToken(email, refreshed);
   return refreshed;
 }
 
 /**
- * Gelijktijdige aanroepen delen één vernieuwing. Anders maakt de tweede
- * vernieuwing het token van de eerste ongeldig en geeft Orbit een 403.
+ * Gelijktijdige aanroepen van één gebruiker delen één vernieuwing. Anders maakt
+ * de tweede vernieuwing het token van de eerste ongeldig en geeft Orbit een 403.
  */
-let refreshing: Promise<OrbitToken | null> | null = null;
+const refreshing = new Map<string, Promise<OrbitToken | null>>();
 
-async function validToken(): Promise<OrbitToken | null> {
-  const token = await readToken();
+async function validToken(email: string): Promise<OrbitToken | null> {
+  const token = readToken(email);
   if (!token) return null;
   if (token.expiresAt - REFRESH_MARGIN_MS > Date.now()) return token;
   if (!token.refreshToken) return null;
 
-  refreshing ??= refresh(token.refreshToken).finally(() => {
-    refreshing = null;
-  });
-  return refreshing;
+  const pending =
+    refreshing.get(email) ??
+    refresh(email, token.refreshToken).finally(() => refreshing.delete(email));
+  refreshing.set(email, pending);
+  return pending;
 }
 
-/** Roept één tool van de officiële Orbit-connector aan en geeft de tekst terug. */
+/** Roept één tool van de officiële Orbit-connector aan met het token van de gebruiker. */
 export async function callOrbitTool(
+  email: string,
   name: string,
   args: Record<string, unknown>,
 ): Promise<OrbitResult> {
   try {
-    const token = await validToken();
+    const token = await validToken(email);
     if (!token) return { status: "niet-verbonden" };
 
     const transport = new StreamableHTTPClientTransport(

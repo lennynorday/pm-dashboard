@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
+import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { config } from "@/config/accounts";
 import { loadDashboard } from "@/lib/dashboard";
@@ -11,6 +12,7 @@ import {
   parseGroepStand,
   parseMenuStand,
 } from "@/lib/preferences";
+import { currentUser, LOGIN_MELDING_COOKIE, LoginMelding } from "@/lib/session";
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -26,12 +28,31 @@ export const metadata: Metadata = {
   description: "Overzicht van accounts en projecten",
 };
 
+function parseLoginMelding(value: string | undefined): LoginMelding | null {
+  return value === "geen-norday-account" || value === "mislukt" ? value : null;
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
+  const user = await currentUser();
+  if (!user) {
+    return (
+      <html lang="nl" className={barlow.variable}>
+        <body>
+          <LoginScherm
+            melding={parseLoginMelding(
+              cookieStore.get(LOGIN_MELDING_COOKIE)?.value,
+            )}
+          />
+        </body>
+      </html>
+    );
+  }
+
   const stand = parseMenuStand(cookieStore.get(MENU_COOKIE)?.value);
   const overige = parseGroepStand(cookieStore.get(OVERIGE_COOKIE)?.value);
   const dashboard = await loadDashboard();
@@ -51,6 +72,7 @@ export default async function RootLayout({
             todoUrl={config.links.todo}
             initialStand={stand}
             initialOverige={overige}
+            user={user}
           />
           <main id="inhoud" className={styles.main}>
             {children}

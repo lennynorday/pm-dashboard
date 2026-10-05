@@ -111,6 +111,66 @@
   cursor: pointer;
 }
 
+.user {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+  font: var(--type-label);
+  font-weight: 600;
+  object-fit: cover;
+}
+
+.user .label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+}
+
+.welkom {
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.email {
+  overflow: hidden;
+  font: var(--type-label-small);
+  color: rgb(255 255 255 / 0.7);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-02) var(--space-03);
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 0.8);
+  font: var(--type-nav);
+  cursor: pointer;
+}
+
+.logout:hover {
+  background: var(--field-shell-hover);
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -364,6 +424,8 @@
 
   .sidebar[data-stand="ingeklapt"] .item,
   .sidebar[data-stand="ingeklapt"] .collapse,
+  .sidebar[data-stand="ingeklapt"] .logout,
+  .sidebar[data-stand="ingeklapt"] .user,
   .sidebar[data-stand="ingeklapt"] .groupToggle {
     justify-content: center;
     padding-inline: 0;
@@ -388,6 +450,9 @@
   .sidebar[data-stand="ingeklapt"] .item:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .collapse:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip,
+  .sidebar[data-stand="ingeklapt"] .user:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .logout:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .logout:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .groupToggle:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .groupToggle:focus-visible .tooltip {
     display: block;
