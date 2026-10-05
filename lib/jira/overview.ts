@@ -173,12 +173,11 @@ function fetchJiraOverzicht(
   });
 }
 
-/** ponytail: statusnamen uit de SUPP-workflow; pas aan als die workflow verandert. */
-const WACHT_OP_NORDAY = [
-  "Waiting for first response",
-  "Wachtend op support",
-  "Response from customer",
-];
+/**
+ * ponytail: status-id's uit de SUPP-workflow; pas aan als die workflow verandert.
+ * 12090 Waiting for first response, 11801 Wachtend op support, 12200 Response from customer.
+ */
+const WACHT_OP_NORDAY = ["12090", "11801", "12200"];
 
 /** Open supporttickets in SUPP voor de Organizations van een account. */
 function fetchSupportOverzicht(
@@ -190,23 +189,27 @@ function fetchSupportOverzicht(
       .map(quote)
       .join(", ")})`;
     const { issues, fetchedAt } = await cachedSearch(email, jql);
-    const statuses = [...new Set(issues.map((issue) => issue.status))];
+    const statusIds = [...new Set(issues.map((issue) => issue.statusId))];
     return {
       organizations,
       open: { aantal: issues.length, url: jqlUrl(jql) },
       opNorday: {
-        aantal: issues.filter((issue) => WACHT_OP_NORDAY.includes(issue.status))
-          .length,
-        url: jqlUrl(
-          `${jql} AND status in (${WACHT_OP_NORDAY.map(quote).join(", ")})`,
-        ),
+        aantal: issues.filter((issue) =>
+          WACHT_OP_NORDAY.includes(issue.statusId),
+        ).length,
+        url: jqlUrl(`${jql} AND status in (${WACHT_OP_NORDAY.join(", ")})`),
       },
-      perStatus: statuses
-        .map((status) => ({
-          status,
-          aantal: issues.filter((issue) => issue.status === status).length,
-          url: jqlUrl(`${jql} AND status = ${quote(status)}`),
-        }))
+      perStatus: statusIds
+        .map((statusId) => {
+          const metStatus = issues.filter(
+            (issue) => issue.statusId === statusId,
+          );
+          return {
+            status: metStatus[0].status,
+            aantal: metStatus.length,
+            url: jqlUrl(`${jql} AND status = ${statusId}`),
+          };
+        })
         .sort((a, b) => b.aantal - a.aantal),
       fetchedAt,
     };
