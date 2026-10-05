@@ -1,4 +1,4 @@
-import type { Contactpersoon } from "@/config/types";
+import type { Contactpersoon } from "@/lib/accountgegevens";
 import styles from "./AccountPeople.module.css";
 
 type Props = {

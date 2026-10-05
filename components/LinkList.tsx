@@ -7,11 +7,7 @@ type Props = { links: Link[] };
 export function LinkList({ links }: Props) {
   const groups = groupLinks(links);
   if (groups.length === 0) {
-    return (
-      <p className={styles.empty}>
-        Nog geen links voor dit account in de config.
-      </p>
-    );
+    return <p className={styles.empty}>Nog geen links voor dit account.</p>;
   }
 
   return (

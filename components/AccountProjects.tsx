@@ -36,11 +36,6 @@ export function AccountProjects({ projecten }: Props) {
                 Project in Orbit
               </ExternalLink>
             </li>
-            {project.links.map((link) => (
-              <li key={link.url}>
-                <ExternalLink href={link.url}>{link.label}</ExternalLink>
-              </li>
-            ))}
           </ul>
         </li>
       ))}

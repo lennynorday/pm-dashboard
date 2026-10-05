@@ -25,6 +25,10 @@ function open(): DatabaseSync {
       token TEXT NOT NULL,
       PRIMARY KEY (email, bron)
     );
+    CREATE TABLE IF NOT EXISTS account_gegevens (
+      slug TEXT PRIMARY KEY,
+      gegevens TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS verborgen_projecten (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       nummer TEXT NOT NULL,
