@@ -3,7 +3,8 @@ import { config } from "@/config/accounts";
 import type { Contactpersoon } from "@/config/types";
 import { readHiddenProjects } from "./hidden-projects";
 import { Link, toLink } from "./links";
-import { fetchMyProjects, OrbitProject, ProjectState } from "./orbit/projects";
+import { CULTURE_FOLDER_ID } from "./orbit/config";
+import { fetchProjects, OrbitProject, ProjectState } from "./orbit/projects";
 
 export type Zichtbaarheid = "zichtbaar" | "verborgen";
 
@@ -22,6 +23,8 @@ export type Project = {
 export type Account = {
   slug: string;
   naam: string;
+  /** Ik ben eigenaar van minstens één open project van dit account. */
+  mijn: boolean;
   jiraKeys: string[];
   supportOrganizations: string[];
   am: string | null;
@@ -80,11 +83,12 @@ function toProject(orbit: OrbitProject, hidden: string[]): Project {
   };
 }
 
-function toAccount(slug: string, projecten: Project[]): Account {
+function toAccount(slug: string, projecten: Project[], mijn: boolean): Account {
   const accountConfig = config.accounts[slug] ?? {};
   return {
     slug,
     naam: projecten[0].accountNaam,
+    mijn,
     jiraKeys: accountConfig.jiraKeys ?? [],
     supportOrganizations: accountConfig.supportOrganizations ?? [],
     am: accountConfig.am || null,
@@ -96,33 +100,48 @@ function toAccount(slug: string, projecten: Project[]): Account {
   };
 }
 
-/** Bouwt de accounts op uit de Orbit-projecten en de config. */
+/**
+ * Bouwt de accounts op uit mijn projecten, de Culture-projecten en de config.
+ * Een project dat in beide lijsten staat, telt één keer.
+ */
 export function buildAccounts(
-  orbitProjects: OrbitProject[],
+  mine: OrbitProject[],
+  culture: OrbitProject[],
   hidden: string[],
 ): Account[] {
-  const projecten = orbitProjects.map((orbit) => toProject(orbit, hidden));
+  const mijnNummers = new Set(mine.map((orbit) => orbit.number));
+  const projecten = [
+    ...mine,
+    ...culture.filter((orbit) => !mijnNummers.has(orbit.number)),
+  ].map((orbit) => toProject(orbit, hidden));
   const slugs = [...new Set(projecten.map((project) => project.accountSlug))];
   return slugs
-    .map((slug) =>
-      toAccount(
+    .map((slug) => {
+      const vanAccount = projecten.filter(
+        (project) => project.accountSlug === slug,
+      );
+      return toAccount(
         slug,
-        projecten.filter((project) => project.accountSlug === slug),
-      ),
-    )
+        vanAccount,
+        vanAccount.some((project) => mijnNummers.has(project.number)),
+      );
+    })
     .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
 }
 
 /** Eén keer per request, ook al vragen layout en pagina het allebei op. */
 export const loadDashboard = cache(async (): Promise<Dashboard> => {
-  const [result, hidden] = await Promise.all([
-    fetchMyProjects(),
+  const [mine, culture, hidden] = await Promise.all([
+    fetchProjects({ mine: true }),
+    fetchProjects({ folderId: CULTURE_FOLDER_ID }),
     readHiddenProjects(),
   ]);
-  if (result.status !== "ok") return result;
+  if (mine.status !== "ok") return mine;
+  if (culture.status !== "ok") return culture;
   return {
     status: "ok",
-    accounts: buildAccounts(result.projects, hidden),
-    fetchedAt: result.fetchedAt,
+    accounts: buildAccounts(mine.projects, culture.projects, hidden),
+    fetchedAt:
+      mine.fetchedAt < culture.fetchedAt ? mine.fetchedAt : culture.fetchedAt,
   };
 });

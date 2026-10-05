@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
+  ChevronIcon,
   CloseIcon,
   ExternalIcon,
   HomeIcon,
@@ -13,7 +14,12 @@ import {
   TodoIcon,
 } from "@/components/icons";
 import type { NavAccount } from "@/lib/navigation";
-import { MENU_COOKIE, MenuStand } from "@/lib/preferences";
+import {
+  GroepStand,
+  MENU_COOKIE,
+  MenuStand,
+  OVERIGE_COOKIE,
+} from "@/lib/preferences";
 import { AccountNav } from "./AccountNav";
 import { setPreferenceCookie } from "./cookies";
 import styles from "./Sidebar.module.css";
@@ -23,16 +29,30 @@ type Props = {
   inboxUrl: string;
   todoUrl: string;
   initialStand: MenuStand;
+  initialOverige: GroepStand;
 };
 
 function currentAccount(pathname: string): string | null {
   return /^\/accounts\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
-export function Sidebar({ accounts, inboxUrl, todoUrl, initialStand }: Props) {
+export function Sidebar({
+  accounts,
+  inboxUrl,
+  todoUrl,
+  initialStand,
+  initialOverige,
+}: Props) {
   const pathname = usePathname();
   const current = currentAccount(pathname);
   const [stand, setStand] = useState<MenuStand>(initialStand);
+  const mijn = accounts.filter((account) => account.mijn);
+  const overige = accounts.filter((account) => !account.mijn);
+  // Open als ik het zo had achtergelaten, of als ik op een van deze accounts ben.
+  const [overigeOpen, setOverigeOpen] = useState(
+    initialOverige === "open" ||
+      overige.some((account) => account.slug === current),
+  );
   // Het mobiele menu is open voor de pagina waarop je het opende; navigeren sluit het.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const mobileOpen = openOn === pathname;
@@ -62,6 +82,12 @@ export function Sidebar({ accounts, inboxUrl, todoUrl, initialStand }: Props) {
     const next = stand === "ingeklapt" ? "uitgeklapt" : "ingeklapt";
     setStand(next);
     setPreferenceCookie(MENU_COOKIE, next);
+  }
+
+  function toggleOverige() {
+    const next = !overigeOpen;
+    setOverigeOpen(next);
+    setPreferenceCookie(OVERIGE_COOKIE, next ? "open" : "dicht");
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
@@ -188,10 +214,35 @@ export function Sidebar({ accounts, inboxUrl, todoUrl, initialStand }: Props) {
 
         <nav aria-label="Accounts" className={styles.section}>
           <h2 className={styles.sectionTitle}>Mijn accounts</h2>
-          {accounts.length === 0 && (
+          {mijn.length === 0 && (
             <p className={styles.empty}>Geen accounts uit Orbit geladen.</p>
           )}
-          <AccountNav accounts={accounts} currentAccount={current} />
+          <AccountNav accounts={mijn} currentAccount={current} />
+
+          {overige.length > 0 && (
+            <>
+              <h2 className={styles.groupTitle}>
+                <button
+                  type="button"
+                  className={styles.groupToggle}
+                  aria-expanded={overigeOpen}
+                  aria-controls="overige-accounts"
+                  onClick={toggleOverige}
+                >
+                  <ChevronIcon />
+                  <span className={styles.label}>
+                    Overige Culture-accounts ({overige.length})
+                  </span>
+                  <span className={styles.tooltip} aria-hidden="true">
+                    Overige Culture-accounts
+                  </span>
+                </button>
+              </h2>
+              <div id="overige-accounts" hidden={!overigeOpen}>
+                <AccountNav accounts={overige} currentAccount={current} />
+              </div>
+            </>
+          )}
         </nav>
 
         <div className={styles.footer}>

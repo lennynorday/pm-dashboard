@@ -5,7 +5,12 @@ import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { config } from "@/config/accounts";
 import { loadDashboard } from "@/lib/dashboard";
 import { toNavAccounts } from "@/lib/navigation";
-import { MENU_COOKIE, parseMenuStand } from "@/lib/preferences";
+import {
+  MENU_COOKIE,
+  OVERIGE_COOKIE,
+  parseGroepStand,
+  parseMenuStand,
+} from "@/lib/preferences";
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -28,6 +33,7 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const stand = parseMenuStand(cookieStore.get(MENU_COOKIE)?.value);
+  const overige = parseGroepStand(cookieStore.get(OVERIGE_COOKIE)?.value);
   const dashboard = await loadDashboard();
   const accounts =
     dashboard.status === "ok" ? toNavAccounts(dashboard.accounts) : [];
@@ -44,6 +50,7 @@ export default async function RootLayout({
             inboxUrl={config.links.inbox}
             todoUrl={config.links.todo}
             initialStand={stand}
+            initialOverige={overige}
           />
           <main id="inhoud" className={styles.main}>
             {children}

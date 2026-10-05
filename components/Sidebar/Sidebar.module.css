@@ -125,6 +125,42 @@
   color: rgb(255 255 255 / 0.7);
 }
 
+.groupTitle {
+  margin: var(--space-04) 0 0;
+}
+
+.groupToggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-02) var(--space-03);
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 0.7);
+  font: var(--type-label-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupToggle:hover {
+  background: var(--field-shell-hover);
+  color: var(--norday-white);
+}
+
+.groupToggle svg {
+  flex: none;
+  transition: transform 150ms ease;
+}
+
+.groupToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .empty {
   margin: 0 var(--space-03);
   font: var(--type-label-small);
@@ -327,7 +363,8 @@
   }
 
   .sidebar[data-stand="ingeklapt"] .item,
-  .sidebar[data-stand="ingeklapt"] .collapse {
+  .sidebar[data-stand="ingeklapt"] .collapse,
+  .sidebar[data-stand="ingeklapt"] .groupToggle {
     justify-content: center;
     padding-inline: 0;
   }
@@ -350,7 +387,9 @@
   .sidebar[data-stand="ingeklapt"] .item:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .item:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .collapse:hover .tooltip,
-  .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip {
+  .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip,
+  .sidebar[data-stand="ingeklapt"] .groupToggle:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .groupToggle:focus-visible .tooltip {
     display: block;
   }
 
