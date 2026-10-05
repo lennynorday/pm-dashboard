@@ -47,6 +47,10 @@ function AccountCel({ rij, rowSpan }: { rij: TicketRij; rowSpan: number }) {
   );
 }
 
+function VerbindJira() {
+  return <a href="/api/jira/login">Verbinden met Jira</a>;
+}
+
 function SupportCellen({
   data,
   rowSpan,
@@ -57,11 +61,13 @@ function SupportCellen({
   const { support } = data;
   if (support === null || support.status !== "ok") {
     const tekst =
-      support === null
-        ? "Geen supportorganisatie ingesteld"
-        : support.status === "fout"
-          ? "Ophalen mislukt"
-          : "Jira niet ingesteld";
+      support === null ? (
+        "Geen supportorganisatie ingesteld"
+      ) : support.status === "fout" ? (
+        "Ophalen mislukt"
+      ) : (
+        <VerbindJira />
+      );
     return (
       <td colSpan={2} rowSpan={rowSpan} className={styles.leeg}>
         {tekst}
@@ -159,9 +165,11 @@ export function TicketTable({ rijen, caption, toonAccount = true }: Props) {
                     <>
                       <td className={styles.key}>{item.key}</td>
                       <td colSpan={3} className={styles.leeg}>
-                        {item.result.status === "fout"
-                          ? "Ophalen mislukt"
-                          : "Jira niet ingesteld"}
+                        {item.result.status === "fout" ? (
+                          "Ophalen mislukt"
+                        ) : (
+                          <VerbindJira />
+                        )}
                       </td>
                     </>
                   )}

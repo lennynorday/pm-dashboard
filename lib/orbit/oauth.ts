@@ -5,7 +5,7 @@ import {
   ORBIT_REDIRECT_URI,
   orbitClientId,
 } from "./config";
-import { OrbitToken, parseTokenResponse } from "./token";
+import { OAuthToken, parseTokenResponse } from "@/lib/koppelingen";
 
 export type PkceStart = {
   authorizeUrl: string;
@@ -33,7 +33,7 @@ export function startLogin(): PkceStart {
 
 async function requestToken(
   params: Record<string, string>,
-): Promise<OrbitToken> {
+): Promise<OAuthToken> {
   const response = await fetch(`${ORBIT_BASE_URL}/oauth2/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -54,7 +54,7 @@ async function requestToken(
 export function exchangeCode(
   code: string,
   verifier: string,
-): Promise<OrbitToken> {
+): Promise<OAuthToken> {
   return requestToken({
     grant_type: "authorization_code",
     code,
@@ -63,6 +63,6 @@ export function exchangeCode(
   });
 }
 
-export function refreshToken(refresh: string): Promise<OrbitToken> {
+export function refreshToken(refresh: string): Promise<OAuthToken> {
   return requestToken({ grant_type: "refresh_token", refresh_token: refresh });
 }
