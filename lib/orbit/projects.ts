@@ -73,11 +73,12 @@ export function clearProjectCache(): void {
 
 /** Alle pagina's van ListProjects, tot een pagina niet meer vol is. */
 async function fetchAllPages(
+  email: string,
   filter: ProjectFilter,
 ): Promise<ProjectListResult> {
   const projects: OrbitProject[] = [];
   for (let page = 1; ; page++) {
-    const result = await callOrbitTool("ListProjects", {
+    const result = await callOrbitTool(email, "ListProjects", {
       ...filter,
       states: "OPEN",
       pageSize: PAGE_SIZE,
@@ -98,17 +99,18 @@ async function fetchAllPages(
   return { status: "ok", projects, fetchedAt: new Date() };
 }
 
-/** Open projecten volgens het filter, met een cache van 15 minuten. */
+/** Open projecten volgens het filter, met een cache van 15 minuten per gebruiker. */
 export async function fetchProjects(
+  email: string,
   filter: ProjectFilter,
 ): Promise<ProjectListResult> {
-  const key = JSON.stringify(filter);
+  const key = JSON.stringify([email, filter]);
   const hit = cache.get(key);
   if (hit && Date.now() - hit.fetchedAt.getTime() < CACHE_MS) {
     return { status: "ok", ...hit };
   }
 
-  const result = await fetchAllPages(filter);
+  const result = await fetchAllPages(email, filter);
   if (result.status === "ok") cache.set(key, result);
   return result;
 }

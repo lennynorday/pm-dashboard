@@ -9,17 +9,20 @@ import {
   ExternalIcon,
   HomeIcon,
   InboxIcon,
+  LogoutIcon,
   MenuIcon,
   PanelIcon,
   TodoIcon,
 } from "@/components/icons";
-import type { NavAccount } from "@/lib/navigation";
+import { logoutAction } from "@/app/actions";
+import { initialen, NavAccount } from "@/lib/navigation";
 import {
   GroepStand,
   MENU_COOKIE,
   MenuStand,
   OVERIGE_COOKIE,
 } from "@/lib/preferences";
+import type { Gebruiker } from "@/lib/session";
 import { AccountNav } from "./AccountNav";
 import { setPreferenceCookie } from "./cookies";
 import styles from "./Sidebar.module.css";
@@ -30,6 +33,7 @@ type Props = {
   todoUrl: string;
   initialStand: MenuStand;
   initialOverige: GroepStand;
+  user: Gebruiker;
 };
 
 function currentAccount(pathname: string): string | null {
@@ -42,6 +46,7 @@ export function Sidebar({
   todoUrl,
   initialStand,
   initialOverige,
+  user,
 }: Props) {
   const pathname = usePathname();
   const current = currentAccount(pathname);
@@ -156,6 +161,34 @@ export function Sidebar({
           </button>
         </div>
 
+        <div className={styles.user}>
+          {user.foto ? (
+            // Een kleine profielfoto van Google; next/image voegt hier niets toe.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className={styles.avatar}
+              src={user.foto}
+              alt=""
+              width={40}
+              height={40}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className={styles.avatar} aria-hidden="true">
+              {initialen(user.naam)}
+            </span>
+          )}
+          <p className={styles.label}>
+            <span className={styles.welkom}>
+              Welkom terug, {user.voornaam}!
+            </span>
+            <span className={styles.email}>{user.email}</span>
+          </p>
+          <span className={styles.tooltip} aria-hidden="true">
+            {user.naam}
+          </span>
+        </div>
+
         <nav aria-label="Hoofdmenu" className={styles.section}>
           <ul className={styles.list}>
             <li>
@@ -246,6 +279,15 @@ export function Sidebar({
         </nav>
 
         <div className={styles.footer}>
+          <form action={logoutAction}>
+            <button type="submit" className={styles.logout}>
+              <LogoutIcon />
+              <span className={styles.label}>Uitloggen</span>
+              <span className={styles.tooltip} aria-hidden="true">
+                Uitloggen
+              </span>
+            </button>
+          </form>
           <button
             type="button"
             className={styles.collapse}

@@ -1,31 +1,24 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { database } from "./db";
 
-const FILE = path.join(process.cwd(), "data", "verborgen-projecten.json");
-
-/** Projectnummers die ik heb verborgen. */
-export async function readHiddenProjects(): Promise<string[]> {
-  try {
-    const data: unknown = JSON.parse(await readFile(FILE, "utf8"));
-    if (!Array.isArray(data)) return [];
-    return data.filter((item): item is string => typeof item === "string");
-  } catch {
-    return [];
-  }
+/** Projectnummers die deze gebruiker heeft verborgen. */
+export function readHiddenProjects(email: string): string[] {
+  return database()
+    .prepare("SELECT nummer FROM verborgen_projecten WHERE email = ?")
+    .all(email)
+    .map((row) => row.nummer)
+    .filter((nummer): nummer is string => typeof nummer === "string");
 }
 
-async function write(numbers: string[]): Promise<void> {
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(numbers, null, 2));
+export function hideProject(email: string, number: string): void {
+  database()
+    .prepare(
+      "INSERT OR IGNORE INTO verborgen_projecten (email, nummer) VALUES (?, ?)",
+    )
+    .run(email, number);
 }
 
-export async function hideProject(number: string): Promise<void> {
-  const hidden = await readHiddenProjects();
-  if (hidden.includes(number)) return;
-  await write([...hidden, number]);
-}
-
-export async function showProject(number: string): Promise<void> {
-  const hidden = await readHiddenProjects();
-  await write(hidden.filter((item) => item !== number));
+export function showProject(email: string, number: string): void {
+  database()
+    .prepare("DELETE FROM verborgen_projecten WHERE email = ? AND nummer = ?")
+    .run(email, number);
 }

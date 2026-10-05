@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode } from "@/lib/orbit/oauth";
 import { saveToken } from "@/lib/orbit/token";
+import { currentUser } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -12,10 +13,13 @@ export async function GET(request: NextRequest) {
     "Inloggen bij Orbit is mislukt. Probeer het opnieuw.",
     { status: 400 },
   );
-  if (!code || !verifier || !state || state !== expectedState) return failed;
+  const user = await currentUser();
+  if (!user || !code || !verifier || !state || state !== expectedState) {
+    return failed;
+  }
 
   try {
-    await saveToken(await exchangeCode(code, verifier));
+    saveToken(user.email, await exchangeCode(code, verifier));
   } catch {
     return failed;
   }

@@ -1,7 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { decrypt, encrypt } from "@/lib/crypto";
+import { database } from "@/lib/db";
 
-const TOKEN_FILE = path.join(process.cwd(), "data", "orbit-token.json");
+const BRON = "orbit";
 
 export type OrbitToken = {
   accessToken: string;
@@ -41,15 +41,24 @@ function parseStoredToken(data: unknown): OrbitToken | null {
   };
 }
 
-export async function readToken(): Promise<OrbitToken | null> {
+/** Het Orbit-token van een gebruiker, of null als die Orbit niet heeft verbonden. */
+export function readToken(email: string): OrbitToken | null {
+  const row = database()
+    .prepare("SELECT token FROM koppelingen WHERE email = ? AND bron = ?")
+    .get(email, BRON);
+  if (typeof row?.token !== "string") return null;
   try {
-    return parseStoredToken(JSON.parse(await readFile(TOKEN_FILE, "utf8")));
+    return parseStoredToken(JSON.parse(decrypt(row.token)));
   } catch {
     return null;
   }
 }
 
-export async function saveToken(token: OrbitToken): Promise<void> {
-  await mkdir(path.dirname(TOKEN_FILE), { recursive: true });
-  await writeFile(TOKEN_FILE, JSON.stringify(token, null, 2), { mode: 0o600 });
+export function saveToken(email: string, token: OrbitToken): void {
+  database()
+    .prepare(
+      `INSERT INTO koppelingen (email, bron, token) VALUES (?, ?, ?)
+       ON CONFLICT (email, bron) DO UPDATE SET token = excluded.token`,
+    )
+    .run(email, BRON, encrypt(JSON.stringify(token)));
 }
