@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
+import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
 
@@ -36,4 +37,15 @@ export async function logoutAction(): Promise<void> {
   if (id) stopSessie(id);
   cookieStore.delete(SESSIE_COOKIE);
   redirect("/");
+}
+
+export async function ontkoppelAction(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  const bron = BRONNEN.find((item) => item === formData.get("bron"));
+  if (!user || !bron) return;
+  deleteKoppeling(user.email, bron);
+  // Wat met het oude token is opgehaald, hoort niet te blijven staan.
+  clearProjectCache();
+  clearJiraCache();
+  revalidatePath("/", "layout");
 }

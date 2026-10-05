@@ -11,7 +11,7 @@
 
 ## Scope
 
-- **Wel:** alle open projecten uit de Orbit-projectmap "Norday | Culture"; zijmenu met "Mijn accounts" en "Overige Culture-accounts"; inloggen met het Norday Google-account; inloggen bij Jira met OAuth in plaats van een API-token; tokens, cache en voorkeuren per gebruiker; bewerkscherm voor accountgegevens; één SQLite-database in `data/` voor accountgegevens, tokens en voorkeuren. Gebouwd in stappen A, B1, B2 en C, elk een eigen PR.
+- **Wel:** alle open projecten uit de Orbit-projectmap "Norday | Culture"; zijmenu met "Mijn accounts" en "Overige Culture-accounts"; inloggen met het Norday Google-account; inloggen bij Jira met OAuth in plaats van een API-token; tokens, cache en voorkeuren per gebruiker; bewerkscherm voor accountgegevens; één SQLite-database in `data/` voor accountgegevens, tokens en voorkeuren. Gebouwd in stappen A, B1, B2, B3 en C, elk een eigen PR.
 - **Niet:** hosting (aparte spec), andere Norday-teams, rechten binnen de app (wie mag wat bewerken), Superhuman-login.
 
 ## Acceptatiecriteria
@@ -41,13 +41,21 @@
 15. Jira-tokens en de Jira-cache zijn per gebruiker, net als bij Orbit (criteria 9 en 10).
 16. Is Jira niet verbonden, of is de koppeling verlopen of ingetrokken, dan staat er in het Jira-blok "Verbinden met Jira"; de rest van de pagina werkt door.
 
+**Stap B3: instellingen**
+
+17. Een klik op mijn foto en naam linksboven opent de pagina Instellingen.
+18. Onder Profiel staan mijn foto, naam en e-mailadres uit Google, met een knop Uitloggen.
+19. Per bron (Teamleader Orbit, Jira) staat of ik verbonden ben, in tekst en met een icoon, niet alleen met kleur. Bij Jira staat ook de site.
+20. Ben ik niet verbonden, dan staat er "Verbinden met Orbit" of "Verbinden met Jira". Ben ik wel verbonden, dan wist "Ontkoppelen" mijn token uit de database; daarna staat er weer "Verbinden".
+21. Bij Jira staat een link naar de plek in mijn Atlassian-account waar ik de toegang van de app intrek.
+
 **Stap C: bewerkscherm**
 
-17. Op elke accountpagina staat een knop "Gegevens bewerken" voor AM, contactpersonen, Jira-keys, SUPP-organisaties en links.
-18. Na opslaan zie ik de wijziging direct op de accountpagina, zonder de app te herstarten.
-19. De gegevens uit `config/accounts.ts` zijn overgezet; daarna bestaat dat bestand niet meer.
-20. Het formulier voldoet aan WCAG 2.2 AA: labels bij elk veld, foutmeldingen bij het veld en in tekst.
-21. "Gegevens exporteren" geeft alle accountgegevens als JSON-bestand; "Gegevens importeren" leest zo'n bestand weer in. Zo verhuizen ze mee naar hosting en kan ik een back-up maken.
+22. Op elke accountpagina staat een knop "Gegevens bewerken" voor AM, contactpersonen, Jira-keys, SUPP-organisaties en links.
+23. Na opslaan zie ik de wijziging direct op de accountpagina, zonder de app te herstarten.
+24. De gegevens uit `config/accounts.ts` zijn overgezet; daarna bestaat dat bestand niet meer.
+25. Het formulier voldoet aan WCAG 2.2 AA: labels bij elk veld, foutmeldingen bij het veld en in tekst.
+26. "Gegevens exporteren" geeft alle accountgegevens als JSON-bestand; "Gegevens importeren" leest zo'n bestand weer in. Zo verhuizen ze mee naar hosting en kan ik een back-up maken.
 
 ## Domeinmodel
 

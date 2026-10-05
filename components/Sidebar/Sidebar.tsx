@@ -161,7 +161,11 @@ export function Sidebar({
           </button>
         </div>
 
-        <div className={styles.user}>
+        <NextLink
+          href="/instellingen"
+          className={styles.user}
+          aria-current={pathname === "/instellingen" ? "page" : undefined}
+        >
           {user.foto ? (
             // Een kleine profielfoto van Google; next/image voegt hier niets toe.
             // eslint-disable-next-line @next/next/no-img-element
@@ -178,16 +182,17 @@ export function Sidebar({
               {initialen(user.naam)}
             </span>
           )}
-          <p className={styles.label}>
+          <span className={styles.label}>
             <span className={styles.welkom}>
               Welkom terug, {user.voornaam}!
             </span>
             <span className={styles.email}>{user.email}</span>
-          </p>
-          <span className={styles.tooltip} aria-hidden="true">
-            {user.naam}
+            <span className="visually-hidden">, naar instellingen</span>
           </span>
-        </div>
+          <span className={styles.tooltip} aria-hidden="true">
+            {user.naam}, instellingen
+          </span>
+        </NextLink>
 
         <nav aria-label="Hoofdmenu" className={styles.section}>
           <ul className={styles.list}>

@@ -116,6 +116,23 @@
   display: flex;
   align-items: center;
   gap: var(--space-03);
+  padding: var(--space-02);
+  margin: calc(-1 * var(--space-02));
+  color: inherit;
+  text-decoration: none;
+}
+
+.user:hover {
+  background: var(--field-shell-hover);
+}
+
+.user[aria-current="page"] {
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
+
+.user[aria-current="page"] .email {
+  color: inherit;
 }
 
 .avatar {
@@ -451,6 +468,7 @@
   .sidebar[data-stand="ingeklapt"] .collapse:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .user:hover .tooltip,
+  .sidebar[data-stand="ingeklapt"] .user:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .logout:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .logout:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .groupToggle:hover .tooltip,
