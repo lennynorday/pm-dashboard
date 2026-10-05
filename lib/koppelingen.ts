@@ -2,7 +2,8 @@ import { decrypt, encrypt } from "./crypto";
 import { database } from "./db";
 
 /** De bronnen waarmee een gebruiker zijn eigen account verbindt. */
-export type Bron = "orbit" | "jira";
+export const BRONNEN = ["orbit", "jira"] as const;
+export type Bron = (typeof BRONNEN)[number];
 
 export type OAuthToken = {
   accessToken: string;
@@ -71,6 +72,18 @@ export function saveKoppeling(
        ON CONFLICT (email, bron) DO UPDATE SET token = excluded.token`,
     )
     .run(email, bron, encrypt(JSON.stringify(token)));
+}
+
+/** Of de gebruiker deze bron heeft verbonden; zegt niets over of het token nog werkt. */
+export function isVerbonden(email: string, bron: Bron): boolean {
+  return parseStoredToken(readKoppeling(email, bron)) !== null;
+}
+
+/** Wist het token van de gebruiker voor deze bron. */
+export function deleteKoppeling(email: string, bron: Bron): void {
+  database()
+    .prepare("DELETE FROM koppelingen WHERE email = ? AND bron = ?")
+    .run(email, bron);
 }
 
 const REFRESH_MARGIN_MS = 60_000;

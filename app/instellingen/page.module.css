@@ -1,0 +1,93 @@
+.profiel,
+.koppeling {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-04);
+  padding: var(--space-05) 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.koppeling:last-child {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.lijst {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+  font: var(--type-ui-heading-1);
+  object-fit: cover;
+}
+
+.naam {
+  margin: 0;
+  font: var(--type-ui-heading-1);
+}
+
+.detail {
+  margin: 0;
+  font: var(--type-body-2);
+  color: var(--color-text-muted);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  margin: var(--space-01) 0;
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.status svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent);
+}
+
+.status[data-verbonden] svg {
+  color: var(--color-text);
+}
+
+/* De knop staat rechts, of onder de tekst als er geen ruimte is. */
+.actie {
+  margin-left: auto;
+}
+
+.knop {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-05);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font: var(--type-label);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.knop:hover {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.primair {
+  border-color: var(--norday-yellow);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
