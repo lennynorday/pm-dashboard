@@ -14,6 +14,8 @@ export type JiraSprint = {
 export type JiraIssue = {
   key: string;
   status: string;
+  /** Gebruik het id in JQL: de naam is vertaald in de taal van de gebruiker. */
+  statusId: string;
   sprints: JiraSprint[];
 };
 
@@ -50,11 +52,12 @@ function parseIssue(data: unknown): JiraIssue | null {
   const issue = record(data);
   if (typeof issue.key !== "string") return null;
   const fields = record(issue.fields);
-  const status = record(fields.status).name;
+  const { name: status, id: statusId } = record(fields.status);
   const sprints = fields[SPRINT_FIELD];
   return {
     key: issue.key,
     status: typeof status === "string" ? status : "Onbekend",
+    statusId: typeof statusId === "string" ? statusId : "",
     sprints: (Array.isArray(sprints) ? sprints : [])
       .map(parseSprint)
       .filter((sprint): sprint is JiraSprint => sprint !== null),
