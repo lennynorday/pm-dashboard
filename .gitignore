@@ -19,3 +19,7 @@ public/fonts/
 # Systeem
 .DS_Store
 npm-debug.log*
+
+# Impeccable: tijdelijke review-opnames
+.impeccable/review/
+.impeccable/questions/

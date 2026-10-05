@@ -6,7 +6,6 @@ import type { DashboardConfig } from "./types";
  * Superhuman-links zijn dan intern, tenzij "gedeeld" in de titel staat.
  */
 export const config: DashboardConfig = {
-  eigenaar: "Lennart Ter Haar",
   jiraSite: "https://in10-rotterdam.atlassian.net",
   orbitSite: "https://norday.orbit.teamleader.eu",
   links: {

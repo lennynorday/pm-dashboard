@@ -1,6 +1,7 @@
 import NextLink from "next/link";
 import type { Project } from "@/lib/dashboard";
 import { formatDate, PROJECT_STATE_LABELS } from "@/lib/format";
+import { projectHref } from "@/lib/navigation";
 import { VisibilityButton } from "./VisibilityButton";
 import styles from "./ProjectList.module.css";
 
@@ -13,19 +14,21 @@ export function ProjectList({ projecten }: Props) {
         <li key={project.number} className={styles.item}>
           <div className={styles.main}>
             <NextLink
-              href={`/projecten/${project.number}`}
+              href={projectHref(project.accountSlug, project.number)}
               className={styles.name}
             >
               {project.naam}
             </NextLink>
             <p className={styles.meta}>
-              <span>#{project.number}</span>
-              <span>{PROJECT_STATE_LABELS[project.status]}</span>
+              <span>Projectnummer {project.number}</span>
+              <span>
+                Status {PROJECT_STATE_LABELS[project.status].toLowerCase()}
+              </span>
               {project.einddatum && (
-                <span>Eind {formatDate(project.einddatum)}</span>
+                <span>Loopt tot {formatDate(project.einddatum)}</span>
               )}
               {project.jiraKeys.length > 0 && (
-                <span>Jira {project.jiraKeys.join(", ")}</span>
+                <span>Jira-project {project.jiraKeys.join(", ")}</span>
               )}
             </p>
           </div>

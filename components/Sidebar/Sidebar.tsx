@@ -13,10 +13,9 @@ import {
   TodoIcon,
 } from "@/components/icons";
 import type { NavAccount } from "@/lib/navigation";
-import { MENU_COOKIE, MenuStand, Thema } from "@/lib/preferences";
+import { MENU_COOKIE, MenuStand } from "@/lib/preferences";
 import { AccountNav } from "./AccountNav";
 import { setPreferenceCookie } from "./cookies";
-import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./Sidebar.module.css";
 
 type Props = {
@@ -24,32 +23,15 @@ type Props = {
   inboxUrl: string;
   todoUrl: string;
   initialStand: MenuStand;
-  initialThema: Thema;
 };
 
-function currentFromPath(pathname: string, accounts: NavAccount[]) {
-  const accountMatch = /^\/accounts\/([^/]+)/.exec(pathname);
-  if (accountMatch) return { account: accountMatch[1], project: null };
-
-  const projectMatch = /^\/projecten\/([^/]+)/.exec(pathname);
-  if (!projectMatch) return { account: null, project: null };
-
-  const project = projectMatch[1];
-  const account = accounts.find((item) =>
-    item.projecten.some((p) => p.number === project),
-  );
-  return { account: account?.slug ?? null, project };
+function currentAccount(pathname: string): string | null {
+  return /^\/accounts\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
-export function Sidebar({
-  accounts,
-  inboxUrl,
-  todoUrl,
-  initialStand,
-  initialThema,
-}: Props) {
+export function Sidebar({ accounts, inboxUrl, todoUrl, initialStand }: Props) {
   const pathname = usePathname();
-  const current = currentFromPath(pathname, accounts);
+  const current = currentAccount(pathname);
   const [stand, setStand] = useState<MenuStand>(initialStand);
   // Het mobiele menu is open voor de pagina waarop je het opende; navigeren sluit het.
   const [openOn, setOpenOn] = useState<string | null>(null);
@@ -68,6 +50,12 @@ export function Sidebar({
   function closeMobile() {
     setOpenOn(null);
     menuButton.current?.focus();
+  }
+
+  // Een projectlink springt binnen dezelfde pagina; sluit dan ook het mobiele menu.
+  function closeOnLinkClick(event: React.MouseEvent) {
+    if (event.target instanceof Element && event.target.closest("a"))
+      setOpenOn(null);
   }
 
   function toggleStand() {
@@ -119,7 +107,12 @@ export function Sidebar({
         />
       )}
 
-      <div ref={panel} id="zijmenu" className={styles.panel}>
+      <div
+        ref={panel}
+        id="zijmenu"
+        className={styles.panel}
+        onClick={closeOnLinkClick}
+      >
         <div className={styles.panelHeader}>
           <NextLink href="/" className={styles.brandPanel}>
             <span className={styles.brandShort} aria-hidden="true">
@@ -160,14 +153,14 @@ export function Sidebar({
                 rel="noopener noreferrer"
               >
                 <InboxIcon />
-                <span className={styles.label}>Inbox</span>
+                <span className={styles.label}>Gmail-inbox</span>
                 <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
                 </span>
                 <span className={styles.tooltip} aria-hidden="true">
-                  Inbox
+                  Gmail-inbox
                 </span>
               </a>
             </li>
@@ -179,14 +172,14 @@ export function Sidebar({
                 rel="noopener noreferrer"
               >
                 <TodoIcon />
-                <span className={styles.label}>To-do&apos;s</span>
+                <span className={styles.label}>To-do&apos;s in Superhuman</span>
                 <ExternalIcon className={styles.external} />
                 <span className="visually-hidden">
                   {" "}
                   (opent in nieuw tabblad)
                 </span>
                 <span className={styles.tooltip} aria-hidden="true">
-                  To-do&apos;s
+                  To-do&apos;s in Superhuman
                 </span>
               </a>
             </li>
@@ -194,19 +187,14 @@ export function Sidebar({
         </nav>
 
         <nav aria-label="Accounts" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Accounts</h2>
+          <h2 className={styles.sectionTitle}>Mijn accounts</h2>
           {accounts.length === 0 && (
-            <p className={styles.empty}>Geen accounts geladen.</p>
+            <p className={styles.empty}>Geen accounts uit Orbit geladen.</p>
           )}
-          <AccountNav
-            accounts={accounts}
-            currentAccount={current.account}
-            currentProject={current.project}
-          />
+          <AccountNav accounts={accounts} currentAccount={current} />
         </nav>
 
         <div className={styles.footer}>
-          <ThemeSwitch initialThema={initialThema} />
           <button
             type="button"
             className={styles.collapse}

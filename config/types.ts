@@ -25,8 +25,6 @@ export type ProjectConfig = {
 };
 
 export type DashboardConfig = {
-  /** Naam van de eigenaar in Orbit, zoals Orbit hem schrijft. */
-  eigenaar: string;
   jiraSite: string;
   orbitSite: string;
   links: { inbox: string; todo: string };

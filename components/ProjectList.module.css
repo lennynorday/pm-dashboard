@@ -23,7 +23,12 @@
 
 .name {
   font-weight: 500;
+  text-decoration: none;
   overflow-wrap: anywhere;
+}
+
+.name:hover {
+  text-decoration: underline;
 }
 
 .meta {
@@ -32,5 +37,6 @@
   gap: var(--space-01) var(--space-03);
   margin: var(--space-01) 0 0;
   font: var(--type-label-small);
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }

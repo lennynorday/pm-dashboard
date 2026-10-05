@@ -1,0 +1,20 @@
+.people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-01) var(--space-06);
+  margin: 0;
+  font: var(--type-label-small);
+}
+
+.people div {
+  display: flex;
+  gap: var(--space-02);
+}
+
+.people dt {
+  color: var(--color-text-muted);
+}
+
+.people dd {
+  margin: 0;
+}

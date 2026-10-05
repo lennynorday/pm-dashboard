@@ -31,3 +31,8 @@ export function toNavAccounts(accounts: Account[]): NavAccount[] {
     }))
     .filter((account) => account.projecten.length > 0);
 }
+
+/** Een project heeft geen eigen pagina; het staat als regel op de accountpagina. */
+export function projectHref(accountSlug: string, number: string): string {
+  return `/accounts/${accountSlug}#project-${number}`;
+}

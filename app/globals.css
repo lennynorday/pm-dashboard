@@ -2,12 +2,25 @@
 
 /* Aanvullende tokens voor het dashboard */
 :root {
-  --radius-small: 8px;
-  --radius-card: 16px;
   --radius-pill: 999px;
-  --content-max-width: 1280px;
   --type-nav: 400 15px/1.35 var(--font-text);
   --type-nav-small: 400 14px/1.35 var(--font-text);
+  --main-padding: var(--space-04);
+
+  /* Kleurvelden: het zijmenu, aandacht en wat nu loopt. */
+  --field-shell: var(--norday-dark);
+  --field-shell-hover: rgb(255 255 255 / 0.1);
+  --field-attention: var(--norday-lilac);
+  --field-live: var(--norday-yellow);
+  --field-ink: var(--norday-dark);
+  --field-ink-muted: rgb(61 16 40 / 0.75);
+  --color-hover: rgb(213 179 255 / 0.35);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --main-padding: var(--space-08);
+  }
 }
 
 *,
@@ -16,11 +29,24 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: light;
+  accent-color: var(--norday-pink);
+  scrollbar-color: var(--color-line-subtle) transparent;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
   font: var(--type-body-2);
+  caret-color: var(--norday-pink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
 }
 
 a {

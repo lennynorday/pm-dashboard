@@ -6,14 +6,16 @@ type Crumb = { label: string; href: string };
 type Props = {
   title: string;
   crumbs?: Crumb[];
+  /** Rechts naast de titel, zoals de versheid van de data. */
+  aside?: React.ReactNode;
   children?: React.ReactNode;
 };
 
-export function PageHeading({ title, crumbs = [], children }: Props) {
+export function PageHeading({ title, crumbs = [], aside, children }: Props) {
   return (
-    <div className={styles.heading}>
+    <header className={styles.heading}>
       {crumbs.length > 0 && (
-        <nav aria-label="Kruimelpad">
+        <nav aria-label="Kruimelpad" className={styles.nav}>
           <ol className={styles.crumbs}>
             {crumbs.map((crumb) => (
               <li key={crumb.href}>
@@ -24,7 +26,8 @@ export function PageHeading({ title, crumbs = [], children }: Props) {
         </nav>
       )}
       <h1 className={styles.title}>{title}</h1>
-      {children}
-    </div>
+      {aside && <div className={styles.aside}>{aside}</div>}
+      {children && <div className={styles.extra}>{children}</div>}
+    </header>
   );
 }

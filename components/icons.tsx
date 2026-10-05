@@ -51,23 +51,6 @@ export function TodoIcon(props: IconProps) {
   );
 }
 
-export function SunIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-    </Icon>
-  );
-}
-
-export function MoonIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
-    </Icon>
-  );
-}
-
 export function ChevronIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -116,6 +99,31 @@ export function AlertIcon(props: IconProps) {
     <Icon {...props}>
       <path d="M12 8v5" />
       <path d="M12 16.5h.01" />
+    </Icon>
+  );
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </Icon>
+  );
+}
+
+export function MessageIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 5h16v11H9l-5 4z" />
+    </Icon>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
     </Icon>
   );
 }

@@ -1,15 +1,18 @@
 .groups {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-04);
+  gap: var(--space-05) var(--space-06);
   margin: 0;
+  padding-top: var(--space-04);
+  border-top: 1px solid var(--color-line);
 }
 
 .type {
+  margin-bottom: var(--space-02);
   font: var(--type-label-small);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-text-muted);
-  margin-bottom: var(--space-01);
 }
 
 .item {
@@ -18,5 +21,7 @@
 
 .empty {
   margin: 0;
+  padding-top: var(--space-04);
+  border-top: 1px solid var(--color-line);
   color: var(--color-text-muted);
 }

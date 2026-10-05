@@ -17,7 +17,9 @@ async function validToken(): Promise<OrbitToken | null> {
   if (token.expiresAt - REFRESH_MARGIN_MS > Date.now()) return token;
   if (!token.refreshToken) return null;
 
-  const refreshed = await refreshToken(token.refreshToken);
+  // Een verlopen refresh token betekent: opnieuw inloggen.
+  const refreshed = await refreshToken(token.refreshToken).catch(() => null);
+  if (!refreshed) return null;
   await saveToken(refreshed);
   return refreshed;
 }

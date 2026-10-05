@@ -12,10 +12,10 @@ export function OrbitStatus({ dashboard }: Props) {
     return (
       <div className={styles.melding}>
         <Melding
-          titel="Niet verbonden met Teamleader Orbit"
+          titel="Niet ingelogd bij Teamleader Orbit"
           actie={<a href="/api/orbit/login">Inloggen bij Orbit</a>}
         >
-          De links uit je config werken wel.
+          Zonder Orbit kan het dashboard je projecten niet ophalen.
         </Melding>
       </div>
     );
@@ -42,14 +42,14 @@ export function OrbitStatus({ dashboard }: Props) {
   return (
     <div className={styles.status}>
       <p className={styles.text}>
-        Orbit opgehaald om{" "}
+        Projecten uit Orbit opgehaald om{" "}
         <time dateTime={dashboard.fetchedAt.toISOString()}>
           {formatTime(dashboard.fetchedAt)}
         </time>
       </p>
       <form action={refreshData}>
         <button className={styles.button} type="submit">
-          Verversen
+          Alles opnieuw ophalen
         </button>
       </form>
     </div>

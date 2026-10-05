@@ -1,3 +1,6 @@
+import { ExternalIcon } from "./icons";
+import styles from "./ExternalLink.module.css";
+
 type Props = {
   href: string;
   className?: string;
@@ -14,7 +17,7 @@ export function ExternalLink({ href, className, children }: Props) {
       rel="noopener noreferrer"
     >
       {children}
-      <span aria-hidden="true"> ↗</span>
+      <ExternalIcon className={styles.icoon} />
       <span className="visually-hidden"> (opent in nieuw tabblad)</span>
     </a>
   );

@@ -1,24 +1,18 @@
+import { cache } from "react";
 import { config } from "@/config/accounts";
 import type { Contactpersoon } from "@/config/types";
 import { readHiddenProjects } from "./hidden-projects";
 import { Link, toLink } from "./links";
-import {
-  BillingMode,
-  fetchMyProjects,
-  OrbitProject,
-  ProjectState,
-} from "./orbit/projects";
+import { fetchMyProjects, OrbitProject, ProjectState } from "./orbit/projects";
 
 export type Zichtbaarheid = "zichtbaar" | "verborgen";
 
 export type Project = {
   number: string;
-  orbitId: string;
   naam: string;
   accountSlug: string;
   accountNaam: string;
   status: ProjectState;
-  afrekenwijze: BillingMode | null;
   einddatum: string | null;
   jiraKeys: string[];
   links: Link[];
@@ -75,12 +69,10 @@ function toProject(orbit: OrbitProject, hidden: string[]): Project {
   const accountConfig = config.accounts[accountSlug] ?? {};
   return {
     number: orbit.number,
-    orbitId: orbit.id,
     naam: orbit.name,
     accountSlug,
     accountNaam: accountConfig.naam || displayName(orbit.client),
     status: orbit.state,
-    afrekenwijze: orbit.billing,
     einddatum: orbit.endDate,
     jiraKeys: projectConfig.jiraKeys ?? accountConfig.jiraKeys ?? [],
     links: (projectConfig.links ?? []).map(toLink),
@@ -121,7 +113,8 @@ export function buildAccounts(
     .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
 }
 
-export async function loadDashboard(): Promise<Dashboard> {
+/** Eén keer per request, ook al vragen layout en pagina het allebei op. */
+export const loadDashboard = cache(async (): Promise<Dashboard> => {
   const [result, hidden] = await Promise.all([
     fetchMyProjects(),
     readHiddenProjects(),
@@ -132,4 +125,4 @@ export async function loadDashboard(): Promise<Dashboard> {
     accounts: buildAccounts(result.projects, hidden),
     fetchedAt: result.fetchedAt,
   };
-}
+});
