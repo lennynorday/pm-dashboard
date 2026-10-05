@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { parseExport, saveAccountGegevens } from "@/lib/accountgegevens";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
 import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
@@ -48,4 +49,31 @@ export async function ontkoppelAction(formData: FormData): Promise<void> {
   clearProjectCache();
   clearJiraCache();
   revalidatePath("/", "layout");
+}
+
+/** Leest een exportbestand in; het resultaat staat daarna op de pagina Instellingen. */
+export async function importAccountGegevensAction(
+  formData: FormData,
+): Promise<void> {
+  if (!(await currentUser())) return;
+  const bestand = formData.get("bestand");
+  let uitkomst: Record<string, string>;
+  try {
+    if (!(bestand instanceof File) || bestand.size === 0) {
+      throw new Error("Kies eerst een bestand");
+    }
+    const accounts = parseExport(JSON.parse(await bestand.text()));
+    saveAccountGegevens(accounts);
+    uitkomst = { import: "ok", aantal: String(Object.keys(accounts).length) };
+  } catch (error) {
+    const melding =
+      error instanceof SyntaxError
+        ? "Het bestand is geen geldige JSON"
+        : error instanceof Error
+          ? error.message
+          : String(error);
+    uitkomst = { import: "fout", melding };
+  }
+  revalidatePath("/", "layout");
+  redirect(`/instellingen?${new URLSearchParams(uitkomst)}#accountgegevens`);
 }

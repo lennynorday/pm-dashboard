@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { config } from "@/config/accounts";
+import { config } from "@/config/dashboard";
 import {
   OAuthToken,
   parseStoredToken,

@@ -1,4 +1,4 @@
-import { config } from "@/config/accounts";
+import { config } from "@/config/dashboard";
 import {
   findBoardId,
   JiraIssue,

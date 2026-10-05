@@ -11,7 +11,7 @@
 
 ## Scope
 
-- **Wel:** alle open projecten uit de Orbit-projectmap "Norday | Culture"; zijmenu met "Mijn accounts" en "Overige Culture-accounts"; inloggen met het Norday Google-account; inloggen bij Jira met OAuth in plaats van een API-token; tokens, cache en voorkeuren per gebruiker; bewerkscherm voor accountgegevens; één SQLite-database in `data/` voor accountgegevens, tokens en voorkeuren. Gebouwd in stappen A, B1, B2, B3 en C, elk een eigen PR.
+- **Wel:** alle open projecten uit de Orbit-projectmap "Norday | Culture"; zijmenu met "Mijn accounts" en "Overige Culture-accounts"; inloggen met het Norday Google-account; inloggen bij Jira met OAuth in plaats van een API-token; tokens, cache en voorkeuren per gebruiker; bewerkscherm voor accountgegevens; één SQLite-database in `data/` voor accountgegevens, tokens en voorkeuren. Gebouwd in stappen A, B1, B2, B3, C1 en C2, elk een eigen PR.
 - **Niet:** hosting (aparte spec), andere Norday-teams, rechten binnen de app (wie mag wat bewerken), Superhuman-login.
 
 ## Acceptatiecriteria
@@ -49,13 +49,17 @@
 20. Ben ik niet verbonden, dan staat er "Verbinden met Orbit" of "Verbinden met Jira". Ben ik wel verbonden, dan wist "Ontkoppelen" mijn token uit de database; daarna staat er weer "Verbinden".
 21. Bij Jira staat een link naar de plek in mijn Atlassian-account waar ik de toegang van de app intrek.
 
-**Stap C: bewerkscherm**
+**Stap C1: accountgegevens in de database**
 
-22. Op elke accountpagina staat een knop "Gegevens bewerken" voor AM, contactpersonen, Jira-keys, SUPP-organisaties en links.
-23. Na opslaan zie ik de wijziging direct op de accountpagina, zonder de app te herstarten.
-24. De gegevens uit `config/accounts.ts` zijn overgezet; daarna bestaat dat bestand niet meer.
-25. Het formulier voldoet aan WCAG 2.2 AA: labels bij elk veld, foutmeldingen bij het veld en in tekst.
-26. "Gegevens exporteren" geeft alle accountgegevens als JSON-bestand; "Gegevens importeren" leest zo'n bestand weer in. Zo verhuizen ze mee naar hosting en kan ik een back-up maken.
+22. De accountgegevens staan in de database; de gegevens uit `config/accounts.ts` zijn overgezet en dat bestand bestaat niet meer. Wat geen accountgegevens zijn (adressen van Jira en Orbit, links naar inbox en to-do's) staat in `config/dashboard.ts`.
+23. Op de pagina Instellingen geeft "Gegevens exporteren" alle accountgegevens als JSON-bestand.
+24. "Gegevens importeren" leest zo'n bestand in: accounts in het bestand worden toegevoegd of bijgewerkt, andere accounts blijven staan. Een ongeldig bestand verandert niets en geeft een melding in tekst.
+
+**Stap C2: bewerkscherm**
+
+25. Op elke accountpagina staat een knop "Gegevens bewerken" voor een kortere naam, AM, contactpersonen, Jira-keys, SUPP-organisaties en links.
+26. Na opslaan zie ik de wijziging direct op de accountpagina, zonder de app te herstarten.
+27. Het formulier voldoet aan WCAG 2.2 AA: labels bij elk veld, foutmeldingen bij het veld en in tekst.
 
 ## Domeinmodel
 

@@ -91,3 +91,31 @@
   background: var(--norday-yellow);
   color: var(--norday-dark);
 }
+
+.uitleg {
+  max-width: 60ch;
+  margin: 0 0 var(--space-05);
+  font: var(--type-body-2);
+}
+
+.gegevens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-06);
+  padding: var(--space-05) 0;
+  border-block: 1px solid var(--color-line);
+}
+
+.import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03);
+}
+
+.label {
+  flex-basis: 100%;
+  font: var(--type-label);
+  font-weight: 600;
+}

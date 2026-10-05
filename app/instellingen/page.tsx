@@ -1,8 +1,13 @@
-import { logoutAction, ontkoppelAction } from "@/app/actions";
+import {
+  importAccountGegevensAction,
+  logoutAction,
+  ontkoppelAction,
+} from "@/app/actions";
 import { ExternalLink } from "@/components/ExternalLink";
 import { AlertIcon, CheckIcon } from "@/components/icons";
+import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
-import { config } from "@/config/accounts";
+import { config } from "@/config/dashboard";
 import { Bron, isVerbonden } from "@/lib/koppelingen";
 import { initialen } from "@/lib/navigation";
 import { currentUser } from "@/lib/session";
@@ -34,7 +39,31 @@ const KOPPELINGEN: BronInfo[] = [
   },
 ];
 
-export default async function InstellingenPage() {
+function ImportUitkomst({
+  params,
+}: {
+  params: Record<string, string | string[] | undefined>;
+}) {
+  if (params.import === "ok") {
+    return (
+      <Melding titel="Accountgegevens ingelezen">
+        {`${params.aantal ?? 0} accounts toegevoegd of bijgewerkt.`}
+      </Melding>
+    );
+  }
+  if (params.import === "fout") {
+    return (
+      <Melding titel="Inlezen is mislukt; er is niets veranderd" role="alert">
+        {typeof params.melding === "string" ? params.melding : null}
+      </Melding>
+    );
+  }
+  return null;
+}
+
+export default async function InstellingenPage({
+  searchParams,
+}: PageProps<"/instellingen">) {
   // De layout toont het inlogscherm zonder sessie; hier is er dus altijd een.
   const user = await currentUser();
   if (!user) return null;
@@ -126,6 +155,38 @@ export default async function InstellingenPage() {
             );
           })}
         </ul>
+      </section>
+
+      <section className={grid.section} aria-labelledby="accountgegevens">
+        <h2 id="accountgegevens" className={grid.sectionTitle}>
+          Accountgegevens
+        </h2>
+        <p className={styles.uitleg}>
+          Wat Orbit niet weet: Jira-projecten, supportorganisaties, AM,
+          contactpersonen en links per account. Iedereen die het dashboard
+          gebruikt, ziet dezelfde gegevens. Exporteer ze af en toe als back-up.
+        </p>
+        <ImportUitkomst params={await searchParams} />
+        <div className={styles.gegevens}>
+          <a href="/api/accountgegevens" className={styles.knop} download>
+            Gegevens exporteren
+          </a>
+          <form action={importAccountGegevensAction} className={styles.import}>
+            <label htmlFor="bestand" className={styles.label}>
+              Exportbestand (.json)
+            </label>
+            <input
+              id="bestand"
+              name="bestand"
+              type="file"
+              accept=".json,application/json"
+              required
+            />
+            <button type="submit" className={styles.knop}>
+              Gegevens importeren
+            </button>
+          </form>
+        </div>
       </section>
     </>
   );

@@ -3,7 +3,7 @@ import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
 import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
-import { config } from "@/config/accounts";
+import { config } from "@/config/dashboard";
 import { loadDashboard } from "@/lib/dashboard";
 import { toNavAccounts } from "@/lib/navigation";
 import {
