@@ -6,6 +6,7 @@ export type NavAccount = {
   slug: string;
   naam: string;
   initialen: string;
+  mijn: boolean;
   projecten: NavProject[];
 };
 
@@ -25,6 +26,7 @@ export function toNavAccounts(accounts: Account[]): NavAccount[] {
       slug: account.slug,
       naam: account.naam,
       initialen: initialen(account.naam),
+      mijn: account.mijn,
       projecten: account.projecten
         .filter((project) => project.zichtbaarheid === "zichtbaar")
         .map((project) => ({ number: project.number, naam: project.naam })),

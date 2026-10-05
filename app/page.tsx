@@ -24,6 +24,7 @@ export default async function HomePage() {
 
   const rijen = await Promise.all(
     dashboard.accounts
+      .filter((account) => account.mijn)
       .map((account) => ({
         account,
         projecten: account.projecten.filter(
