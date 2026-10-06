@@ -5,14 +5,17 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
 import { parseExport, saveAccountGegevens } from "@/lib/accountgegevens";
+import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
 import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
+import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
 
 export async function refreshData(): Promise<void> {
   clearProjectCache();
+  clearBudgetCache();
   clearJiraCache();
   revalidatePath("/", "layout");
 }
@@ -33,6 +36,21 @@ export async function showProjectAction(formData: FormData): Promise<void> {
   revalidatePath("/", "layout");
 }
 
+export async function negeerMeldingAction(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  const id = formData.get("id");
+  if (!user || typeof id !== "string") return;
+  negeer(user.email, id);
+  revalidatePath("/");
+}
+
+export async function herstelMeldingenAction(): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  herstelAlles(user.email);
+  revalidatePath("/");
+}
+
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
   const id = cookieStore.get(SESSIE_COOKIE)?.value;
@@ -48,6 +66,7 @@ export async function ontkoppelAction(formData: FormData): Promise<void> {
   deleteKoppeling(user.email, bron);
   // Wat met het oude token is opgehaald, hoort niet te blijven staan.
   clearProjectCache();
+  clearBudgetCache();
   clearJiraCache();
   revalidatePath("/", "layout");
 }

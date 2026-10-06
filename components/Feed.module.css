@@ -1,0 +1,235 @@
+/* Donker paneel met witte kaarten per melding. */
+.feed {
+  margin-bottom: var(--space-10);
+  padding: var(--space-06);
+  border-radius: 28px;
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.kop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-03) var(--space-05);
+  margin-bottom: var(--space-04);
+}
+
+.titel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  margin: 0;
+  font: var(--type-h5);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+.aantal {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--space-02);
+  border-radius: var(--radius-pill);
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+  font: var(--type-ui-heading-2);
+  letter-spacing: 0;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.4);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--norday-white);
+  font: var(--type-label-small);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filter[aria-pressed="true"] {
+  background: var(--norday-white);
+  color: var(--norday-dark);
+}
+
+.filter:focus-visible,
+.negeer:focus-visible,
+.herstelKnop:focus-visible,
+.scroll:focus-visible {
+  outline: 2px solid var(--norday-lilac);
+  outline-offset: 2px;
+}
+
+.filterAantal {
+  opacity: 0.75;
+}
+
+.leeg {
+  margin: 0;
+  padding: var(--space-06);
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.08);
+  font: var(--type-label);
+}
+
+.scroll {
+  max-height: 360px;
+  margin: 0 -6px;
+  padding: 0 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lijst {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  padding: var(--space-03) var(--space-03) var(--space-03) 14px;
+  border-radius: 18px;
+  background: var(--norday-white);
+  color: var(--norday-dark);
+}
+
+.icoon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+/* Per soort verschilt ook de lichtheid, niet alleen de kleur. */
+.icoon[data-soort="boven-offerte"] {
+  background: var(--norday-pink);
+  color: var(--norday-white);
+}
+
+.icoon[data-soort="bijna-op"] {
+  background: #ffd6e0;
+  color: var(--norday-dark);
+}
+
+.icoon[data-soort="eerste-reactie"] {
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+}
+
+.icoon[data-soort="sprint-verlopen"] {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-01) var(--space-02);
+  font: var(--type-label-small);
+}
+
+.meta a {
+  color: var(--color-text-muted);
+}
+
+.soort {
+  padding: 1px var(--space-02);
+  border-radius: var(--radius-pill);
+  background: #ece6ea;
+  font-weight: 600;
+}
+
+.soort[data-soort="boven-offerte"],
+.soort[data-soort="bijna-op"] {
+  background: #ffd6e0;
+}
+
+.soort[data-soort="eerste-reactie"] {
+  background: #eadcff;
+}
+
+.itemTitel {
+  font: var(--type-body-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.itemTitel:hover {
+  text-decoration: underline;
+}
+
+.detail {
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.negeer {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: #f3edf8;
+  color: var(--norday-dark);
+  cursor: pointer;
+}
+
+.negeer:hover {
+  background: var(--norday-lilac);
+}
+
+.herstel {
+  margin-top: 14px;
+  font: var(--type-label-small);
+  color: rgb(255 255 255 / 0.8);
+}
+
+.herstelKnop {
+  min-height: 32px;
+  padding: 0 var(--space-01);
+  border: 0;
+  background: transparent;
+  color: var(--norday-white);
+  font: var(--type-label-small);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .item {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    column-gap: var(--space-03);
+  }
+
+  .icoon {
+    width: 36px;
+    height: 36px;
+  }
+}

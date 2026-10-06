@@ -29,6 +29,11 @@ export type SupportOverzicht = {
   open: Telling;
   /** Open tickets waarbij de bal bij Norday ligt. */
   opNorday: Telling;
+  /** Nog geen eerste reactie: voor de projectmanager om op te pakken. */
+  eersteReactie: Telling;
+  wachtOpKlant: Telling;
+  /** In een sprint of on hold. */
+  overig: Telling;
   perStatus: StatusTelling[];
   fetchedAt: Date;
 };
@@ -178,6 +183,9 @@ function fetchJiraOverzicht(
  * 12090 Waiting for first response, 11801 Wachtend op support, 12200 Response from customer.
  */
 const WACHT_OP_NORDAY = ["12090", "11801", "12200"];
+const EERSTE_REACTIE = "12090";
+/** 11802 Wachtend op klant. */
+const WACHT_OP_KLANT = "11802";
 
 /** Open supporttickets in SUPP voor de Organizations van een account. */
 function fetchSupportOverzicht(
@@ -190,6 +198,11 @@ function fetchSupportOverzicht(
       .join(", ")})`;
     const { issues, fetchedAt } = await cachedSearch(email, jql);
     const statusIds = [...new Set(issues.map((issue) => issue.statusId))];
+    const telling = (ids: string[], filter: string): Telling => ({
+      aantal: issues.filter((issue) => ids.includes(issue.statusId)).length,
+      url: jqlUrl(`${jql} AND ${filter}`),
+    });
+    const bekend = [...WACHT_OP_NORDAY, WACHT_OP_KLANT];
     return {
       organizations,
       open: { aantal: issues.length, url: jqlUrl(jql) },
@@ -198,6 +211,13 @@ function fetchSupportOverzicht(
           WACHT_OP_NORDAY.includes(issue.statusId),
         ).length,
         url: jqlUrl(`${jql} AND status in (${WACHT_OP_NORDAY.join(", ")})`),
+      },
+      eersteReactie: telling([EERSTE_REACTIE], `status = ${EERSTE_REACTIE}`),
+      wachtOpKlant: telling([WACHT_OP_KLANT], `status = ${WACHT_OP_KLANT}`),
+      overig: {
+        aantal: issues.filter((issue) => !bekend.includes(issue.statusId))
+          .length,
+        url: jqlUrl(`${jql} AND status not in (${bekend.join(", ")})`),
       },
       perStatus: statusIds
         .map((statusId) => {
