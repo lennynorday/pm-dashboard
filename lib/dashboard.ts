@@ -24,6 +24,8 @@ export type Project = {
   einddatum: string | null;
   jiraKeys: string[];
   zichtbaarheid: Zichtbaarheid;
+  /** Ik ben de eigenaar in Orbit. */
+  mijn: boolean;
 };
 
 export type Account = {
@@ -78,6 +80,7 @@ function toProject(
   orbit: OrbitProject,
   hidden: string[],
   gegevens: AlleAccountGegevens,
+  mijn: boolean,
 ): Project {
   const accountSlug = slugify(orbit.client);
   const accountConfig = gegevens[accountSlug] ?? LEGE_GEGEVENS;
@@ -90,13 +93,13 @@ function toProject(
     einddatum: orbit.endDate,
     jiraKeys: accountConfig.jiraKeys,
     zichtbaarheid: hidden.includes(orbit.number) ? "verborgen" : "zichtbaar",
+    mijn,
   };
 }
 
 function toAccount(
   slug: string,
   projecten: Project[],
-  mijn: boolean,
   accountConfig: AccountGegevens,
   orbitNaam: string,
 ): Account {
@@ -104,7 +107,7 @@ function toAccount(
     slug,
     naam: projecten[0].accountNaam,
     orbitNaam,
-    mijn,
+    mijn: projecten.some((project) => project.mijn),
     jiraKeys: accountConfig.jiraKeys,
     supportOrganizations: accountConfig.supportOrganizations,
     am: accountConfig.am ?? null,
@@ -139,7 +142,7 @@ export function buildAccounts(
     ]),
   );
   const projecten = orbitProjecten.map((orbit) =>
-    toProject(orbit, hidden, gegevens),
+    toProject(orbit, hidden, gegevens, mijnNummers.has(orbit.number)),
   );
   const slugs = [...new Set(projecten.map((project) => project.accountSlug))];
   return slugs
@@ -150,7 +153,6 @@ export function buildAccounts(
       return toAccount(
         slug,
         vanAccount,
-        vanAccount.some((project) => mijnNummers.has(project.number)),
         gegevens[slug] ?? LEGE_GEGEVENS,
         orbitNamen.get(slug) ?? slug,
       );

@@ -77,7 +77,7 @@ export function Sidebar({
     menuButton.current?.focus();
   }
 
-  // Een projectlink springt binnen dezelfde pagina; sluit dan ook het mobiele menu.
+  // Een link naar de pagina waar je al bent navigeert niet; sluit dan ook het mobiele menu.
   function closeOnLinkClick(event: React.MouseEvent) {
     if (event.target instanceof Element && event.target.closest("a"))
       setOpenOn(null);

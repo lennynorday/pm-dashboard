@@ -25,3 +25,10 @@ export const PROJECT_STATE_LABELS: Record<ProjectState, string> = {
   CLOSED: "Afgesloten",
   ARCHIVED: "Gearchiveerd",
 };
+
+const urenFormat = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 1 });
+
+/** Minuten als uren, bijvoorbeeld 4395 als "73,3". */
+export function formatUren(minuten: number): string {
+  return urenFormat.format(minuten / 60);
+}

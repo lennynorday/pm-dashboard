@@ -1,0 +1,387 @@
+.accounts {
+  display: grid;
+  gap: var(--space-11);
+}
+
+.accountNaam {
+  margin: 0;
+  padding-bottom: var(--space-03);
+  border-bottom: 2px solid var(--color-line);
+  font: var(--type-h5);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+.accountNaam a {
+  text-decoration: none;
+}
+
+.accountNaam a:hover {
+  text-decoration: underline;
+}
+
+.blokken {
+  container-type: inline-size;
+  display: grid;
+  gap: var(--space-08);
+  margin-top: var(--space-05);
+}
+
+.blokKop {
+  margin: 0 0 var(--space-03);
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.muted {
+  margin: 0;
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.subLink,
+.orbit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font: var(--type-label-small);
+}
+
+.subLink {
+  margin-top: var(--space-02);
+}
+
+/* Supportkaart: een afgeronde kaart in een lichte lila tint. */
+.kaart {
+  max-width: 320px;
+  padding: 0 var(--space-04);
+  border-radius: 20px;
+  background: rgb(213 179 255 / 0.4);
+}
+
+.kaartKop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  min-height: 64px;
+  padding: var(--space-03) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.kaartKop::-webkit-details-marker,
+.projectRij::-webkit-details-marker {
+  display: none;
+}
+
+.bol {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--space-02);
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: var(--type-ui-heading-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.kaartLabel {
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.kaartPijl {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--norday-white);
+}
+
+.chevron {
+  flex: none;
+  transition: transform 150ms ease;
+}
+
+details[open] > summary .chevron {
+  transform: rotate(90deg);
+}
+
+.kolommen {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--space-03);
+  padding: var(--space-04) 0 var(--space-05);
+  border-top: 1px solid var(--color-line-subtle);
+}
+
+.kolom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-02);
+  min-width: 72px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.kolomGetal {
+  font: var(--type-ui-heading-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.kolomBak {
+  display: flex;
+  align-items: flex-end;
+  width: 40px;
+  height: 64px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.7);
+  overflow: hidden;
+}
+
+.kolomBak span {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.kolomBak [data-soort="ons"] {
+  background: var(--norday-dark);
+}
+
+.kolomBak [data-soort="klant"] {
+  background: #a77be0;
+}
+
+/* Gearceerd, zodat het ook zonder kleur van de andere twee te onderscheiden is. */
+.kolomBak [data-soort="overig"] {
+  border: 1px solid var(--color-line);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--norday-dark) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+.kolomLabel {
+  font: var(--type-label-small);
+  text-align: center;
+  text-decoration: underline;
+}
+
+/* Projecten: één grid voor kolomkop, projectregels, mappen en schrijfregels. */
+.rij {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 48px 88px 88px 88px 88px;
+  align-items: center;
+  column-gap: var(--space-04);
+}
+
+.kolomKop {
+  padding-bottom: var(--space-02);
+  border-bottom: 1px solid var(--color-line);
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.projecten,
+.mappen,
+.regels {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project {
+  position: relative;
+  border-bottom: 1px solid var(--color-line-subtle);
+  scroll-margin-top: var(--space-06);
+}
+
+.project:target {
+  background: var(--field-live);
+}
+
+.projectRij {
+  min-height: 44px;
+  padding: var(--space-03) 0 var(--space-07);
+  cursor: pointer;
+  list-style: none;
+}
+
+div.projectRij {
+  cursor: auto;
+}
+
+.projectRij:hover .naam {
+  text-decoration: underline;
+}
+
+.naamCel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  min-width: 0;
+}
+
+.naam {
+  overflow: hidden;
+  font: var(--type-body-2);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* De Teamleader-link staat onder de naam, buiten de uitklapper. */
+.orbit {
+  position: absolute;
+  top: 38px;
+  left: 22px;
+}
+
+.getal {
+  font: var(--type-label-small);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.projectRij .getal {
+  font: var(--type-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rood, maar donkerder dan Norday-roze zodat kleine tekst 4.5:1 haalt. */
+.over {
+  color: #d1003a;
+  font-weight: 600;
+}
+
+.status {
+  text-align: right;
+}
+
+.label {
+  display: inline-block;
+  padding: 2px var(--space-03);
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: var(--type-label-small);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.melding {
+  grid-column: 2 / -1;
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+}
+
+.balk {
+  display: block;
+  height: 10px;
+  border: 1px solid var(--color-line);
+  background: var(--norday-white);
+}
+
+.balk.klein {
+  height: 6px;
+}
+
+.balk span {
+  display: block;
+  height: 100%;
+  background: var(--norday-dark);
+}
+
+.balk[data-over="true"] {
+  border-color: var(--color-accent);
+}
+
+.balk[data-over="true"] span {
+  background: var(--color-accent);
+}
+
+.mappen {
+  padding: 0 0 var(--space-04) 22px;
+}
+
+.mapRij {
+  padding: var(--space-02) 0;
+  border-top: 1px solid var(--color-line-subtle);
+  font: var(--type-label-small);
+  font-weight: 600;
+}
+
+.regelRij {
+  padding: 2px 0;
+  font: var(--type-label-small);
+}
+
+.regelRij .naamCel {
+  padding-left: var(--space-03);
+}
+
+.afgesloten {
+  color: var(--color-text-muted);
+}
+
+/* Kijkt naar de breedte van de inhoud, niet van het scherm: het zijmenu neemt ook ruimte in. */
+@container (max-width: 720px) {
+  .rij {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: var(--space-01);
+  }
+
+  .rij > :nth-child(1) {
+    grid-column: 1 / span 2;
+    grid-row: 1;
+  }
+
+  .rij > :nth-child(3) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .rij > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .rij > :nth-child(7) {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .kolomKop {
+    display: none;
+  }
+
+  /* Zonder kolomkop staan de labels bij de getallen zelf. */
+  .getal .celLabel {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    color: var(--color-text-muted);
+    font: var(--type-label-small);
+  }
+
+  .orbit {
+    position: static;
+    margin: 0 0 var(--space-03) 22px;
+  }
+
+  .projectRij {
+    padding-bottom: var(--space-03);
+  }
+}
