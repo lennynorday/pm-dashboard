@@ -38,7 +38,7 @@ Een persoonlijk werkoverzicht dat Orbit, Jira en Beheer & Support (SUPP) samenbr
 - Apercu Condensed Pro Bold voor koppen (hoofdletters, -3%), Suisse Int'l voor de rest. De fontbestanden ontbreken nog; terugvalfonts uit de tokens tot ze er zijn.
 - Pink haalt 4,5:1 niet voor gewone tekst: alleen voor grote tekst, randen, iconen en statusaccenten.
 - Dashboard, geen website: kleinere tekststijlen en compactere marges dan de marketingsite. Het moet niet als website voelen.
-- Visuele basis: [Intelly HealthCare App Dashboard](https://dribbble.com/shots/23902200-Intelly-HealthCare-App-Dashboard). Neem de vormtaal over (kaarten, afronding, witruimte, hiërarchie), in Norday-kleuren en -fonts. Dit is de enige UI-referentie.
+- Visuele basis: [Intelly HealthCare App Dashboard](https://dribbble.com/shots/23902200-Intelly-HealthCare-App-Dashboard), lokaal in `docs/inspiratie/intelly-dashboard.jpg`. Neem de vormtaal over (kaarten, afronding, witruimte, hiërarchie), in Norday-kleuren en -fonts. Dit is de enige UI-referentie.
 
 ## Evidence on Hand
 

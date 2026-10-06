@@ -136,7 +136,7 @@ Zoek in fase 0 uit welke route werkt, in deze volgorde:
 - **Logo:** ik zet het logo als SVG in `docs/huisstijl/logo/`, het liefst met een versie voor licht en voor donker en een los beeldmerk. Gebruik het in de app en maak er het favicon van. Het logo mag wel in Git.
 - **Dashboard, geen website:** gebruik de kleinere tekststijlen en compactere marges. De websitematen zijn voor een marketingsite.
 - **Knoppen, links en kaarten:** die staan in het frame "Partials" van hetzelfde Figma-bestand. Als de Figma-connector in Claude Code beschikbaar is, haal je ze daar op.
-- **UI-referentie:** de basis voor alle schermen is [Intelly HealthCare App Dashboard](https://dribbble.com/shots/23902200-Intelly-HealthCare-App-Dashboard). Neem de vormtaal over, houd de Norday-kleuren en -fonts. Bekijk die voordat je de schermen opbouwt.
+- **UI-referentie:** de basis voor alle schermen is [Intelly HealthCare App Dashboard](https://dribbble.com/shots/23902200-Intelly-HealthCare-App-Dashboard) (lokaal: `docs/inspiratie/intelly-dashboard.jpg`). Neem de vormtaal over, houd de Norday-kleuren en -fonts. Bekijk die voordat je de schermen opbouwt.
 - **Status en toegankelijkheid:** status nooit alleen met kleur tonen, maar ook met tekst of een icoon. WCAG 2.2 AA.
 - **Responsief en thema:** het dashboard werkt ook op een smal scherm. Lichte en donkere modus staan in de tokens.
 
