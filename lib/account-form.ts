@@ -1,11 +1,10 @@
 import type { AccountGegevens } from "./accountgegevens";
-import { LINK_TYPES, LinkType } from "./links";
+import { LINK_TYPES, LinkType, LinkUrls } from "./links";
 
-/** Lege rijen onder de bestaande, om contactpersonen en links toe te voegen. */
+/** Lege rijen onder de bestaande, om contactpersonen toe te voegen. */
 export const LEGE_RIJEN = 2;
 
 export type ContactRij = { naam: string; rol: string; email: string };
-export type LinkRij = { label: string; url: string; type: LinkType | "" };
 
 /** Wat er in het formulier staat, als tekst; ook na een fout, zodat niets verloren gaat. */
 export type FormWaarden = {
@@ -14,7 +13,7 @@ export type FormWaarden = {
   jiraKeys: string;
   supportOrganizations: string;
   contactpersonen: ContactRij[];
-  links: LinkRij[];
+  links: Record<LinkType, string>;
 };
 
 /** Foutmelding per veld; de sleutel is de name van het invoerveld. */
@@ -23,7 +22,6 @@ export type FormFouten = Record<string, string>;
 export type FormState = { fouten: FormFouten; waarden: FormWaarden } | null;
 
 const LEGE_CONTACT: ContactRij = { naam: "", rol: "", email: "" };
-const LEGE_LINK: LinkRij = { label: "", url: "", type: "" };
 
 export function toFormWaarden(gegevens: AccountGegevens): FormWaarden {
   return {
@@ -36,11 +34,9 @@ export function toFormWaarden(gegevens: AccountGegevens): FormWaarden {
       rol: persoon.rol ?? "",
       email: persoon.email ?? "",
     })),
-    links: gegevens.links.map((link) => ({
-      label: link.label,
-      url: link.url,
-      type: link.type ?? "",
-    })),
+    links: Object.fromEntries(
+      LINK_TYPES.map((type) => [type, gegevens.links[type] ?? ""]),
+    ) as Record<LinkType, string>,
   };
 }
 
@@ -52,7 +48,6 @@ export function metLegeRijen(waarden: FormWaarden): FormWaarden {
       ...waarden.contactpersonen,
       ...Array<ContactRij>(LEGE_RIJEN).fill(LEGE_CONTACT),
     ],
-    links: [...waarden.links, ...Array<LinkRij>(LEGE_RIJEN).fill(LEGE_LINK)],
   };
 }
 
@@ -83,14 +78,9 @@ export function readFormWaarden(formData: FormData): FormWaarden {
       rol: text(formData, `contact-${index}-rol`),
       email: text(formData, `contact-${index}-email`),
     })),
-    links: rijen(formData, "link", (index) => ({
-      label: text(formData, `link-${index}-label`),
-      url: text(formData, `link-${index}-url`),
-      type:
-        LINK_TYPES.find(
-          (type) => type === text(formData, `link-${index}-type`),
-        ) ?? "",
-    })),
+    links: Object.fromEntries(
+      LINK_TYPES.map((type) => [type, text(formData, `link-${type}`)]),
+    ) as Record<LinkType, string>,
   };
 }
 
@@ -136,18 +126,17 @@ export function validateForm(
     ];
   });
 
-  const links = waarden.links.flatMap((rij, index) => {
-    if (!rij.label && !rij.url) return [];
-    if (!rij.label) {
-      fouten[`link-${index}-label`] =
-        "Vul een titel in, of maak de hele rij leeg.";
-    }
-    if (!URL_START.test(rij.url)) {
-      fouten[`link-${index}-url`] =
-        "Een link begint met https:// of http://, zoals https://www.kunsthal.nl.";
-    }
-    return [{ label: rij.label, url: rij.url, type: rij.type || undefined }];
-  });
+  const links: LinkUrls = Object.fromEntries(
+    LINK_TYPES.flatMap((type) => {
+      const url = waarden.links[type];
+      if (!url) return [];
+      if (!URL_START.test(url) || !URL.canParse(url)) {
+        fouten[`link-${type}`] =
+          "Een link begint met https:// of http://, zoals https://www.kunsthal.nl.";
+      }
+      return [[type, url]];
+    }),
+  );
 
   if (Object.keys(fouten).length > 0) return { fouten };
   return {

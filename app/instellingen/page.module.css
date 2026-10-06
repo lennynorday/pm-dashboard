@@ -101,21 +101,8 @@
 .gegevens {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-06);
+  align-items: center;
+  gap: var(--space-04);
   padding: var(--space-05) 0;
   border-block: 1px solid var(--color-line);
-}
-
-.import {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-03);
-}
-
-.label {
-  flex-basis: 100%;
-  font: var(--type-label);
-  font-weight: 600;
 }

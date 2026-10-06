@@ -8,6 +8,8 @@ export const LINK_TYPES = [
   "offerte",
   "omgeving-acc",
   "omgeving-prod",
+  "cms-acc",
+  "cms-prod",
   "overig",
 ] as const;
 
@@ -19,12 +21,8 @@ export type Link = {
   url: string;
 };
 
-/** Zoals een link in de config staat: het type mag je weglaten. */
-export type LinkInput = {
-  label: string;
-  url: string;
-  type?: LinkType;
-};
+/** Per type hooguit één link, zoals in de tabel in Superhuman. */
+export type LinkUrls = Partial<Record<LinkType, string>>;
 
 export const LINK_TYPE_LABELS: Record<LinkType, string> = {
   "superhuman-intern": "Superhuman intern",
@@ -36,27 +34,17 @@ export const LINK_TYPE_LABELS: Record<LinkType, string> = {
   offerte: "Offerte",
   "omgeving-acc": "Acceptatie",
   "omgeving-prod": "Productie",
+  "cms-acc": "CMS acceptatie",
+  "cms-prod": "CMS productie",
   overig: "Overig",
 };
 
-/** Slack en Superhuman zijn intern, tenzij "gedeeld" in de titel staat. */
-function inferType(label: string, url: string): LinkType {
-  const shared = /gedeeld/i.test(label);
-  if (/slack\.com/i.test(url)) return shared ? "slack-klant" : "slack-intern";
-  if (/superhuman\.com|coda\.io/i.test(url)) {
-    return shared ? "superhuman-gedeeld" : "superhuman-intern";
-  }
-  if (/atlassian\.net/i.test(url)) return "jira-board";
-  if (/drive\.google|docs\.google/i.test(url)) return "drive";
-  return "overig";
-}
-
-export function toLink(input: LinkInput): Link {
-  return {
-    type: input.type ?? inferType(input.label, input.url),
-    label: input.label,
-    url: input.url,
-  };
+/** De links van een account, met de host als titel. */
+export function toLinks(urls: LinkUrls): Link[] {
+  return LINK_TYPES.flatMap((type) => {
+    const url = urls[type];
+    return url ? [{ type, label: new URL(url).host, url }] : [];
+  });
 }
 
 export type LinkGroup = { type: LinkType; links: Link[] };

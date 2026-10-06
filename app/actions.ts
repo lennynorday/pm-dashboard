@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
-import { parseExport, saveAccountGegevens } from "@/lib/accountgegevens";
+import {
+  clearAccountGegevensCache,
+  saveAccountGegevens,
+} from "@/lib/accountgegevens";
+import { loadDashboard } from "@/lib/dashboard";
 import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -71,31 +75,11 @@ export async function ontkoppelAction(formData: FormData): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-/** Leest een exportbestand in; het resultaat staat daarna op de pagina Instellingen. */
-export async function importAccountGegevensAction(
-  formData: FormData,
-): Promise<void> {
+/** Haalt de accountgegevens meteen opnieuw uit Superhuman. */
+export async function refreshAccountGegevensAction(): Promise<void> {
   if (!(await currentUser())) return;
-  const bestand = formData.get("bestand");
-  let uitkomst: Record<string, string>;
-  try {
-    if (!(bestand instanceof File) || bestand.size === 0) {
-      throw new Error("Kies eerst een bestand");
-    }
-    const accounts = parseExport(JSON.parse(await bestand.text()));
-    saveAccountGegevens(accounts);
-    uitkomst = { import: "ok", aantal: String(Object.keys(accounts).length) };
-  } catch (error) {
-    const melding =
-      error instanceof SyntaxError
-        ? "Het bestand is geen geldige JSON"
-        : error instanceof Error
-          ? error.message
-          : String(error);
-    uitkomst = { import: "fout", melding };
-  }
+  clearAccountGegevensCache();
   revalidatePath("/", "layout");
-  redirect(`/instellingen?${new URLSearchParams(uitkomst)}#accountgegevens`);
 }
 
 /** Slaat de gegevens van één account op; bij fouten blijft alles staan wat is ingevuld. */
@@ -109,7 +93,34 @@ export async function saveAccountAction(
   const uitkomst = validateForm(waarden);
   if ("fouten" in uitkomst) return { fouten: uitkomst.fouten, waarden };
 
-  saveAccountGegevens({ [slug]: uitkomst.gegevens });
+  const dashboard = await loadDashboard();
+  const account =
+    dashboard.status === "ok"
+      ? dashboard.accounts.find((item) => item.slug === slug)
+      : undefined;
+  if (!account?.orbitId) {
+    return {
+      fouten: {
+        opslaan:
+          "Dit account is niet in Orbit gevonden, dus het kan niet worden opgeslagen.",
+      },
+      waarden,
+    };
+  }
+  try {
+    await saveAccountGegevens(
+      account.orbitId,
+      account.orbitNaam,
+      uitkomst.gegevens,
+    );
+  } catch (error) {
+    return {
+      fouten: {
+        opslaan: `Opslaan in Superhuman is mislukt. ${error instanceof Error ? error.message : String(error)}`,
+      },
+      waarden,
+    };
+  }
   revalidatePath("/", "layout");
   redirect(`/accounts/${slug}`);
 }
