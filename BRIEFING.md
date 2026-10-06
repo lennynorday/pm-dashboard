@@ -208,6 +208,10 @@ Signaleer supporttickets die blijven liggen:
 
 Het doel is dat het eigenaarschap in het team komt te liggen. Het overzicht moet dus ook bruikbaar zijn voor wie die week support draait, niet alleen voor mij.
 
+### Opnieuw ophalen ook voor Jira zichtbaar
+- De knop "Alles opnieuw ophalen" leegt al de cache van Orbit én Jira, maar ernaast staat alleen hoe laat de Orbit-data is opgehaald. Daardoor lijkt het een Orbit-knop.
+- Toon ook wanneer de Jira-data is opgehaald, of maak de status bronneutraal, zodat duidelijk is dat de knop alles ververst.
+
 ### Sprintrapporten en supportweek-rapporten
 - Rapportages per sprint en per supportweek, op basis van Jira (projectborden en SUPP met de supportweek-labels) en de uren uit Teamleader.
 - **Openstaande vraag:** wat ze precies moeten bevatten en voor wie ze zijn (intern, klant of allebei). Dit bepalen we later.
