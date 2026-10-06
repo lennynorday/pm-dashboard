@@ -8,8 +8,9 @@ import {
   readAccountGegevens,
 } from "./accountgegevens";
 import { readHiddenProjects } from "./hidden-projects";
-import { Link, toLink } from "./links";
+import { Link, toLinks } from "./links";
 import { CULTURE_FOLDER_ID } from "./orbit/config";
+import { fetchKlantIds } from "./orbit/klanten";
 import { fetchProjects, OrbitProject, ProjectState } from "./orbit/projects";
 import { currentUser } from "./session";
 
@@ -30,6 +31,8 @@ export type Project = {
 
 export type Account = {
   slug: string;
+  /** Het klant-id in Orbit; null als Orbit de klant niet kon vinden. */
+  orbitId: string | null;
   naam: string;
   /** De klantnaam zoals Orbit die kent, ook als er een kortere naam is ingevuld. */
   orbitNaam: string;
@@ -44,7 +47,13 @@ export type Account = {
 };
 
 export type Dashboard =
-  | { status: "ok"; accounts: Account[]; fetchedAt: Date }
+  | {
+      status: "ok";
+      accounts: Account[];
+      fetchedAt: Date;
+      /** Waarom de accountgegevens uit Superhuman niet zijn opgehaald. */
+      gegevensFout: string | null;
+    }
   | { status: "niet-verbonden" }
   | { status: "fout"; message: string };
 
@@ -76,14 +85,20 @@ export function orbitProjectUrl(number: string): string {
   return `${config.orbitSite}/project/${encodeURIComponent(number)}`;
 }
 
+function gegevensVan(
+  gegevens: AlleAccountGegevens,
+  orbitId: string | null,
+): AccountGegevens {
+  return (orbitId && gegevens[orbitId]) || LEGE_GEGEVENS;
+}
+
 function toProject(
   orbit: OrbitProject,
   hidden: string[],
-  gegevens: AlleAccountGegevens,
+  accountConfig: AccountGegevens,
   mijn: boolean,
 ): Project {
   const accountSlug = slugify(orbit.client);
-  const accountConfig = gegevens[accountSlug] ?? LEGE_GEGEVENS;
   return {
     number: orbit.number,
     naam: orbit.name,
@@ -99,12 +114,14 @@ function toProject(
 
 function toAccount(
   slug: string,
+  orbitId: string | null,
   projecten: Project[],
   accountConfig: AccountGegevens,
   orbitNaam: string,
 ): Account {
   return {
     slug,
+    orbitId,
     naam: projecten[0].accountNaam,
     orbitNaam,
     mijn: projecten.some((project) => project.mijn),
@@ -112,7 +129,7 @@ function toAccount(
     supportOrganizations: accountConfig.supportOrganizations,
     am: accountConfig.am ?? null,
     contactpersonen: accountConfig.contactpersonen,
-    links: accountConfig.links.map(toLink),
+    links: toLinks(accountConfig.links),
     projecten: [...projecten].sort((a, b) =>
       a.naam.localeCompare(b.naam, "nl"),
     ),
@@ -129,6 +146,7 @@ export function buildAccounts(
   culture: OrbitProject[],
   hidden: string[],
   gegevens: AlleAccountGegevens,
+  klantIds: Map<string, string>,
 ): Account[] {
   const mijnNummers = new Set(mine.map((orbit) => orbit.number));
   const orbitProjecten = [
@@ -141,8 +159,19 @@ export function buildAccounts(
       displayName(orbit.client),
     ]),
   );
+  const orbitIds = new Map(
+    orbitProjecten.map((orbit) => [
+      slugify(orbit.client),
+      klantIds.get(orbit.client) ?? null,
+    ]),
+  );
   const projecten = orbitProjecten.map((orbit) =>
-    toProject(orbit, hidden, gegevens, mijnNummers.has(orbit.number)),
+    toProject(
+      orbit,
+      hidden,
+      gegevensVan(gegevens, klantIds.get(orbit.client) ?? null),
+      mijnNummers.has(orbit.number),
+    ),
   );
   const slugs = [...new Set(projecten.map((project) => project.accountSlug))];
   return slugs
@@ -150,10 +179,12 @@ export function buildAccounts(
       const vanAccount = projecten.filter(
         (project) => project.accountSlug === slug,
       );
+      const orbitId = orbitIds.get(slug) ?? null;
       return toAccount(
         slug,
+        orbitId,
         vanAccount,
-        gegevens[slug] ?? LEGE_GEGEVENS,
+        gegevensVan(gegevens, orbitId),
         orbitNamen.get(slug) ?? slug,
       );
     })
@@ -171,15 +202,22 @@ export const loadDashboard = cache(async (): Promise<Dashboard> => {
   const hidden = readHiddenProjects(user.email);
   if (mine.status !== "ok") return mine;
   if (culture.status !== "ok") return culture;
+  const klantIds = await fetchKlantIds(
+    user.email,
+    [...mine.projects, ...culture.projects].map((orbit) => orbit.client),
+  );
+  const { gegevens, fout } = await readAccountGegevens();
   return {
     status: "ok",
     accounts: buildAccounts(
       mine.projects,
       culture.projects,
       hidden,
-      readAccountGegevens(),
+      gegevens,
+      klantIds,
     ),
     fetchedAt:
       mine.fetchedAt < culture.fetchedAt ? mine.fetchedAt : culture.fetchedAt,
+    gegevensFout: fout,
   };
 });

@@ -1,4 +1,4 @@
-import { database } from "@/lib/db";
+import { bewaar, database, lees, vers } from "@/lib/db";
 import { callOrbitTool } from "./client";
 
 /** Eén taak in Orbit waarop uren geschreven worden. Uren in minuten. */
@@ -136,40 +136,6 @@ export function plafond(data: ProjectBudget): {
 const CACHE_MS = 15 * 60 * 1000;
 // Een akkoord gegeven offerte verandert zelden; zo blijven we onder de rate limit van Orbit.
 const OFFERTE_CACHE_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Bewaard in de database, zodat een herstart niets weggooit en we bij een
- * rate limit van Orbit de laatst bekende cijfers kunnen tonen.
- * Verhoog de versie in de sleutel als de vorm van de waarde verandert.
- */
-function lees<T>(sleutel: string): { waarde: T; opgehaald: number } | null {
-  const regel = database()
-    .prepare("SELECT waarde, opgehaald FROM orbit_cache WHERE sleutel = ?")
-    .get(sleutel);
-  if (
-    typeof regel?.waarde !== "string" ||
-    typeof regel.opgehaald !== "number"
-  ) {
-    return null;
-  }
-  return { waarde: JSON.parse(regel.waarde) as T, opgehaald: regel.opgehaald };
-}
-
-function bewaar(
-  sleutel: string,
-  waarde: unknown,
-  opgehaald = Date.now(),
-): void {
-  database()
-    .prepare(
-      "INSERT OR REPLACE INTO orbit_cache (sleutel, waarde, opgehaald) VALUES (?, ?, ?)",
-    )
-    .run(sleutel, JSON.stringify(waarde), opgehaald);
-}
-
-function vers(opgehaald: number, maxMs: number): boolean {
-  return Date.now() - opgehaald < maxMs;
-}
 
 /** Alles verloopt meteen, maar blijft bewaard als terugval. */
 export function clearBudgetCache(): void {

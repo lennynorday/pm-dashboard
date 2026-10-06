@@ -185,50 +185,27 @@ export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
       <fieldset className={styles.groep}>
         <legend className={styles.legend}>Links</legend>
         <p className={styles.hint}>
-          Maak een rij leeg om een link te verwijderen. Bij type Automatisch
-          herkent het dashboard Slack, Superhuman, Jira en Drive aan de link.
+          Eén link per soort. Maak een veld leeg om de link te verwijderen.
         </p>
-        <input type="hidden" name="link-aantal" value={huidig.links.length} />
-        {huidig.links.map((rij, index) => (
-          <fieldset key={index} className={styles.rij}>
-            <legend className={styles.rijLegend}>Link {index + 1}</legend>
-            <Veld
-              name={`link-${index}-label`}
-              label="Titel"
-              defaultValue={rij.label}
-              fout={fouten[`link-${index}-label`]}
-            />
-            <Veld
-              name={`link-${index}-url`}
-              label="Adres"
-              type="url"
-              defaultValue={rij.url}
-              fout={fouten[`link-${index}-url`]}
-            />
-            <div className={styles.veld}>
-              <label htmlFor={`link-${index}-type`} className={styles.label}>
-                Type
-              </label>
-              <select
-                id={`link-${index}-type`}
-                name={`link-${index}-type`}
-                defaultValue={rij.type}
-                className={styles.input}
-              >
-                <option value="">Automatisch</option>
-                {LINK_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {LINK_TYPE_LABELS[type]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </fieldset>
+        {LINK_TYPES.map((type) => (
+          <Veld
+            key={type}
+            name={`link-${type}`}
+            label={LINK_TYPE_LABELS[type]}
+            type="url"
+            defaultValue={huidig.links[type]}
+            fout={fouten[`link-${type}`]}
+          />
         ))}
       </fieldset>
 
       <div className={styles.acties}>
-        <button type="submit" className={styles.opslaan} disabled={bezig}>
+        <button
+          id="opslaan"
+          type="submit"
+          className={styles.opslaan}
+          disabled={bezig}
+        >
           {bezig ? "Bezig met opslaan" : "Opslaan"}
         </button>
         <NextLink href={terugHref} className={styles.annuleren}>

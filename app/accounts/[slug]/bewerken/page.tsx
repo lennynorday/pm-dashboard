@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { saveAccountAction } from "@/app/actions";
 import { AccountForm } from "@/components/AccountForm";
+import { Melding } from "@/components/Melding";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { metLegeRijen, toFormWaarden } from "@/lib/account-form";
@@ -28,17 +29,36 @@ export default async function AccountBewerkenPage({
   if (!account) notFound();
 
   const href = `/accounts/${slug}`;
-  const gegevens = readAccountGegevens()[slug] ?? LEGE_GEGEVENS;
+  const { gegevens, fout } = await readAccountGegevens();
+  const heading = (
+    <PageHeading
+      title={`${account.naam} bewerken`}
+      crumbs={[HOME, { label: account.naam, href }]}
+    />
+  );
+
+  // Zonder actuele gegevens zou opslaan wat er in Superhuman staat overschrijven.
+  if (fout) {
+    return (
+      <>
+        {heading}
+        <Melding titel="Bewerken kan nu niet" role="alert">
+          {`De accountgegevens konden niet uit Superhuman worden opgehaald. ${fout}`}
+        </Melding>
+      </>
+    );
+  }
 
   return (
     <>
-      <PageHeading
-        title={`${account.naam} bewerken`}
-        crumbs={[HOME, { label: account.naam, href }]}
-      />
+      {heading}
       <AccountForm
         action={saveAccountAction.bind(null, slug)}
-        waarden={metLegeRijen(toFormWaarden(gegevens))}
+        waarden={metLegeRijen(
+          toFormWaarden(
+            (account.orbitId && gegevens[account.orbitId]) || LEGE_GEGEVENS,
+          ),
+        )}
         orbitNaam={account.orbitNaam}
         terugHref={href}
       />

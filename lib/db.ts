@@ -25,10 +25,8 @@ function open(): DatabaseSync {
       token TEXT NOT NULL,
       PRIMARY KEY (email, bron)
     );
-    CREATE TABLE IF NOT EXISTS account_gegevens (
-      slug TEXT PRIMARY KEY,
-      gegevens TEXT NOT NULL
-    );
+    -- De accountgegevens staan sinds oktober 2026 in Superhuman.
+    DROP TABLE IF EXISTS account_gegevens;
     CREATE TABLE IF NOT EXISTS verborgen_projecten (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       nummer TEXT NOT NULL,
@@ -55,4 +53,41 @@ const store = globalThis as { dashboardDb?: DatabaseSync };
 export function database(): DatabaseSync {
   store.dashboardDb ??= open();
   return store.dashboardDb;
+}
+
+/**
+ * Cache in de database, zodat een herstart niets weggooit en we bij een
+ * rate limit of storing de laatst bekende gegevens kunnen tonen.
+ * Ondanks de naam orbit_cache ook voor Superhuman.
+ * Verhoog de versie in de sleutel als de vorm van de waarde verandert.
+ */
+export function lees<T>(
+  sleutel: string,
+): { waarde: T; opgehaald: number } | null {
+  const regel = database()
+    .prepare("SELECT waarde, opgehaald FROM orbit_cache WHERE sleutel = ?")
+    .get(sleutel);
+  if (
+    typeof regel?.waarde !== "string" ||
+    typeof regel.opgehaald !== "number"
+  ) {
+    return null;
+  }
+  return { waarde: JSON.parse(regel.waarde) as T, opgehaald: regel.opgehaald };
+}
+
+export function bewaar(
+  sleutel: string,
+  waarde: unknown,
+  opgehaald = Date.now(),
+): void {
+  database()
+    .prepare(
+      "INSERT OR REPLACE INTO orbit_cache (sleutel, waarde, opgehaald) VALUES (?, ?, ?)",
+    )
+    .run(sleutel, JSON.stringify(waarde), opgehaald);
+}
+
+export function vers(opgehaald: number, maxMs: number): boolean {
+  return Date.now() - opgehaald < maxMs;
 }

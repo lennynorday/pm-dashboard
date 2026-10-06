@@ -6,6 +6,7 @@ import { AccountProjects } from "@/components/AccountProjects";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
 import { LinkList } from "@/components/LinkList";
+import { Melding } from "@/components/Melding";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { TicketDetails } from "@/components/TicketDetails";
@@ -63,6 +64,19 @@ export default async function AccountPage({
           contactpersonen={account.contactpersonen}
         />
       </PageHeading>
+      {dashboard.gegevensFout && (
+        <Melding
+          titel="Accountgegevens uit Superhuman zijn niet opgehaald"
+          role="alert"
+          actie={
+            <NextLink href="/instellingen#accountgegevens">
+              Instellingen
+            </NextLink>
+          }
+        >
+          {dashboard.gegevensFout}
+        </Melding>
+      )}
       <AttentionBand signalen={signalen} toonAccount={false} />
 
       <section className={styles.section} aria-labelledby="projecten">

@@ -1,16 +1,18 @@
 import {
-  importAccountGegevensAction,
   logoutAction,
   ontkoppelAction,
+  refreshAccountGegevensAction,
 } from "@/app/actions";
 import { ExternalLink } from "@/components/ExternalLink";
 import { AlertIcon, CheckIcon } from "@/components/icons";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
 import { config } from "@/config/dashboard";
+import { readAccountGegevens } from "@/lib/accountgegevens";
 import { Bron, isVerbonden } from "@/lib/koppelingen";
 import { initialen } from "@/lib/navigation";
 import { currentUser } from "@/lib/session";
+import { TABEL_BROWSER_URL } from "@/lib/superhuman";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
 
@@ -39,34 +41,11 @@ const KOPPELINGEN: BronInfo[] = [
   },
 ];
 
-function ImportUitkomst({
-  params,
-}: {
-  params: Record<string, string | string[] | undefined>;
-}) {
-  if (params.import === "ok") {
-    return (
-      <Melding titel="Accountgegevens ingelezen">
-        {`${params.aantal ?? 0} accounts toegevoegd of bijgewerkt.`}
-      </Melding>
-    );
-  }
-  if (params.import === "fout") {
-    return (
-      <Melding titel="Inlezen is mislukt; er is niets veranderd" role="alert">
-        {typeof params.melding === "string" ? params.melding : null}
-      </Melding>
-    );
-  }
-  return null;
-}
-
-export default async function InstellingenPage({
-  searchParams,
-}: PageProps<"/instellingen">) {
+export default async function InstellingenPage() {
   // De layout toont het inlogscherm zonder sessie; hier is er dus altijd een.
   const user = await currentUser();
   if (!user) return null;
+  const { fout } = await readAccountGegevens();
 
   return (
     <>
@@ -163,27 +142,22 @@ export default async function InstellingenPage({
         </h2>
         <p className={styles.uitleg}>
           Wat Orbit niet weet: Jira-projecten, supportorganisaties, AM,
-          contactpersonen en links per account. Iedereen die het dashboard
-          gebruikt, ziet dezelfde gegevens. Exporteer ze af en toe als back-up.
+          contactpersonen en links per account. Ze staan in een tabel in
+          Superhuman, zodat iedereen dezelfde gegevens ziet. Het dashboard haalt
+          ze één keer per dag op.
         </p>
-        <ImportUitkomst params={await searchParams} />
+        {fout && (
+          <Melding titel="Ophalen uit Superhuman is mislukt" role="alert">
+            {fout}
+          </Melding>
+        )}
         <div className={styles.gegevens}>
-          <a href="/api/accountgegevens" className={styles.knop} download>
-            Gegevens exporteren
-          </a>
-          <form action={importAccountGegevensAction} className={styles.import}>
-            <label htmlFor="bestand" className={styles.label}>
-              Exportbestand (.json)
-            </label>
-            <input
-              id="bestand"
-              name="bestand"
-              type="file"
-              accept=".json,application/json"
-              required
-            />
+          <ExternalLink href={TABEL_BROWSER_URL} className={styles.knop}>
+            Tabel openen in Superhuman
+          </ExternalLink>
+          <form action={refreshAccountGegevensAction}>
             <button type="submit" className={styles.knop}>
-              Gegevens importeren
+              Verversen
             </button>
           </form>
         </div>
