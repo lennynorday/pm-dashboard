@@ -15,6 +15,12 @@ export type Signaal = {
   url: string;
 };
 
+export function koppelTitel(aantal: number, klant: string): string {
+  return aantal === 1
+    ? `1 project van ${klant} hoort nog bij geen platform`
+    : `${aantal} projecten van ${klant} horen nog bij geen platform`;
+}
+
 export function isVerlopen(sprint: ActieveSprint, nu: Date): boolean {
   return sprint.einddatum !== null && new Date(sprint.einddatum) < nu;
 }
@@ -34,7 +40,7 @@ export function platformSignalen(
           {
             ...basis,
             type: "koppelen",
-            titel: `${los === 1 ? "1 project" : `${los} projecten`} van ${platform.klant.naam} ${los === 1 ? "hoort" : "horen"} nog bij geen platform`,
+            titel: koppelTitel(los, platform.klant.naam),
             detail: "Kies bij welke website elk project hoort",
             url: `/platforms/${platform.slug}/koppelen`,
           },

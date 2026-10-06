@@ -132,6 +132,9 @@ export function Feed({ items, genegeerd }: Props) {
                       <a href={`/platforms/${item.platformSlug}`}>
                         {item.platformNaam}
                       </a>
+                      {item.klantNaam && (
+                        <span className={styles.klant}>· {item.klantNaam}</span>
+                      )}
                     </span>
                     <a
                       href={item.url}

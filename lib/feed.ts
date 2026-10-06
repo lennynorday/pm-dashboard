@@ -2,7 +2,7 @@ import { ongekoppeld, type Platform, type Project } from "./dashboard";
 import { formatDate, formatUren } from "./format";
 import type { AccountJira } from "./jira/overview";
 import { plafond, type ProjectBudgetResult } from "./orbit/budget";
-import { isVerlopen } from "./signals";
+import { isVerlopen, koppelTitel } from "./signals";
 
 export type FeedSoort =
   | "boven-offerte"
@@ -17,6 +17,8 @@ export type FeedItem = {
   soort: FeedSoort;
   platformSlug: string;
   platformNaam: string;
+  /** Alleen bij een klant met meer platforms. */
+  klantNaam: string | null;
   titel: string;
   detail: string;
   url: string;
@@ -36,6 +38,16 @@ const VOLGORDE: FeedSoort[] = [
   "sprint-verlopen",
 ];
 
+function waar(
+  platform: Platform,
+): Pick<FeedItem, "platformSlug" | "platformNaam" | "klantNaam"> {
+  return {
+    platformSlug: platform.slug,
+    platformNaam: platform.naam,
+    klantNaam: platform.klant.meerPlatforms ? platform.klant.naam : null,
+  };
+}
+
 function budgetItems({ platform, projecten }: FeedBron): FeedItem[] {
   return projecten.flatMap(({ project, budget }): FeedItem[] => {
     if (budget.status !== "ok") return [];
@@ -44,8 +56,7 @@ function budgetItems({ platform, projecten }: FeedBron): FeedItem[] {
     const geschreven = budget.data.geschreven;
     const percentage = Math.round((geschreven / minuten) * 100);
     const basis = {
-      platformSlug: platform.slug,
-      platformNaam: platform.naam,
+      ...waar(platform),
       detail: `${formatUren(geschreven)} van ${formatUren(minuten)} uur ${soort} (${percentage}%)`,
       url: `#project-${project.number}`,
     };
@@ -74,7 +85,7 @@ function budgetItems({ platform, projecten }: FeedBron): FeedItem[] {
 }
 
 function jiraItems({ platform, jira }: FeedBron, nu: Date): FeedItem[] {
-  const basis = { platformSlug: platform.slug, platformNaam: platform.naam };
+  const basis = waar(platform);
   const sprints = jira.jira.flatMap(({ key, result }): FeedItem[] => {
     if (result.status !== "ok") return [];
     return result.data.actieveSprints
@@ -114,27 +125,22 @@ function jiraItems({ platform, jira }: FeedBron, nu: Date): FeedItem[] {
  * ben van zo'n project of PM van een van zijn platforms.
  */
 export function koppelItems(platforms: Platform[]): FeedItem[] {
-  const eerste = platforms.filter(
-    (platform, index) =>
-      platforms.findIndex((item) => item.klant === platform.klant) === index,
-  );
-  return eerste.flatMap((platform): FeedItem[] => {
-    const los = ongekoppeld(platform.klant);
+  const klanten = [...new Set(platforms.map((platform) => platform.klant))];
+  return klanten.flatMap((klant): FeedItem[] => {
+    const vanKlant = platforms.filter((platform) => platform.klant === klant);
+    // Het eerste platform waar ik PM van ben, anders het eerste van de klant.
+    const platform = vanKlant.find((item) => item.mijn) ?? vanKlant[0];
+    const los = ongekoppeld(klant);
     const mijn =
-      los.some((project) => project.mijn) ||
-      platforms.some((item) => item.klant === platform.klant && item.mijn);
+      los.some((project) => project.mijn) || vanKlant.some((item) => item.mijn);
     if (los.length === 0 || !mijn) return [];
     return [
       {
-        id: `koppelen:${platform.klant.orbitId}:${los.map((project) => project.number).join(",")}`,
+        id: `koppelen:${klant.orbitId}:${los.map((project) => project.number).join(",")}`,
         soort: "koppelen",
-        platformSlug: platform.slug,
-        platformNaam: platform.klant.naam,
-        titel:
-          los.length === 1
-            ? "1 project hoort nog bij geen platform"
-            : `${los.length} projecten horen nog bij geen platform`,
-        detail: los.map((project) => project.naam).join(", "),
+        ...waar(platform),
+        titel: koppelTitel(los.length, klant.naam),
+        detail: "Kies per project de website, of \u201cgeen platform\u201d",
         url: `/platforms/${platform.slug}/koppelen`,
       },
     ];

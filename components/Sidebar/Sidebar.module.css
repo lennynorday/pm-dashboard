@@ -296,6 +296,12 @@
   overflow-wrap: anywhere;
 }
 
+.klant {
+  display: block;
+  font: var(--type-label-small);
+  opacity: 0.72;
+}
+
 .item .external {
   width: 16px;
   height: 16px;

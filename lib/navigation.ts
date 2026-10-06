@@ -1,8 +1,10 @@
 import type { Platform } from "./dashboard";
 
-export type NavAccount = {
+export type NavPlatform = {
   slug: string;
   naam: string;
+  /** De klant, alleen als die anders heet dan het platform. */
+  klant: string | null;
   initialen: string;
   mijn: boolean;
 };
@@ -21,7 +23,7 @@ export function initialen(naam: string): string {
  * Een platform zonder projecten staat er ook in, zodat je een net toegevoegd
  * platform kunt vinden.
  */
-export function toNavAccounts(platforms: Platform[]): NavAccount[] {
+export function toNavPlatforms(platforms: Platform[]): NavPlatform[] {
   return platforms
     .filter(
       (platform) =>
@@ -33,6 +35,7 @@ export function toNavAccounts(platforms: Platform[]): NavAccount[] {
     .map((platform) => ({
       slug: platform.slug,
       naam: platform.naam,
+      klant: platform.klant.naam === platform.naam ? null : platform.klant.naam,
       initialen: initialen(platform.naam),
       mijn: platform.mijn,
     }));

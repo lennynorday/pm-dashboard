@@ -158,7 +158,8 @@
   font: var(--type-label-small);
 }
 
-.meta a {
+.meta a,
+.klant {
   color: var(--color-text-muted);
 }
 

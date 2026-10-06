@@ -307,6 +307,9 @@ export function MijnProjecten({ rijen }: { rijen: AccountRij[] }) {
             <NextLink href={`/platforms/${platform.slug}`}>
               {platform.naam}
             </NextLink>
+            {platform.klant.meerPlatforms && (
+              <span className={styles.klant}> · {platform.klant.naam}</span>
+            )}
           </h2>
           <div className={styles.blokken}>
             <div>
