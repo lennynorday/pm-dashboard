@@ -33,5 +33,5 @@
 ## Domeinmodel
 
 - **Account** — klant uit Orbit, herkend aan het Orbit-klant-id; heeft een klantnaam (uit Orbit, ter herkenning), een eigen naam, AM, Jira-keys en support-organisaties.
-- **Links** — per account één URL per linktype uit de app (Superhuman intern, Superhuman gedeeld, Slack intern, Slack klant, Jira, Drive, offerte, acceptatie, productie, overig), elk in een eigen kolom.
+- **Links** — per account één URL per linktype uit de app (Superhuman intern, Superhuman gedeeld, Slack intern, Slack klant, Jira, Drive, offerte, acceptatie, productie, CMS acceptatie, CMS productie, overig), elk in een eigen kolom.
 - **Contactpersonen** — per account in één tekstkolom.

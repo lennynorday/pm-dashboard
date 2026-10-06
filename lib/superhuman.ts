@@ -34,6 +34,8 @@ const LINK_KOLOM: Record<LinkType, string> = {
   offerte: "c-W1cvzHrhxI",
   "omgeving-acc": "c-Qj6ml7we-K",
   "omgeving-prod": "c-xQA47jnGKo",
+  "cms-acc": "c-k2JYz6vZS-",
+  "cms-prod": "c-eqY6-Oi5ZO",
   overig: "c-ic7q-uARcr",
 };
 

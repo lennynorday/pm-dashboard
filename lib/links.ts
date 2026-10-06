@@ -8,6 +8,8 @@ export const LINK_TYPES = [
   "offerte",
   "omgeving-acc",
   "omgeving-prod",
+  "cms-acc",
+  "cms-prod",
   "overig",
 ] as const;
 
@@ -32,6 +34,8 @@ export const LINK_TYPE_LABELS: Record<LinkType, string> = {
   offerte: "Offerte",
   "omgeving-acc": "Acceptatie",
   "omgeving-prod": "Productie",
+  "cms-acc": "CMS acceptatie",
+  "cms-prod": "CMS productie",
   overig: "Overig",
 };
 
