@@ -20,6 +20,7 @@ const KOLOM = {
   orbitId: "c-CXL6t7por1",
   platform: "c-dT_H3ngZYh",
   orbitProjecten: "c-TmE6og8-9d",
+  zonderPlatform: "c-ShmUnihnjP",
   naam: "c-PhQ1GgAOiW",
   am: "c-MegEx3kHVZ",
   jiraKeys: "c-tUsRlLHmYz",
@@ -132,6 +133,7 @@ function parseRij(data: unknown): Rij | null {
     klant: {
       naam: tekst(waarden, KOLOM.naam) || undefined,
       am: tekst(waarden, KOLOM.am) || undefined,
+      zonderPlatform: lijst(tekst(waarden, KOLOM.zonderPlatform)),
     },
     platform: {
       rijId: typeof rij.id === "string" ? rij.id : undefined,
@@ -149,7 +151,7 @@ function parseRij(data: unknown): Rij | null {
   };
 }
 
-/** Rijen per klant; naam en AM van de klant uit de eerste rij die ze heeft. */
+/** Rijen per klant; de klantvelden uit de eerste rij die ze heeft. */
 export function groepeerRijen(rijen: Rij[]): AlleAccountGegevens {
   return rijen.reduce<AlleAccountGegevens>(
     (alle, { orbitId, klant, platform }) => {
@@ -159,6 +161,9 @@ export function groepeerRijen(rijen: Rij[]): AlleAccountGegevens {
         [orbitId]: {
           naam: vorige?.naam ?? klant.naam,
           am: vorige?.am ?? klant.am,
+          zonderPlatform: vorige?.zonderPlatform.length
+            ? vorige.zonderPlatform
+            : klant.zonderPlatform,
           platforms: [...(vorige?.platforms ?? []), platform],
         },
       };
@@ -196,6 +201,7 @@ function klantCellen(orbitId: string, klant: string, velden: KlantVelden) {
     [KOLOM.klant, klant],
     [KOLOM.naam, velden.naam ?? ""],
     [KOLOM.am, velden.am ?? ""],
+    [KOLOM.zonderPlatform, velden.zonderPlatform.join(", ")],
   ]);
 }
 
@@ -222,7 +228,29 @@ async function schrijfRij(rijId: string | undefined, cells: Cel[]) {
 }
 
 /**
- * Slaat één platform op, en naam en AM van de klant in alle rijen van die
+ * Slaat bij welk platform de projecten van een klant horen: de Orbit-projecten
+ * van elk platform, en in alle rijen de projecten zonder platform.
+ */
+export async function saveKoppelingRijen(
+  orbitId: string,
+  klant: string,
+  velden: KlantVelden,
+  platforms: Pick<PlatformGegevens, "rijId" | "naam" | "orbitProjecten">[],
+): Promise<void> {
+  const klantDeel = klantCellen(orbitId, klant, velden);
+  for (const platform of platforms) {
+    await schrijfRij(platform.rijId, [
+      ...klantDeel,
+      ...cellen([
+        [KOLOM.platform, platform.naam],
+        [KOLOM.orbitProjecten, platform.orbitProjecten.join(", ")],
+      ]),
+    ]);
+  }
+}
+
+/**
+ * Slaat één platform op, en de klantvelden in alle rijen van die
  * klant. Superhuman verwerkt dit na een paar seconden; de app wacht daar
  * niet op.
  */

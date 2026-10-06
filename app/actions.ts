@@ -6,9 +6,10 @@ import { redirect } from "next/navigation";
 import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
 import {
   clearAccountGegevensCache,
+  saveKoppelingen,
   savePlatformGegevens,
 } from "@/lib/accountgegevens";
-import { loadDashboard, slugify } from "@/lib/dashboard";
+import { type KlantProject, loadDashboard, slugify } from "@/lib/dashboard";
 import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -133,7 +134,10 @@ async function savePlatform(
     await savePlatformGegevens(
       orbitId,
       platform.klant.orbitNaam,
-      uitkomst.klant,
+      {
+        ...uitkomst.klant,
+        zonderPlatform: platform.klant.velden.zonderPlatform,
+      },
       nieuw
         ? { ...uitkomst.platform, orbitProjecten: [] }
         : {
@@ -169,4 +173,98 @@ export async function addPlatformAction(
   formData: FormData,
 ): Promise<FormState> {
   return savePlatform(slug, true, formData);
+}
+
+/** Waar een project bij hoort: de naam van een platform, "geen", of nog niets. */
+type Keuze = { platform: string } | "geen" | null;
+
+/**
+ * Slaat voor alle projecten van de klant van dit platform op waar ze bij horen.
+ * Een fout komt terug als tekst; bij succes null.
+ */
+async function bewaarKoppelingen(
+  slug: string,
+  keuze: (project: KlantProject) => Keuze,
+): Promise<string | null> {
+  if (!(await currentUser()) || !/^[a-z0-9-]+$/.test(slug)) redirect("/");
+  const dashboard = await loadDashboard();
+  if (dashboard.status !== "ok") return "Orbit is niet bereikbaar.";
+  if (dashboard.gegevensFout) {
+    return `De accountgegevens konden niet uit Superhuman worden opgehaald. ${dashboard.gegevensFout}`;
+  }
+  const platform = dashboard.platforms.find((item) => item.slug === slug);
+  const orbitId = platform?.klant.orbitId;
+  if (!platform || !orbitId) return "Deze klant is niet in Orbit gevonden.";
+
+  const { klant } = platform;
+  const keuzes = klant.projecten.map((project) => ({
+    number: project.number,
+    keuze: keuze(project),
+  }));
+  const zusters = dashboard.platforms.filter((item) => item.klant === klant);
+  try {
+    await saveKoppelingen(
+      orbitId,
+      klant.orbitNaam,
+      {
+        ...klant.velden,
+        zonderPlatform: keuzes
+          .filter((item) => item.keuze === "geen")
+          .map((item) => item.number),
+      },
+      zusters.map((zuster) => ({
+        ...zuster.gegevens,
+        naam: zuster.naam,
+        orbitProjecten: keuzes
+          .filter(
+            (item) =>
+              typeof item.keuze === "object" &&
+              item.keuze?.platform === zuster.naam,
+          )
+          .map((item) => item.number),
+      })),
+    );
+  } catch (error) {
+    return `Opslaan in Superhuman is mislukt. ${error instanceof Error ? error.message : String(error)}`;
+  }
+  revalidatePath("/", "layout");
+  return null;
+}
+
+/** Wat er nu staat, zodat een project zonder keuze blijft zoals het was. */
+function huidig(project: KlantProject): Keuze {
+  if (project.zonderPlatform) return "geen";
+  return project.platform === null ? null : { platform: project.platform };
+}
+
+export type KoppelState = { fout: string } | null;
+
+/** Het koppelscherm: per project een platform of "geen platform". */
+export async function koppelAction(
+  slug: string,
+  _vorige: KoppelState,
+  formData: FormData,
+): Promise<KoppelState> {
+  const fout = await bewaarKoppelingen(slug, (project) => {
+    const waarde = formData.get(`project-${project.number}`);
+    if (waarde === "geen") return "geen";
+    if (typeof waarde === "string" && waarde.startsWith("platform:")) {
+      return { platform: waarde.slice("platform:".length) };
+    }
+    return huidig(project);
+  });
+  if (fout) return { fout };
+  redirect(`/platforms/${slug}`);
+}
+
+/** Haalt één project van zijn platform af; daarna is het weer te koppelen. */
+export async function ontkoppelProjectAction(
+  slug: string,
+  formData: FormData,
+): Promise<void> {
+  const nummer = formData.get("projectnummer");
+  const fout = await bewaarKoppelingen(slug, (project) =>
+    project.number === nummer ? null : huidig(project),
+  );
+  if (fout) throw new Error(fout);
 }

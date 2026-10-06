@@ -54,7 +54,7 @@ export default async function HomePage() {
       }),
   );
   const genegeerd = readGenegeerd(user.email);
-  const feed = bouwFeed(bronnen, new Date());
+  const feed = bouwFeed(bronnen, dashboard.platforms, new Date());
   const verborgen = dashboard.platforms
     .flatMap((platform) => platform.projecten)
     .filter((project) => project.zichtbaarheid === "verborgen");

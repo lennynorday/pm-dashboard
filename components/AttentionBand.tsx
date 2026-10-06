@@ -1,16 +1,23 @@
 import NextLink from "next/link";
 import type { Signaal, SignaalType } from "@/lib/signals";
 import { ExternalLink } from "./ExternalLink";
-import { AlertIcon, CheckIcon, ClockIcon, MessageIcon } from "./icons";
+import {
+  AlertIcon,
+  CheckIcon,
+  ClockIcon,
+  LinkIcon,
+  MessageIcon,
+} from "./icons";
 import styles from "./AttentionBand.module.css";
 
 type Props = {
   signalen: Signaal[];
-  /** Op de accountpagina is de accountnaam overbodig. */
+  /** Op de platformpagina is de platformnaam overbodig. */
   toonAccount?: boolean;
 };
 
 const SOORT: Record<SignaalType, { label: string; Icon: typeof ClockIcon }> = {
+  koppelen: { label: "Koppelen", Icon: LinkIcon },
   "sprint-verlopen": { label: "Sprint verlopen", Icon: ClockIcon },
   "support-wacht": { label: "Support wacht", Icon: MessageIcon },
   "bron-fout": { label: "Ophalen mislukt", Icon: AlertIcon },

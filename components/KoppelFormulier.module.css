@@ -1,0 +1,48 @@
+.project {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: var(--space-04) 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-line-subtle);
+}
+
+.naam {
+  padding: 0;
+  font: var(--type-body-2);
+  font-weight: 600;
+}
+
+.meta {
+  margin: 0;
+  font: var(--type-label-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.los {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.keuzes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02) var(--space-05);
+}
+
+.keuze {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  min-height: 44px;
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+.keuze input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--norday-dark);
+}

@@ -1,11 +1,15 @@
-import type { Platform, Project } from "./dashboard";
+import { ongekoppeld, type Platform, type Project } from "./dashboard";
 import { formatDate, formatUren } from "./format";
 import type { AccountJira } from "./jira/overview";
 import { plafond, type ProjectBudgetResult } from "./orbit/budget";
 import { isVerlopen } from "./signals";
 
 export type FeedSoort =
-  "boven-offerte" | "bijna-op" | "eerste-reactie" | "sprint-verlopen";
+  | "boven-offerte"
+  | "bijna-op"
+  | "koppelen"
+  | "eerste-reactie"
+  | "sprint-verlopen";
 
 /** Iets in Mijn feed. Het id verandert als de situatie verandert, zodat een genegeerd item terugkomt. */
 export type FeedItem = {
@@ -27,6 +31,7 @@ export type FeedBron = {
 const VOLGORDE: FeedSoort[] = [
   "boven-offerte",
   "bijna-op",
+  "koppelen",
   "eerste-reactie",
   "sprint-verlopen",
 ];
@@ -104,9 +109,49 @@ function jiraItems({ platform, jira }: FeedBron, nu: Date): FeedItem[] {
   ];
 }
 
+/**
+ * Eén item per klant met projecten die nog nergens bij horen, als ik eigenaar
+ * ben van zo'n project of PM van een van zijn platforms.
+ */
+export function koppelItems(platforms: Platform[]): FeedItem[] {
+  const eerste = platforms.filter(
+    (platform, index) =>
+      platforms.findIndex((item) => item.klant === platform.klant) === index,
+  );
+  return eerste.flatMap((platform): FeedItem[] => {
+    const los = ongekoppeld(platform.klant);
+    const mijn =
+      los.some((project) => project.mijn) ||
+      platforms.some((item) => item.klant === platform.klant && item.mijn);
+    if (los.length === 0 || !mijn) return [];
+    return [
+      {
+        id: `koppelen:${platform.klant.orbitId}:${los.map((project) => project.number).join(",")}`,
+        soort: "koppelen",
+        platformSlug: platform.slug,
+        platformNaam: platform.klant.naam,
+        titel:
+          los.length === 1
+            ? "1 project hoort nog bij geen platform"
+            : `${los.length} projecten horen nog bij geen platform`,
+        detail: los.map((project) => project.naam).join(", "),
+        url: `/platforms/${platform.slug}/koppelen`,
+      },
+    ];
+  });
+}
+
 /** Alles wat aandacht vraagt, belangrijkste soort eerst. */
-export function bouwFeed(bronnen: FeedBron[], nu: Date): FeedItem[] {
-  return bronnen
-    .flatMap((bron) => [...budgetItems(bron), ...jiraItems(bron, nu)])
-    .sort((a, b) => VOLGORDE.indexOf(a.soort) - VOLGORDE.indexOf(b.soort));
+export function bouwFeed(
+  bronnen: FeedBron[],
+  platforms: Platform[],
+  nu: Date,
+): FeedItem[] {
+  return [
+    ...koppelItems(platforms),
+    ...bronnen.flatMap((bron) => [
+      ...budgetItems(bron),
+      ...jiraItems(bron, nu),
+    ]),
+  ].sort((a, b) => VOLGORDE.indexOf(a.soort) - VOLGORDE.indexOf(b.soort));
 }

@@ -1,6 +1,7 @@
 import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { ontkoppelProjectAction } from "@/app/actions";
 import { AccountPeople } from "@/components/AccountPeople";
 import { AccountProjects } from "@/components/AccountProjects";
 import { AttentionBand } from "@/components/AttentionBand";
@@ -113,6 +114,11 @@ export default async function PlatformPage({
         <AccountProjects
           projecten={zichtbaar}
           budgetten={Object.fromEntries(budgetten)}
+          ontkoppel={
+            platform.klant.meerPlatforms
+              ? ontkoppelProjectAction.bind(null, platform.slug)
+              : undefined
+          }
         />
         <HiddenProjects projecten={verborgen} />
       </section>

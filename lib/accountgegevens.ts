@@ -1,6 +1,6 @@
 import { bewaar, lees, vers } from "./db";
 import type { LinkUrls } from "./links";
-import { fetchTabel, savePlatformRij } from "./superhuman";
+import { fetchTabel, saveKoppelingRijen, savePlatformRij } from "./superhuman";
 
 export type Contactpersoon = {
   naam: string;
@@ -13,6 +13,8 @@ export type KlantVelden = {
   /** Leeg: de naam uit Orbit. */
   naam?: string;
   am?: string;
+  /** Projectnummers die bij de hele klant horen, niet bij een platform. */
+  zonderPlatform: string[];
 };
 
 /** Wat Orbit niet weet over een platform; één rij in de tabel in Superhuman. */
@@ -33,6 +35,8 @@ export type PlatformGegevens = {
 
 export type AccountGegevens = KlantVelden & { platforms: PlatformGegevens[] };
 
+export const LEGE_KLANT: KlantVelden = { zonderPlatform: [] };
+
 /** Per Orbit-klant-id, bijvoorbeeld "CL4KKKRQSAXN7GK". */
 export type AlleAccountGegevens = Record<string, AccountGegevens>;
 
@@ -52,7 +56,7 @@ export type GegevensResult = {
   fout: string | null;
 };
 
-const SLEUTEL = "superhuman:accountgegevens:v2";
+const SLEUTEL = "superhuman:accountgegevens:v3";
 const CACHE_MS = 24 * 60 * 60 * 1000;
 
 function melding(error: unknown): string {
@@ -108,6 +112,27 @@ export async function savePlatformGegevens(
     const platforms = huidige.some(isDit)
       ? huidige.map((item) => (isDit(item) ? platform : item))
       : [...huidige, platform];
+    bewaar(
+      SLEUTEL,
+      { ...hit.waarde, [orbitId]: { ...velden, platforms } },
+      hit.opgehaald,
+    );
+  }
+}
+
+/**
+ * Slaat op bij welk platform elk project van een klant hoort, in Superhuman en
+ * meteen in de cache.
+ */
+export async function saveKoppelingen(
+  orbitId: string,
+  klant: string,
+  velden: KlantVelden,
+  platforms: PlatformGegevens[],
+): Promise<void> {
+  await saveKoppelingRijen(orbitId, klant, velden, platforms);
+  const hit = lees<AlleAccountGegevens>(SLEUTEL);
+  if (hit) {
     bewaar(
       SLEUTEL,
       { ...hit.waarde, [orbitId]: { ...velden, platforms } },
