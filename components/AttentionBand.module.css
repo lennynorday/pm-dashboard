@@ -65,14 +65,14 @@
   stroke-width: 2.25;
 }
 
-.account {
+.platform {
   font: var(--type-body-2);
   font-weight: 600;
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 
-.account:hover {
+.platform:hover {
   text-decoration: underline;
 }
 

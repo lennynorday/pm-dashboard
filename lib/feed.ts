@@ -1,4 +1,4 @@
-import type { Account, Project } from "./dashboard";
+import type { Platform, Project } from "./dashboard";
 import { formatDate, formatUren } from "./format";
 import type { AccountJira } from "./jira/overview";
 import { plafond, type ProjectBudgetResult } from "./orbit/budget";
@@ -11,15 +11,15 @@ export type FeedSoort =
 export type FeedItem = {
   id: string;
   soort: FeedSoort;
-  accountSlug: string;
-  accountNaam: string;
+  platformSlug: string;
+  platformNaam: string;
   titel: string;
   detail: string;
   url: string;
 };
 
 export type FeedBron = {
-  account: Account;
+  platform: Platform;
   jira: AccountJira;
   projecten: { project: Project; budget: ProjectBudgetResult }[];
 };
@@ -31,7 +31,7 @@ const VOLGORDE: FeedSoort[] = [
   "sprint-verlopen",
 ];
 
-function budgetItems({ account, projecten }: FeedBron): FeedItem[] {
+function budgetItems({ platform, projecten }: FeedBron): FeedItem[] {
   return projecten.flatMap(({ project, budget }): FeedItem[] => {
     if (budget.status !== "ok") return [];
     const { minuten, soort } = plafond(budget.data);
@@ -39,8 +39,8 @@ function budgetItems({ account, projecten }: FeedBron): FeedItem[] {
     const geschreven = budget.data.geschreven;
     const percentage = Math.round((geschreven / minuten) * 100);
     const basis = {
-      accountSlug: account.slug,
-      accountNaam: account.naam,
+      platformSlug: platform.slug,
+      platformNaam: platform.naam,
       detail: `${formatUren(geschreven)} van ${formatUren(minuten)} uur ${soort} (${percentage}%)`,
       url: `#project-${project.number}`,
     };
@@ -68,8 +68,8 @@ function budgetItems({ account, projecten }: FeedBron): FeedItem[] {
   });
 }
 
-function jiraItems({ account, jira }: FeedBron, nu: Date): FeedItem[] {
-  const basis = { accountSlug: account.slug, accountNaam: account.naam };
+function jiraItems({ platform, jira }: FeedBron, nu: Date): FeedItem[] {
+  const basis = { platformSlug: platform.slug, platformNaam: platform.naam };
   const sprints = jira.jira.flatMap(({ key, result }): FeedItem[] => {
     if (result.status !== "ok") return [];
     return result.data.actieveSprints
@@ -92,7 +92,7 @@ function jiraItems({ account, jira }: FeedBron, nu: Date): FeedItem[] {
     ...sprints,
     {
       ...basis,
-      id: `eerste-reactie:${account.slug}:${aantal}`,
+      id: `eerste-reactie:${platform.slug}:${aantal}`,
       soort: "eerste-reactie",
       titel:
         aantal === 1

@@ -4,7 +4,9 @@ import {
   AccountGegevens,
   AlleAccountGegevens,
   Contactpersoon,
-  LEGE_GEGEVENS,
+  KlantVelden,
+  LEEG_PLATFORM,
+  PlatformGegevens,
   readAccountGegevens,
 } from "./accountgegevens";
 import { readHiddenProjects } from "./hidden-projects";
@@ -19,28 +21,43 @@ export type Zichtbaarheid = "zichtbaar" | "verborgen";
 export type Project = {
   number: string;
   naam: string;
-  accountSlug: string;
-  accountNaam: string;
+  platformSlug: string;
+  platformNaam: string;
   status: ProjectState;
   einddatum: string | null;
+  /** De projectverantwoordelijke in Orbit. */
+  eigenaar: string;
   jiraKeys: string[];
   zichtbaarheid: Zichtbaarheid;
   /** Ik ben de eigenaar in Orbit. */
   mijn: boolean;
 };
 
-export type Account = {
-  slug: string;
+/** Een klant uit Orbit; heeft geen eigen pagina, maar wel een of meer platforms. */
+export type Klant = {
   /** Het klant-id in Orbit; null als Orbit de klant niet kon vinden. */
   orbitId: string | null;
   naam: string;
   /** De klantnaam zoals Orbit die kent, ook als er een kortere naam is ingevuld. */
   orbitNaam: string;
-  /** Ik ben eigenaar van minstens één open project van dit account. */
+  am: string | null;
+  /** Zoals in Superhuman, om te bewerken. */
+  velden: KlantVelden;
+};
+
+/** Een website van een klant: wat een PM beheert. */
+export type Platform = {
+  slug: string;
+  naam: string;
+  /** Zoals in Superhuman; leeg als het platform daar nog niet staat. */
+  gegevens: PlatformGegevens;
+  klant: Klant;
+  /** De eigenaars van de projecten in Orbit. */
+  pms: string[];
+  /** Ik ben eigenaar van minstens één open project van dit platform. */
   mijn: boolean;
   jiraKeys: string[];
   supportOrganizations: string[];
-  am: string | null;
   contactpersonen: Contactpersoon[];
   links: Link[];
   projecten: Project[];
@@ -49,7 +66,7 @@ export type Account = {
 export type Dashboard =
   | {
       status: "ok";
-      accounts: Account[];
+      platforms: Platform[];
       fetchedAt: Date;
       /** Waarom de accountgegevens uit Superhuman niet zijn opgehaald. */
       gegevensFout: string | null;
@@ -85,108 +102,98 @@ export function orbitProjectUrl(number: string): string {
   return `${config.orbitSite}/project/${encodeURIComponent(number)}`;
 }
 
-function gegevensVan(
-  gegevens: AlleAccountGegevens,
-  orbitId: string | null,
-): AccountGegevens {
-  return (orbitId && gegevens[orbitId]) || LEGE_GEGEVENS;
+/** Bij welk platform een project hoort; null als het niet gekoppeld is. */
+export function platformVan(
+  number: string,
+  platforms: PlatformGegevens[],
+): PlatformGegevens | null {
+  if (platforms.length === 1) return platforms[0];
+  return platforms.find((item) => item.orbitProjecten.includes(number)) ?? null;
 }
 
-function toProject(
-  orbit: OrbitProject,
-  hidden: string[],
-  accountConfig: AccountGegevens,
-  mijn: boolean,
-): Project {
-  const accountSlug = slugify(orbit.client);
-  return {
-    number: orbit.number,
-    naam: orbit.name,
-    accountSlug,
-    accountNaam: accountConfig.naam || displayName(orbit.client),
-    status: orbit.state,
-    einddatum: orbit.endDate,
-    jiraKeys: accountConfig.jiraKeys,
-    zichtbaarheid: hidden.includes(orbit.number) ? "verborgen" : "zichtbaar",
-    mijn,
-  };
-}
-
-function toAccount(
-  slug: string,
-  orbitId: string | null,
-  projecten: Project[],
-  accountConfig: AccountGegevens,
-  orbitNaam: string,
-): Account {
-  return {
-    slug,
-    orbitId,
-    naam: projecten[0].accountNaam,
-    orbitNaam,
-    mijn: projecten.some((project) => project.mijn),
-    jiraKeys: accountConfig.jiraKeys,
-    supportOrganizations: accountConfig.supportOrganizations,
-    am: accountConfig.am ?? null,
-    contactpersonen: accountConfig.contactpersonen,
-    links: toLinks(accountConfig.links),
-    projecten: [...projecten].sort((a, b) =>
-      a.naam.localeCompare(b.naam, "nl"),
-    ),
-  };
+/** Uniek in de hele lijst; bij een dubbele naam komt de klant ervoor. */
+function uniekeSlug(naam: string, klant: string, bezet: Set<string>): string {
+  const slug = slugify(naam);
+  return bezet.has(slug) ? slugify(`${klant} ${naam}`) : slug;
 }
 
 /**
- * Bouwt de accounts op uit mijn projecten, de Culture-projecten en de
- * accountgegevens.
- * Een project dat in beide lijsten staat, telt één keer.
+ * Bouwt de platforms op uit mijn projecten, de Culture-projecten en de
+ * accountgegevens. Een project dat in beide lijsten staat, telt één keer.
+ * Een project van een klant met meer platforms dat niet gekoppeld is, staat
+ * op geen enkel platform.
  */
-export function buildAccounts(
+export function buildPlatforms(
   mine: OrbitProject[],
   culture: OrbitProject[],
   hidden: string[],
   gegevens: AlleAccountGegevens,
   klantIds: Map<string, string>,
-): Account[] {
+): Platform[] {
   const mijnNummers = new Set(mine.map((orbit) => orbit.number));
   const orbitProjecten = [
     ...mine,
     ...culture.filter((orbit) => !mijnNummers.has(orbit.number)),
   ];
-  const orbitNamen = new Map(
-    orbitProjecten.map((orbit) => [
-      slugify(orbit.client),
-      displayName(orbit.client),
-    ]),
-  );
-  const orbitIds = new Map(
-    orbitProjecten.map((orbit) => [
-      slugify(orbit.client),
-      klantIds.get(orbit.client) ?? null,
-    ]),
-  );
-  const projecten = orbitProjecten.map((orbit) =>
-    toProject(
-      orbit,
-      hidden,
-      gegevensVan(gegevens, klantIds.get(orbit.client) ?? null),
-      mijnNummers.has(orbit.number),
-    ),
-  );
-  const slugs = [...new Set(projecten.map((project) => project.accountSlug))];
-  return slugs
-    .map((slug) => {
-      const vanAccount = projecten.filter(
-        (project) => project.accountSlug === slug,
-      );
-      const orbitId = orbitIds.get(slug) ?? null;
-      return toAccount(
-        slug,
+  const klantNamen = [...new Set(orbitProjecten.map((orbit) => orbit.client))];
+  const bezet = new Set<string>();
+
+  return klantNamen
+    .flatMap((orbitKlant) => {
+      const orbitId = klantIds.get(orbitKlant) ?? null;
+      const account: AccountGegevens = (orbitId && gegevens[orbitId]) || {
+        platforms: [],
+      };
+      const klant: Klant = {
         orbitId,
-        vanAccount,
-        gegevensVan(gegevens, orbitId),
-        orbitNamen.get(slug) ?? slug,
+        naam: account.naam || displayName(orbitKlant),
+        orbitNaam: displayName(orbitKlant),
+        am: account.am ?? null,
+        velden: { naam: account.naam, am: account.am },
+      };
+      const platforms =
+        account.platforms.length > 0 ? account.platforms : [LEEG_PLATFORM];
+      const vanKlant = orbitProjecten.filter(
+        (orbit) => orbit.client === orbitKlant,
       );
+
+      return platforms.map((platform): Platform => {
+        const naam = platform.naam || klant.naam;
+        const slug = uniekeSlug(naam, klant.naam, bezet);
+        bezet.add(slug);
+        const projecten = vanKlant
+          .filter((orbit) => platformVan(orbit.number, platforms) === platform)
+          .map((orbit): Project => ({
+            number: orbit.number,
+            naam: orbit.name,
+            platformSlug: slug,
+            platformNaam: naam,
+            status: orbit.state,
+            einddatum: orbit.endDate,
+            eigenaar: orbit.owner,
+            jiraKeys: platform.jiraKeys,
+            zichtbaarheid: hidden.includes(orbit.number)
+              ? "verborgen"
+              : "zichtbaar",
+            mijn: mijnNummers.has(orbit.number),
+          }))
+          .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
+        return {
+          slug,
+          naam,
+          gegevens: platform,
+          klant,
+          pms: [...new Set(projecten.map((project) => project.eigenaar))]
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, "nl")),
+          mijn: projecten.some((project) => project.mijn),
+          jiraKeys: platform.jiraKeys,
+          supportOrganizations: platform.supportOrganizations,
+          contactpersonen: platform.contactpersonen,
+          links: toLinks(platform.links),
+          projecten,
+        };
+      });
     })
     .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
 }
@@ -209,7 +216,7 @@ export const loadDashboard = cache(async (): Promise<Dashboard> => {
   const { gegevens, fout } = await readAccountGegevens();
   return {
     status: "ok",
-    accounts: buildAccounts(
+    platforms: buildPlatforms(
       mine.projects,
       culture.projects,
       hidden,

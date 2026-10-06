@@ -1,7 +1,8 @@
 import type {
-  AccountGegevens,
   AlleAccountGegevens,
   Contactpersoon,
+  KlantVelden,
+  PlatformGegevens,
 } from "./accountgegevens";
 import { LINK_TYPES, LinkType, LinkUrls } from "./links";
 
@@ -17,6 +18,8 @@ export const TABEL_BROWSER_URL =
 const KOLOM = {
   klant: "c-CtxH8Fdj4Y",
   orbitId: "c-CXL6t7por1",
+  platform: "c-dT_H3ngZYh",
+  orbitProjecten: "c-TmE6og8-9d",
   naam: "c-PhQ1GgAOiW",
   am: "c-MegEx3kHVZ",
   jiraKeys: "c-tUsRlLHmYz",
@@ -116,16 +119,24 @@ function parseLinks(waarden: Record<string, unknown>): LinkUrls {
   );
 }
 
+type Rij = { orbitId: string; klant: KlantVelden; platform: PlatformGegevens };
+
 /** Eén rij; null als er geen Orbit-id in staat. */
-function parseRij(data: unknown): [string, AccountGegevens] | null {
-  const waarden = record(record(data).values);
+function parseRij(data: unknown): Rij | null {
+  const rij = record(data);
+  const waarden = record(rij.values);
   const orbitId = tekst(waarden, KOLOM.orbitId);
   if (!orbitId) return null;
-  return [
+  return {
     orbitId,
-    {
+    klant: {
       naam: tekst(waarden, KOLOM.naam) || undefined,
       am: tekst(waarden, KOLOM.am) || undefined,
+    },
+    platform: {
+      rijId: typeof rij.id === "string" ? rij.id : undefined,
+      naam: tekst(waarden, KOLOM.platform),
+      orbitProjecten: lijst(tekst(waarden, KOLOM.orbitProjecten)),
       jiraKeys: lijst(tekst(waarden, KOLOM.jiraKeys)).map((key) =>
         key.toUpperCase(),
       ),
@@ -135,7 +146,25 @@ function parseRij(data: unknown): [string, AccountGegevens] | null {
       ),
       links: parseLinks(waarden),
     },
-  ];
+  };
+}
+
+/** Rijen per klant; naam en AM van de klant uit de eerste rij die ze heeft. */
+export function groepeerRijen(rijen: Rij[]): AlleAccountGegevens {
+  return rijen.reduce<AlleAccountGegevens>(
+    (alle, { orbitId, klant, platform }) => {
+      const vorige = alle[orbitId];
+      return {
+        ...alle,
+        [orbitId]: {
+          naam: vorige?.naam ?? klant.naam,
+          am: vorige?.am ?? klant.am,
+          platforms: [...(vorige?.platforms ?? []), platform],
+        },
+      };
+    },
+    {},
+  );
 }
 
 /** Alle rijen van de tabel, per Orbit-klant-id. */
@@ -152,36 +181,72 @@ export async function fetchTabel(): Promise<AlleAccountGegevens> {
         ? pagina.nextPageToken
         : undefined;
   } while (pageToken);
-  return Object.fromEntries(rijen.map(parseRij).filter((rij) => rij !== null));
+  return groepeerRijen(rijen.map(parseRij).filter((rij) => rij !== null));
+}
+
+type Cel = { column: string; value: string };
+
+function cellen(paren: [string, string][]): Cel[] {
+  return paren.map(([column, value]) => ({ column, value }));
+}
+
+function klantCellen(orbitId: string, klant: string, velden: KlantVelden) {
+  return cellen([
+    [KOLOM.orbitId, orbitId],
+    [KOLOM.klant, klant],
+    [KOLOM.naam, velden.naam ?? ""],
+    [KOLOM.am, velden.am ?? ""],
+  ]);
 }
 
 /**
- * Voegt de rij van een klant toe of werkt hem bij. Superhuman verwerkt dit
- * na een paar seconden; de app wacht daar niet op.
+ * Werkt één rij bij op zijn id, of voegt hem toe als hij nog geen id heeft.
+ * Toevoegen gaat op Orbit-id plus Platform, zodat twee keer opslaan geen
+ * twee rijen maakt.
  */
-export async function saveRij(
-  orbitId: string,
-  klant: string,
-  gegevens: AccountGegevens,
-): Promise<void> {
-  const cellen: [string, string][] = [
-    [KOLOM.orbitId, orbitId],
-    [KOLOM.klant, klant],
-    [KOLOM.naam, gegevens.naam ?? ""],
-    [KOLOM.am, gegevens.am ?? ""],
-    [KOLOM.jiraKeys, gegevens.jiraKeys.join(", ")],
-    [KOLOM.supportOrganizations, gegevens.supportOrganizations.join(", ")],
-    [KOLOM.contactpersonen, formatContactpersonen(gegevens.contactpersonen)],
-    ...LINK_TYPES.map((type): [string, string] => [
-      LINK_KOLOM[type],
-      gegevens.links[type] ?? "",
-    ]),
-  ];
+async function schrijfRij(rijId: string | undefined, cells: Cel[]) {
+  if (rijId) {
+    await request(`/rows/${encodeURIComponent(rijId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ row: { cells } }),
+    });
+    return;
+  }
   await request("/rows", {
     method: "POST",
     body: JSON.stringify({
-      keyColumns: [KOLOM.orbitId],
-      rows: [{ cells: cellen.map(([column, value]) => ({ column, value })) }],
+      keyColumns: [KOLOM.orbitId, KOLOM.platform],
+      rows: [{ cells }],
     }),
   });
+}
+
+/**
+ * Slaat één platform op, en naam en AM van de klant in alle rijen van die
+ * klant. Superhuman verwerkt dit na een paar seconden; de app wacht daar
+ * niet op.
+ */
+export async function savePlatformRij(
+  orbitId: string,
+  klant: string,
+  velden: KlantVelden,
+  platform: PlatformGegevens,
+  andereRijIds: string[],
+): Promise<void> {
+  const klantDeel = klantCellen(orbitId, klant, velden);
+  await schrijfRij(platform.rijId, [
+    ...klantDeel,
+    ...cellen([
+      [KOLOM.platform, platform.naam],
+      [KOLOM.orbitProjecten, platform.orbitProjecten.join(", ")],
+      [KOLOM.jiraKeys, platform.jiraKeys.join(", ")],
+      [KOLOM.supportOrganizations, platform.supportOrganizations.join(", ")],
+      [KOLOM.contactpersonen, formatContactpersonen(platform.contactpersonen)],
+      ...LINK_TYPES.map((type): [string, string] => [
+        LINK_KOLOM[type],
+        platform.links[type] ?? "",
+      ]),
+    ]),
+  ]);
+  for (const rijId of andereRijIds) await schrijfRij(rijId, klantDeel);
 }

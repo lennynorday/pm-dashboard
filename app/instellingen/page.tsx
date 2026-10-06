@@ -142,7 +142,7 @@ export default async function InstellingenPage() {
         </h2>
         <p className={styles.uitleg}>
           Wat Orbit niet weet: Jira-projecten, supportorganisaties, AM,
-          contactpersonen en links per account. Ze staan in een tabel in
+          contactpersonen en links per platform. Ze staan in een tabel in
           Superhuman, zodat iedereen dezelfde gegevens ziet. Het dashboard haalt
           ze één keer per dag op.
         </p>

@@ -13,55 +13,79 @@ import { TicketDetails } from "@/components/TicketDetails";
 import { TicketTable } from "@/components/TicketTable";
 import { loadDashboard } from "@/lib/dashboard";
 import { fetchAccountJira } from "@/lib/jira/overview";
-import { accountSignalen } from "@/lib/signals";
+import { fetchProjectBudget } from "@/lib/orbit/budget";
+import { currentUser } from "@/lib/session";
+import { platformSignalen } from "@/lib/signals";
 import styles from "../../grid.module.css";
 
 const HOME = { label: "Overzicht", href: "/" };
 
-export default async function AccountPage({
+export default async function PlatformPage({
   params,
-}: PageProps<"/accounts/[slug]">) {
+}: PageProps<"/platforms/[slug]">) {
   await connection();
   const { slug } = await params;
-  const dashboard = await loadDashboard();
+  const [dashboard, user] = await Promise.all([loadDashboard(), currentUser()]);
 
-  if (dashboard.status !== "ok") {
+  if (dashboard.status !== "ok" || !user) {
     return (
       <>
-        <PageHeading title="Account" crumbs={[HOME]} />
+        <PageHeading title="Platform" crumbs={[HOME]} />
         <OrbitStatus dashboard={dashboard} />
       </>
     );
   }
 
-  const account = dashboard.accounts.find((item) => item.slug === slug);
-  if (!account) notFound();
+  const platform = dashboard.platforms.find((item) => item.slug === slug);
+  if (!platform) notFound();
 
-  const data = await fetchAccountJira(account);
-  const signalen = accountSignalen(account, data, new Date());
-  const zichtbaar = account.projecten.filter(
+  const zichtbaar = platform.projecten.filter(
     (p) => p.zichtbaarheid === "zichtbaar",
   );
-  const verborgen = account.projecten.filter(
+  const verborgen = platform.projecten.filter(
     (p) => p.zichtbaarheid === "verborgen",
   );
+  const [data, budgetten] = await Promise.all([
+    fetchAccountJira(platform),
+    Promise.all(
+      zichtbaar.map(
+        async (project) =>
+          [
+            project.number,
+            await fetchProjectBudget(user.email, project.number),
+          ] as const,
+      ),
+    ),
+  ]);
+  const signalen = platformSignalen(platform, data, new Date());
 
   return (
     <>
       <PageHeading
-        title={account.naam}
+        title={platform.naam}
         crumbs={[HOME]}
         aside={<OrbitStatus dashboard={dashboard} />}
       >
-        <NextLink
-          href={`/accounts/${account.slug}/bewerken`}
-          className={styles.bewerken}
-        >
-          Gegevens bewerken
-        </NextLink>
+        <div className={styles.acties}>
+          <NextLink
+            href={`/platforms/${platform.slug}/bewerken`}
+            className={styles.bewerken}
+          >
+            Gegevens bewerken
+          </NextLink>
+          <NextLink
+            href={`/platforms/${platform.slug}/nieuw`}
+            className={styles.bewerken}
+          >
+            Platform toevoegen
+            <span className="visually-hidden"> aan {platform.klant.naam}</span>
+          </NextLink>
+        </div>
         <AccountPeople
-          am={account.am}
-          contactpersonen={account.contactpersonen}
+          klant={platform.klant.naam}
+          pms={platform.pms}
+          am={platform.klant.am}
+          contactpersonen={platform.contactpersonen}
         />
       </PageHeading>
       {dashboard.gegevensFout && (
@@ -86,7 +110,10 @@ export default async function AccountPage({
         {zichtbaar.length === 0 && (
           <p className={styles.muted}>Geen zichtbare projecten.</p>
         )}
-        <AccountProjects projecten={zichtbaar} />
+        <AccountProjects
+          projecten={zichtbaar}
+          budgetten={Object.fromEntries(budgetten)}
+        />
         <HiddenProjects projecten={verborgen} />
       </section>
 
@@ -95,8 +122,8 @@ export default async function AccountPage({
           Tickets
         </h2>
         <TicketTable
-          rijen={[{ account, projecten: zichtbaar, data }]}
-          caption={`Open tickets van ${account.naam} in Jira en Beheer & Support`}
+          rijen={[{ platform, projecten: zichtbaar, data }]}
+          caption={`Open tickets van ${platform.naam} in Jira en Beheer & Support`}
           toonAccount={false}
         />
         <TicketDetails data={data} />
@@ -104,9 +131,9 @@ export default async function AccountPage({
 
       <section className={styles.section} aria-labelledby="links">
         <h2 id="links" className={styles.sectionTitle}>
-          Links van dit account
+          Links van dit platform
         </h2>
-        <LinkList links={account.links} />
+        <LinkList links={platform.links} />
       </section>
     </>
   );

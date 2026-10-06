@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
 import {
   clearAccountGegevensCache,
-  saveAccountGegevens,
+  savePlatformGegevens,
 } from "@/lib/accountgegevens";
-import { loadDashboard } from "@/lib/dashboard";
+import { loadDashboard, slugify } from "@/lib/dashboard";
 import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -82,10 +82,13 @@ export async function refreshAccountGegevensAction(): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-/** Slaat de gegevens van één account op; bij fouten blijft alles staan wat is ingevuld. */
-export async function saveAccountAction(
+/**
+ * Slaat een platform op; `nieuw` voegt een platform toe aan de klant van het
+ * platform met deze slug. Bij fouten blijft alles staan wat is ingevuld.
+ */
+async function savePlatform(
   slug: string,
-  _vorige: FormState,
+  nieuw: boolean,
   formData: FormData,
 ): Promise<FormState> {
   if (!(await currentUser()) || !/^[a-z0-9-]+$/.test(slug)) redirect("/");
@@ -94,24 +97,51 @@ export async function saveAccountAction(
   if ("fouten" in uitkomst) return { fouten: uitkomst.fouten, waarden };
 
   const dashboard = await loadDashboard();
-  const account =
+  const platform =
     dashboard.status === "ok"
-      ? dashboard.accounts.find((item) => item.slug === slug)
+      ? dashboard.platforms.find((item) => item.slug === slug)
       : undefined;
-  if (!account?.orbitId) {
+  const orbitId = platform?.klant.orbitId;
+  if (!platform || !orbitId || dashboard.status !== "ok") {
     return {
       fouten: {
         opslaan:
-          "Dit account is niet in Orbit gevonden, dus het kan niet worden opgeslagen.",
+          "Deze klant is niet in Orbit gevonden, dus het platform kan niet worden opgeslagen.",
       },
       waarden,
     };
   }
+
+  // Orbit-id plus naam is de sleutel van de rij, dus de naam moet uniek zijn binnen de klant.
+  const naam = uitkomst.platform.naam;
+  const dubbel = dashboard.platforms.some(
+    (item) =>
+      item.klant.orbitId === orbitId &&
+      (nieuw || item.slug !== slug) &&
+      item.naam.toLowerCase() === naam.toLowerCase(),
+  );
+  if (dubbel) {
+    return {
+      fouten: {
+        platform: `${platform.klant.naam} heeft al een platform ${naam}. Kies een andere naam.`,
+      },
+      waarden,
+    };
+  }
+
   try {
-    await saveAccountGegevens(
-      account.orbitId,
-      account.orbitNaam,
-      uitkomst.gegevens,
+    await savePlatformGegevens(
+      orbitId,
+      platform.klant.orbitNaam,
+      uitkomst.klant,
+      nieuw
+        ? { ...uitkomst.platform, orbitProjecten: [] }
+        : {
+            ...uitkomst.platform,
+            rijId: platform.gegevens.rijId,
+            orbitProjecten: platform.gegevens.orbitProjecten,
+          },
+      nieuw ? null : platform.gegevens.naam,
     );
   } catch (error) {
     return {
@@ -122,5 +152,21 @@ export async function saveAccountAction(
     };
   }
   revalidatePath("/", "layout");
-  redirect(`/accounts/${slug}`);
+  redirect(`/platforms/${slugify(naam)}`);
+}
+
+export async function savePlatformAction(
+  slug: string,
+  _vorige: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  return savePlatform(slug, false, formData);
+}
+
+export async function addPlatformAction(
+  slug: string,
+  _vorige: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  return savePlatform(slug, true, formData);
 }

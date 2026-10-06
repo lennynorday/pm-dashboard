@@ -25,7 +25,7 @@ const barlow = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: "PM-dashboard",
-  description: "Overzicht van accounts en projecten",
+  description: "Overzicht van platforms en projecten",
 };
 
 function parseLoginMelding(value: string | undefined): LoginMelding | null {
@@ -57,7 +57,7 @@ export default async function RootLayout({
   const overige = parseGroepStand(cookieStore.get(OVERIGE_COOKIE)?.value);
   const dashboard = await loadDashboard();
   const accounts =
-    dashboard.status === "ok" ? toNavAccounts(dashboard.accounts) : [];
+    dashboard.status === "ok" ? toNavAccounts(dashboard.platforms) : [];
 
   return (
     <html lang="nl" className={barlow.variable}>

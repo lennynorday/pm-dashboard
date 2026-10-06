@@ -1,4 +1,4 @@
-import type { Account } from "./dashboard";
+import type { Platform } from "./dashboard";
 
 export type NavAccount = {
   slug: string;
@@ -16,23 +16,29 @@ export function initialen(naam: string): string {
     .join("");
 }
 
-/** Accounts met zichtbare projecten, in de vorm die het zijmenu nodig heeft. */
-export function toNavAccounts(accounts: Account[]): NavAccount[] {
-  return accounts
-    .filter((account) =>
-      account.projecten.some(
-        (project) => project.zichtbaarheid === "zichtbaar",
-      ),
+/**
+ * Platforms met zichtbare projecten, in de vorm die het zijmenu nodig heeft.
+ * Een platform zonder projecten staat er ook in, zodat je een net toegevoegd
+ * platform kunt vinden.
+ */
+export function toNavAccounts(platforms: Platform[]): NavAccount[] {
+  return platforms
+    .filter(
+      (platform) =>
+        platform.projecten.length === 0 ||
+        platform.projecten.some(
+          (project) => project.zichtbaarheid === "zichtbaar",
+        ),
     )
-    .map((account) => ({
-      slug: account.slug,
-      naam: account.naam,
-      initialen: initialen(account.naam),
-      mijn: account.mijn,
+    .map((platform) => ({
+      slug: platform.slug,
+      naam: platform.naam,
+      initialen: initialen(platform.naam),
+      mijn: platform.mijn,
     }));
 }
 
-/** Een project heeft geen eigen pagina; het staat als regel op de accountpagina. */
-export function projectHref(accountSlug: string, number: string): string {
-  return `/accounts/${accountSlug}#project-${number}`;
+/** Een project heeft geen eigen pagina; het staat als regel op de platformpagina. */
+export function projectHref(platformSlug: string, number: string): string {
+  return `/platforms/${platformSlug}#project-${number}`;
 }

@@ -37,7 +37,7 @@ type Props = {
 };
 
 function currentAccount(pathname: string): string | null {
-  return /^\/accounts\/([^/]+)/.exec(pathname)?.[1] ?? null;
+  return /^\/platforms\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
 export function Sidebar({
@@ -251,9 +251,9 @@ export function Sidebar({
         </nav>
 
         <nav aria-label="Accounts" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Mijn accounts</h2>
+          <h2 className={styles.sectionTitle}>Mijn platforms</h2>
           {mijn.length === 0 && (
-            <p className={styles.empty}>Geen accounts uit Orbit geladen.</p>
+            <p className={styles.empty}>Geen platforms uit Orbit geladen.</p>
           )}
           <AccountNav accounts={mijn} currentAccount={current} />
 
@@ -264,19 +264,19 @@ export function Sidebar({
                   type="button"
                   className={styles.groupToggle}
                   aria-expanded={overigeOpen}
-                  aria-controls="overige-accounts"
+                  aria-controls="overige-platforms"
                   onClick={toggleOverige}
                 >
                   <ChevronIcon />
                   <span className={styles.label}>
-                    Overige Culture-accounts ({overige.length})
+                    Overige Culture-platforms ({overige.length})
                   </span>
                   <span className={styles.tooltip} aria-hidden="true">
-                    Overige Culture-accounts
+                    Overige Culture-platforms
                   </span>
                 </button>
               </h2>
-              <div id="overige-accounts" hidden={!overigeOpen}>
+              <div id="overige-platforms" hidden={!overigeOpen}>
                 <AccountNav accounts={overige} currentAccount={current} />
               </div>
             </>

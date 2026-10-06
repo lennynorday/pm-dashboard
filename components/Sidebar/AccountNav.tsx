@@ -13,7 +13,7 @@ export function AccountNav({ accounts, currentAccount }: Props) {
       {accounts.map((account) => (
         <li key={account.slug}>
           <NextLink
-            href={`/accounts/${account.slug}`}
+            href={`/platforms/${account.slug}`}
             className={styles.item}
             aria-current={account.slug === currentAccount ? "page" : undefined}
           >

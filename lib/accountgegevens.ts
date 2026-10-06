@@ -1,6 +1,6 @@
 import { bewaar, lees, vers } from "./db";
 import type { LinkUrls } from "./links";
-import { fetchTabel, saveRij } from "./superhuman";
+import { fetchTabel, savePlatformRij } from "./superhuman";
 
 export type Contactpersoon = {
   naam: string;
@@ -8,12 +8,22 @@ export type Contactpersoon = {
   email?: string;
 };
 
-/** Wat Orbit niet weet over een account; gedeeld via de tabel in Superhuman. */
-export type AccountGegevens = {
+/** Wat per klant geldt, voor al zijn platforms. */
+export type KlantVelden = {
   /** Leeg: de naam uit Orbit. */
   naam?: string;
   am?: string;
-  /** Jira-projecten van dit account. */
+};
+
+/** Wat Orbit niet weet over een platform; één rij in de tabel in Superhuman. */
+export type PlatformGegevens = {
+  /** Het id van de rij; ontbreekt zolang het platform niet in Superhuman staat. */
+  rijId?: string;
+  /** Leeg: de naam van de klant. */
+  naam: string;
+  /** Projectnummers in Orbit; alleen nodig bij een klant met meer platforms. */
+  orbitProjecten: string[];
+  /** Jira-projecten van dit platform. */
   jiraKeys: string[];
   /** Organizations in SUPP (Beheer en Support). */
   supportOrganizations: string[];
@@ -21,10 +31,15 @@ export type AccountGegevens = {
   links: LinkUrls;
 };
 
+export type AccountGegevens = KlantVelden & { platforms: PlatformGegevens[] };
+
 /** Per Orbit-klant-id, bijvoorbeeld "CL4KKKRQSAXN7GK". */
 export type AlleAccountGegevens = Record<string, AccountGegevens>;
 
-export const LEGE_GEGEVENS: AccountGegevens = {
+/** Een klant zonder rij in Superhuman heeft één platform met de naam van de klant. */
+export const LEEG_PLATFORM: PlatformGegevens = {
+  naam: "",
+  orbitProjecten: [],
   jiraKeys: [],
   supportOrganizations: [],
   contactpersonen: [],
@@ -37,7 +52,7 @@ export type GegevensResult = {
   fout: string | null;
 };
 
-const SLEUTEL = "superhuman:accountgegevens:v1";
+const SLEUTEL = "superhuman:accountgegevens:v2";
 const CACHE_MS = 24 * 60 * 60 * 1000;
 
 function melding(error: unknown): string {
@@ -66,17 +81,37 @@ export function clearAccountGegevensCache(): void {
 }
 
 /**
- * Slaat één account op in Superhuman en meteen in de cache, zodat de app de
- * wijziging toont terwijl Superhuman hem nog verwerkt.
+ * Slaat één platform op in Superhuman en meteen in de cache, zodat de app de
+ * wijziging toont terwijl Superhuman hem nog verwerkt. `vorigeNaam` wijst het
+ * platform aan dat wordt bijgewerkt; null voegt een platform toe.
  */
-export async function saveAccountGegevens(
+export async function savePlatformGegevens(
   orbitId: string,
   klant: string,
-  gegevens: AccountGegevens,
+  velden: KlantVelden,
+  platform: PlatformGegevens,
+  vorigeNaam: string | null,
 ): Promise<void> {
-  await saveRij(orbitId, klant, gegevens);
   const hit = lees<AlleAccountGegevens>(SLEUTEL);
+  const huidige = hit?.waarde[orbitId]?.platforms ?? [];
+  const isDit = (item: PlatformGegevens) =>
+    vorigeNaam !== null && item.naam === vorigeNaam;
+  const andere = huidige.filter((item) => !isDit(item));
+  await savePlatformRij(
+    orbitId,
+    klant,
+    velden,
+    platform,
+    andere.flatMap((item) => (item.rijId ? [item.rijId] : [])),
+  );
   if (hit) {
-    bewaar(SLEUTEL, { ...hit.waarde, [orbitId]: gegevens }, hit.opgehaald);
+    const platforms = huidige.some(isDit)
+      ? huidige.map((item) => (isDit(item) ? platform : item))
+      : [...huidige, platform];
+    bewaar(
+      SLEUTEL,
+      { ...hit.waarde, [orbitId]: { ...velden, platforms } },
+      hit.opgehaald,
+    );
   }
 }

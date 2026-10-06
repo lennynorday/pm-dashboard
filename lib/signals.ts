@@ -1,4 +1,4 @@
-import type { Account } from "./dashboard";
+import type { Platform } from "./dashboard";
 import { formatDate } from "./format";
 import type { AccountJira, ActieveSprint } from "./jira/overview";
 
@@ -7,8 +7,8 @@ export type SignaalType = "sprint-verlopen" | "support-wacht" | "bron-fout";
 /** Iets dat nu aandacht vraagt, met een link naar waar je het oplost. */
 export type Signaal = {
   type: SignaalType;
-  accountSlug: string;
-  accountNaam: string;
+  platformSlug: string;
+  platformNaam: string;
   titel: string;
   detail: string;
   url: string;
@@ -18,13 +18,13 @@ export function isVerlopen(sprint: ActieveSprint, nu: Date): boolean {
   return sprint.einddatum !== null && new Date(sprint.einddatum) < nu;
 }
 
-/** Signalen van één account uit zijn Jira- en supportdata. */
-export function accountSignalen(
-  account: Pick<Account, "slug" | "naam">,
+/** Signalen van één platform uit zijn Jira- en supportdata. */
+export function platformSignalen(
+  platform: Pick<Platform, "slug" | "naam">,
   { jira, support }: AccountJira,
   nu: Date,
 ): Signaal[] {
-  const basis = { accountSlug: account.slug, accountNaam: account.naam };
+  const basis = { platformSlug: platform.slug, platformNaam: platform.naam };
 
   const jiraSignalen = jira.flatMap(({ key, result }): Signaal[] => {
     if (result.status === "fout") {
@@ -34,7 +34,7 @@ export function accountSignalen(
           type: "bron-fout",
           titel: `Tickets van Jira ${key} konden niet worden opgehaald`,
           detail: result.message,
-          url: `/accounts/${account.slug}`,
+          url: `/platforms/${platform.slug}`,
         },
       ];
     }
@@ -58,7 +58,7 @@ export function accountSignalen(
         type: "bron-fout",
         titel: "Supporttickets konden niet worden opgehaald",
         detail: support.message,
-        url: `/accounts/${account.slug}`,
+        url: `/platforms/${platform.slug}`,
       },
     ];
   }

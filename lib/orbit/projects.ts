@@ -10,6 +10,8 @@ export type OrbitProject = {
   number: string;
   name: string;
   client: string;
+  /** De projectverantwoordelijke. */
+  owner: string;
   state: ProjectState;
   endDate: string | null;
 };
@@ -40,6 +42,7 @@ function parseRow(line: string): OrbitProject | null {
     number: link[1],
     name: cells[1],
     client: cells[2] || "Onbekende klant",
+    owner: cells[3],
     state,
     endDate,
   };

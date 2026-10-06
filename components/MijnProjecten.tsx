@@ -1,5 +1,5 @@
 import NextLink from "next/link";
-import type { Account, Project } from "@/lib/dashboard";
+import type { Platform, Project } from "@/lib/dashboard";
 import { orbitProjectUrl } from "@/lib/dashboard";
 import { formatUren } from "@/lib/format";
 import type { JiraResult, SupportOverzicht } from "@/lib/jira/overview";
@@ -15,7 +15,7 @@ import styles from "./MijnProjecten.module.css";
 export type ProjectRij = { project: Project; budget: ProjectBudgetResult };
 
 export type AccountRij = {
-  account: Account;
+  platform: Platform;
   support: JiraResult<SupportOverzicht> | null;
   projecten: ProjectRij[];
 };
@@ -100,17 +100,17 @@ function SupportKolom({
 }
 
 function Support({
-  account,
+  platform,
   support,
 }: {
-  account: Account;
+  platform: Platform;
   support: AccountRij["support"];
 }) {
   if (support === null) {
     return (
       <p className={styles.muted}>
         Geen Beheer &amp; Support gekoppeld ·{" "}
-        <NextLink href={`/accounts/${account.slug}/bewerken`}>
+        <NextLink href={`/platforms/${platform.slug}/bewerken`}>
           Organization koppelen
         </NextLink>
       </p>
@@ -294,21 +294,24 @@ function ProjectItem({ project, budget }: ProjectRij) {
   );
 }
 
-/** Mijn accounts met Beheer & Support en de projecten, grootste urenbudget eerst. */
+/** Mijn platforms met Beheer & Support en de projecten, grootste urenbudget eerst. */
 export function MijnProjecten({ rijen }: { rijen: AccountRij[] }) {
   return (
-    <div className={styles.accounts}>
-      {rijen.map(({ account, support, projecten }) => (
-        <section key={account.slug} aria-labelledby={`account-${account.slug}`}>
-          <h2 id={`account-${account.slug}`} className={styles.accountNaam}>
-            <NextLink href={`/accounts/${account.slug}`}>
-              {account.naam}
+    <div className={styles.platforms}>
+      {rijen.map(({ platform, support, projecten }) => (
+        <section
+          key={platform.slug}
+          aria-labelledby={`platform-${platform.slug}`}
+        >
+          <h2 id={`platform-${platform.slug}`} className={styles.platformNaam}>
+            <NextLink href={`/platforms/${platform.slug}`}>
+              {platform.naam}
             </NextLink>
           </h2>
           <div className={styles.blokken}>
             <div>
               <h3 className={styles.blokKop}>Beheer &amp; Support</h3>
-              <Support account={account} support={support} />
+              <Support platform={platform} support={support} />
             </div>
             <div>
               <h3 className={styles.blokKop}>Projecten</h3>

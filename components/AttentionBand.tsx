@@ -47,7 +47,7 @@ export function AttentionBand({ signalen, toonAccount = true }: Props) {
           const intern = signaal.url.startsWith("/");
           return (
             <li
-              key={`${signaal.accountSlug}-${signaal.titel}`}
+              key={`${signaal.platformSlug}-${signaal.titel}`}
               className={styles.signaal}
             >
               <span className={styles.soort}>
@@ -56,10 +56,10 @@ export function AttentionBand({ signalen, toonAccount = true }: Props) {
               </span>
               {toonAccount && (
                 <NextLink
-                  href={`/accounts/${signaal.accountSlug}`}
-                  className={styles.account}
+                  href={`/platforms/${signaal.platformSlug}`}
+                  className={styles.platform}
                 >
-                  {signaal.accountNaam}
+                  {signaal.platformNaam}
                 </NextLink>
               )}
               <span className={styles.wat}>
