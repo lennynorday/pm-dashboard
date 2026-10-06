@@ -1,11 +1,30 @@
 /* Norday design tokens, uit Figma "Norday Website" > Handoff > Foundation (4 oktober 2026). */
 
-/* Lettertypebestanden: plaats ze in public/fonts zodra het Brand-team ze levert, en zet de @font-face-regels aan.
-@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
-@font-face { font-family: "Suisse Intl"; src: url("/fonts/SuisseIntl-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
-@font-face { font-family: "Apercu Condensed Pro"; src: url("/fonts/ApercuCondensedPro-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-*/
+/* Lettertypebestanden van het Brand-team, in public/fonts. */
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Apercu Condensed Pro";
+  src: url("/fonts/ApercuCondensed-Bold-Pro.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
 
 :root {
   /* Merkkleuren */
