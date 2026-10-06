@@ -272,8 +272,6 @@
 }
 
 .item:hover,
-.project:hover,
-.expand:hover,
 .closeButton:hover,
 .collapse:hover {
   background: var(--field-shell-hover);
@@ -315,51 +313,6 @@
   font: var(--type-label-small);
   font-weight: 600;
   letter-spacing: 0.02em;
-}
-
-.accountRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-01);
-}
-
-.expand {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: transparent;
-  color: rgb(255 255 255 / 0.7);
-  cursor: pointer;
-}
-
-.expand svg {
-  transition: transform 150ms ease;
-}
-
-.expand[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-
-.projects {
-  margin: var(--space-01) 0 var(--space-02) 25px;
-  padding: 0 0 0 var(--space-02);
-  border-left: 1px solid rgb(255 255 255 / 0.3);
-  list-style: none;
-}
-
-.project {
-  display: block;
-  padding: var(--space-02) var(--space-03);
-  color: rgb(255 255 255 / 0.8);
-  font: var(--type-nav-small);
-  text-decoration: none;
-}
-
-.project:hover {
-  color: var(--norday-white);
 }
 
 .footer {
@@ -433,8 +386,6 @@
   }
 
   .sidebar[data-stand="ingeklapt"] .external,
-  .sidebar[data-stand="ingeklapt"] .expand,
-  .sidebar[data-stand="ingeklapt"] .projects,
   .sidebar[data-stand="ingeklapt"] .empty {
     display: none;
   }

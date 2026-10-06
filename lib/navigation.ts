@@ -1,13 +1,10 @@
 import type { Account } from "./dashboard";
 
-export type NavProject = { number: string; naam: string };
-
 export type NavAccount = {
   slug: string;
   naam: string;
   initialen: string;
   mijn: boolean;
-  projecten: NavProject[];
 };
 
 export function initialen(naam: string): string {
@@ -22,16 +19,17 @@ export function initialen(naam: string): string {
 /** Accounts met zichtbare projecten, in de vorm die het zijmenu nodig heeft. */
 export function toNavAccounts(accounts: Account[]): NavAccount[] {
   return accounts
+    .filter((account) =>
+      account.projecten.some(
+        (project) => project.zichtbaarheid === "zichtbaar",
+      ),
+    )
     .map((account) => ({
       slug: account.slug,
       naam: account.naam,
       initialen: initialen(account.naam),
       mijn: account.mijn,
-      projecten: account.projecten
-        .filter((project) => project.zichtbaarheid === "zichtbaar")
-        .map((project) => ({ number: project.number, naam: project.naam })),
-    }))
-    .filter((account) => account.projecten.length > 0);
+    }));
 }
 
 /** Een project heeft geen eigen pagina; het staat als regel op de accountpagina. */

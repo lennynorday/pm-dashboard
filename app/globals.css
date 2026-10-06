@@ -4,7 +4,6 @@
 :root {
   --radius-pill: 999px;
   --type-nav: 400 15px/1.35 var(--font-text);
-  --type-nav-small: 400 14px/1.35 var(--font-text);
   --main-padding: var(--space-04);
 
   /* Kleurvelden: het zijmenu, aandacht en wat nu loopt. */
