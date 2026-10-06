@@ -34,6 +34,16 @@ function open(): DatabaseSync {
       nummer TEXT NOT NULL,
       PRIMARY KEY (email, nummer)
     );
+    CREATE TABLE IF NOT EXISTS orbit_cache (
+      sleutel TEXT PRIMARY KEY,
+      waarde TEXT NOT NULL,
+      opgehaald INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS genegeerde_meldingen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      id TEXT NOT NULL,
+      PRIMARY KEY (email, id)
+    );
   `);
   return db;
 }
