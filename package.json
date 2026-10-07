@@ -2,12 +2,15 @@
   "name": "pm-dashboard",
   "version": "0.1.0",
   "private": true,
+  "description": "PM-dashboard van Norday",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dmg": "next build && node electron/prepare.cjs && electron-builder --mac dmg --arm64"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",
@@ -19,9 +22,36 @@
     "@types/node": "^26.6.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "prettier": "3.9.9",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "nl.norday.pm-dashboard",
+    "productName": "PM Dashboard",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/main.cjs",
+      "package.json",
+      "!node_modules"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "identity": null,
+      "category": "public.app-category.productivity"
+    },
+    "afterPack": "electron/after-pack.cjs"
   }
 }

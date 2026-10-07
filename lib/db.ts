@@ -2,7 +2,11 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-const FILE = path.join(process.cwd(), "data", "dashboard.db");
+/** De desktop-app zet de map op Application Support; anders data/ in de repo. */
+const FILE = path.join(
+  process.env.PM_DATA_DIR ?? path.join(process.cwd(), "data"),
+  "dashboard.db",
+);
 
 function open(): DatabaseSync {
   mkdirSync(path.dirname(FILE), { recursive: true });
@@ -49,7 +53,7 @@ function open(): DatabaseSync {
 // Eén verbinding, ook als Next.js deze module in dev opnieuw laadt.
 const store = globalThis as { dashboardDb?: DatabaseSync };
 
-/** De database in data/dashboard.db; wordt bij het eerste gebruik aangemaakt. */
+/** De database dashboard.db; wordt bij het eerste gebruik aangemaakt. */
 export function database(): DatabaseSync {
   store.dashboardDb ??= open();
   return store.dashboardDb;

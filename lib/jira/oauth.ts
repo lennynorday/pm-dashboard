@@ -1,3 +1,4 @@
+import { appUrl } from "@/lib/app-url";
 import { randomBytes } from "node:crypto";
 import { config } from "@/config/dashboard";
 import {
@@ -10,7 +11,7 @@ const AUTHORIZE_URL = "https://auth.atlassian.com/authorize";
 const TOKEN_URL = "https://auth.atlassian.com/oauth/token";
 const RESOURCES_URL =
   "https://api.atlassian.com/oauth/token/accessible-resources";
-export const JIRA_REDIRECT_URI = "http://localhost:3000/api/jira/callback";
+export const JIRA_REDIRECT_URI = appUrl("/api/jira/callback");
 
 /** Alleen lezen; offline_access geeft een refresh token. */
 const SCOPES = "read:jira-work offline_access";
