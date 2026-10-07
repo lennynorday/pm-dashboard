@@ -23,6 +23,7 @@ import {
   OVERIGE_COOKIE,
 } from "@/lib/preferences";
 import type { Gebruiker } from "@/lib/session";
+import { NordayLogo } from "../NordayLogo";
 import { PlatformNav } from "./PlatformNav";
 import { setPreferenceCookie } from "./cookies";
 import styles from "./Sidebar.module.css";
@@ -115,6 +116,7 @@ export function Sidebar({
     >
       <div className={styles.topbar}>
         <NextLink href="/" className={styles.brand}>
+          <NordayLogo className={styles.logo} />
           PM-dashboard
         </NextLink>
         <button
@@ -146,9 +148,7 @@ export function Sidebar({
       >
         <div className={styles.panelHeader}>
           <NextLink href="/" className={styles.brandPanel}>
-            <span className={styles.brandShort} aria-hidden="true">
-              PM
-            </span>
+            <NordayLogo className={styles.logo} />
             <span className={styles.label}>PM-dashboard</span>
           </NextLink>
           <button

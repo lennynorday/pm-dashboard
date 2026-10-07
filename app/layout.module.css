@@ -1,4 +1,6 @@
 .main {
+  width: 100%;
+  max-width: 1240px;
   min-width: 0;
   padding: var(--space-06) var(--main-padding) var(--space-11);
 }
