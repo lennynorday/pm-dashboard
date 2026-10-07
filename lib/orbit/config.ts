@@ -1,6 +1,7 @@
+import { appUrl } from "@/lib/app-url";
 export const ORBIT_BASE_URL = "https://api.orbit.teamleader.eu";
 export const ORBIT_MCP_URL = `${ORBIT_BASE_URL}/mcp`;
-export const ORBIT_REDIRECT_URI = "http://localhost:3000/api/orbit/callback";
+export const ORBIT_REDIRECT_URI = appUrl("/api/orbit/callback");
 /** De Orbit-projectmap "Norday | Culture". */
 export const CULTURE_FOLDER_ID = "PFSKPK1A598RYGX";
 

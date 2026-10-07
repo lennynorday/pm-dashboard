@@ -1,9 +1,10 @@
+import { appUrl } from "@/lib/app-url";
 import { pkce, Pkce } from "@/lib/pkce";
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
-export const GOOGLE_REDIRECT_URI = "http://localhost:3000/api/google/callback";
+export const GOOGLE_REDIRECT_URI = appUrl("/api/google/callback");
 
 /** Alleen Google-accounts van dit domein mogen inloggen. */
 export const NORDAY_DOMEIN = "norday.nl";
