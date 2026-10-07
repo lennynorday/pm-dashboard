@@ -1,9 +1,9 @@
 .people {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-01) var(--space-06);
+  gap: 6px 28px;
   margin: 0;
-  font: var(--type-label-small);
+  font: 400 14px/1.35 var(--font-text);
 }
 
 .people div {
@@ -17,4 +17,5 @@
 
 .people dd {
   margin: 0;
+  font-weight: 500;
 }

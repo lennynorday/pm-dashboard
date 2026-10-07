@@ -3,15 +3,15 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { addEigenLinkAction, ontkoppelProjectAction } from "@/app/actions";
 import { AccountPeople } from "@/components/AccountPeople";
-import { AccountProjects } from "@/components/AccountProjects";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
 import { LinkGroepen } from "@/components/LinkGroepen";
 import { Melding } from "@/components/Melding";
 import { OrbitStatus } from "@/components/OrbitStatus";
+import { PencilIcon } from "@/components/icons";
+import { ProjectLijst } from "@/components/MijnProjecten";
 import { PageHeading } from "@/components/PageHeading";
-import { TicketDetails } from "@/components/TicketDetails";
-import { TicketTable } from "@/components/TicketTable";
+import { TicketKaarten } from "@/components/TicketKaarten";
 import { loadDashboard } from "@/lib/dashboard";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
@@ -49,12 +49,8 @@ export default async function PlatformPage({
   const [data, budgetten] = await Promise.all([
     fetchAccountJira(platform),
     Promise.all(
-      zichtbaar.map(
-        async (project) =>
-          [
-            project.number,
-            await fetchProjectBudget(user.email, project.number),
-          ] as const,
+      zichtbaar.map((project) =>
+        fetchProjectBudget(user.email, project.number),
       ),
     ),
   ]);
@@ -65,23 +61,30 @@ export default async function PlatformPage({
       <PageHeading
         title={platform.naam}
         crumbs={[HOME]}
+        titelActie={
+          <>
+            <NextLink
+              href={`/platforms/${platform.slug}/bewerken`}
+              className={styles.rondeKnop}
+              aria-label="Gegevens bewerken"
+              title="Gegevens bewerken"
+            >
+              <PencilIcon className={styles.rondIcoon} />
+            </NextLink>
+            <NextLink
+              href={`/platforms/${platform.slug}/nieuw`}
+              className={styles.bewerken}
+            >
+              Platform toevoegen
+              <span className="visually-hidden">
+                {" "}
+                aan {platform.klant.naam}
+              </span>
+            </NextLink>
+          </>
+        }
         aside={<OrbitStatus dashboard={dashboard} />}
       >
-        <div className={styles.acties}>
-          <NextLink
-            href={`/platforms/${platform.slug}/bewerken`}
-            className={styles.bewerken}
-          >
-            Gegevens bewerken
-          </NextLink>
-          <NextLink
-            href={`/platforms/${platform.slug}/nieuw`}
-            className={styles.bewerken}
-          >
-            Platform toevoegen
-            <span className="visually-hidden"> aan {platform.klant.naam}</span>
-          </NextLink>
-        </div>
         <AccountPeople
           klant={platform.klant.naam}
           pms={platform.pms}
@@ -90,19 +93,21 @@ export default async function PlatformPage({
         />
       </PageHeading>
       {dashboard.gegevensFout && (
-        <Melding
-          titel="Accountgegevens uit Superhuman zijn niet opgehaald"
-          role="alert"
-          actie={
-            <NextLink href="/instellingen#accountgegevens">
-              Instellingen
-            </NextLink>
-          }
-        >
-          {dashboard.gegevensFout}
-        </Melding>
+        <div className={styles.melding}>
+          <Melding
+            titel="Accountgegevens uit Superhuman zijn niet opgehaald"
+            role="alert"
+            actie={
+              <NextLink href="/instellingen#accountgegevens">
+                Instellingen
+              </NextLink>
+            }
+          >
+            {dashboard.gegevensFout}
+          </Melding>
+        </div>
       )}
-      <AttentionBand signalen={signalen} toonAccount={false} />
+      <AttentionBand signalen={signalen} />
 
       <section className={styles.section} aria-labelledby="links">
         <h2 id="links" className={styles.sectionTitle}>
@@ -119,35 +124,36 @@ export default async function PlatformPage({
         />
       </section>
 
-      <section className={styles.section} aria-labelledby="projecten">
+      <section
+        className={`${styles.section} ${styles.kaart}`}
+        aria-labelledby="projecten"
+      >
         <h2 id="projecten" className={styles.sectionTitle}>
-          Projecten in Orbit
+          Projecten
         </h2>
-        {zichtbaar.length === 0 && (
+        {zichtbaar.length === 0 ? (
           <p className={styles.muted}>Geen zichtbare projecten.</p>
+        ) : (
+          <ProjectLijst
+            rijen={zichtbaar.map((project, index) => ({
+              project,
+              budget: budgetten[index],
+            }))}
+            feiten={{
+              ontkoppel: platform.klant.meerPlatforms
+                ? ontkoppelProjectAction.bind(null, platform.slug)
+                : undefined,
+            }}
+          />
         )}
-        <AccountProjects
-          projecten={zichtbaar}
-          budgetten={Object.fromEntries(budgetten)}
-          ontkoppel={
-            platform.klant.meerPlatforms
-              ? ontkoppelProjectAction.bind(null, platform.slug)
-              : undefined
-          }
-        />
         <HiddenProjects projecten={verborgen} />
       </section>
 
-      <section className={styles.section} aria-labelledby="jira">
-        <h2 id="jira" className={styles.sectionTitle}>
+      <section className={styles.section} aria-labelledby="tickets">
+        <h2 id="tickets" className={styles.sectionTitle}>
           Tickets
         </h2>
-        <TicketTable
-          rijen={[{ platform, projecten: zichtbaar, data }]}
-          caption={`Open tickets van ${platform.naam} in Jira en Beheer & Support`}
-          toonAccount={false}
-        />
-        <TicketDetails data={data} />
+        <TicketKaarten data={data} />
       </section>
     </>
   );

@@ -22,14 +22,10 @@
   --type-nav: 400 15px/1.35 var(--font-text);
   --main-padding: var(--space-04);
 
-  /* Kleurvelden: het zijmenu, aandacht en wat nu loopt. */
+  /* Kleurvelden: het zijmenu en de tekst op het lila Aandacht-veld. */
   --field-shell: var(--norday-dark);
   --field-shell-hover: rgb(255 255 255 / 0.1);
-  --field-attention: var(--norday-lilac);
-  --field-live: var(--norday-yellow);
-  --field-ink: var(--norday-dark);
   --field-ink-muted: rgb(61 16 40 / 0.75);
-  --color-hover: rgb(213 179 255 / 0.35);
 }
 
 @media (min-width: 1024px) {

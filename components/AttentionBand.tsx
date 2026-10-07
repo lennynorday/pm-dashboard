@@ -1,20 +1,10 @@
 import NextLink from "next/link";
 import type { Signaal, SignaalType } from "@/lib/signals";
 import { ExternalLink } from "./ExternalLink";
-import {
-  AlertIcon,
-  CheckIcon,
-  ClockIcon,
-  LinkIcon,
-  MessageIcon,
-} from "./icons";
+import { AlertIcon, ClockIcon, LinkIcon, MessageIcon } from "./icons";
 import styles from "./AttentionBand.module.css";
 
-type Props = {
-  signalen: Signaal[];
-  /** Op de platformpagina is de platformnaam overbodig. */
-  toonAccount?: boolean;
-};
+type Props = { signalen: Signaal[] };
 
 const SOORT: Record<SignaalType, { label: string; Icon: typeof ClockIcon }> = {
   koppelen: { label: "Koppelen", Icon: LinkIcon },
@@ -23,27 +13,12 @@ const SOORT: Record<SignaalType, { label: string; Icon: typeof ClockIcon }> = {
   "bron-fout": { label: "Ophalen mislukt", Icon: AlertIcon },
 };
 
-/** Vol lila veld met wat nu aandacht vraagt; zonder signalen één rustige regel. */
-export function AttentionBand({ signalen, toonAccount = true }: Props) {
-  if (signalen.length === 0) {
-    return (
-      <section className={styles.rustig} aria-labelledby="aandacht">
-        <h2 id="aandacht" className="visually-hidden">
-          Vraagt nu aandacht
-        </h2>
-        <CheckIcon className={styles.rustigIcoon} />
-        <p className={styles.rustigTekst}>
-          Geen verlopen sprints en geen supporttickets die op ons wachten.
-        </p>
-      </section>
-    );
-  }
+/** Lila kaart met wat nu aandacht vraagt; zonder signalen staat er niets. */
+export function AttentionBand({ signalen }: Props) {
+  if (signalen.length === 0) return null;
 
   return (
-    <section
-      className={`${styles.band} ${toonAccount ? "" : styles.zonderAccount}`}
-      aria-labelledby="aandacht"
-    >
+    <section className={styles.band} aria-labelledby="aandacht">
       <h2 id="aandacht" className={styles.kop}>
         Vraagt nu aandacht{" "}
         <span className={styles.aantal}>{signalen.length}</span>
@@ -51,36 +26,22 @@ export function AttentionBand({ signalen, toonAccount = true }: Props) {
       <ul className={styles.lijst}>
         {signalen.map((signaal) => {
           const { label, Icon } = SOORT[signaal.type];
-          const intern = signaal.url.startsWith("/");
           return (
-            <li
-              key={`${signaal.platformSlug}-${signaal.titel}`}
-              className={styles.signaal}
-            >
+            <li key={signaal.titel} className={styles.signaal}>
               <span className={styles.soort}>
                 <Icon className={styles.icoon} />
                 {label}
               </span>
-              {toonAccount && (
-                <NextLink
-                  href={`/platforms/${signaal.platformSlug}`}
-                  className={styles.platform}
-                >
-                  {signaal.platformNaam}
+              {signaal.url.startsWith("/") ? (
+                <NextLink href={signaal.url} className={styles.titel}>
+                  {signaal.titel}
                 </NextLink>
+              ) : (
+                <ExternalLink href={signaal.url} className={styles.titel}>
+                  {signaal.titel}
+                </ExternalLink>
               )}
-              <span className={styles.wat}>
-                {intern ? (
-                  <NextLink href={signaal.url} className={styles.titel}>
-                    {signaal.titel}
-                  </NextLink>
-                ) : (
-                  <ExternalLink href={signaal.url} className={styles.titel}>
-                    {signaal.titel}
-                  </ExternalLink>
-                )}
-                <span className={styles.detail}>{signaal.detail}</span>
-              </span>
+              <span className={styles.detail}>{signaal.detail}</span>
             </li>
           );
         })}
