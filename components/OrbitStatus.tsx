@@ -1,9 +1,9 @@
 import { refreshData } from "@/app/actions";
 import type { Dashboard } from "@/lib/dashboard";
 import { formatTime } from "@/lib/format";
-import { RefreshIcon } from "./icons";
 import { Melding } from "./Melding";
 import styles from "./OrbitStatus.module.css";
+import { VerversKnop } from "./VerversKnop";
 
 type Props = { dashboard: Dashboard };
 
@@ -54,17 +54,7 @@ export function OrbitStatus({ dashboard }: Props) {
         </span>
       </p>
       <form action={refreshData}>
-        <button
-          className={styles.knop}
-          type="submit"
-          title="Orbit, Jira en Superhuman opnieuw ophalen"
-        >
-          <RefreshIcon className={styles.icoon} />
-          Verversen
-          <span className="visually-hidden">
-            : Orbit, Jira en Superhuman opnieuw ophalen
-          </span>
-        </button>
+        <VerversKnop opgehaald={dashboard.fetchedAt.toISOString()} />
       </form>
     </div>
   );
