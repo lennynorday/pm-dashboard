@@ -1,5 +1,6 @@
 import { refreshData } from "@/app/actions";
 import type { Dashboard } from "@/lib/dashboard";
+import { voortgang } from "@/lib/orbit/achtergrond";
 import { formatTime } from "@/lib/format";
 import { Melding } from "./Melding";
 import styles from "./OrbitStatus.module.css";
@@ -54,7 +55,10 @@ export function OrbitStatus({ dashboard }: Props) {
         </span>
       </p>
       <form action={refreshData}>
-        <VerversKnop opgehaald={dashboard.fetchedAt.toISOString()} />
+        <VerversKnop
+          opgehaald={dashboard.fetchedAt.toISOString()}
+          voortgang={voortgang()}
+        />
       </form>
     </div>
   );

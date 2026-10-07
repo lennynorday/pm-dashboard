@@ -240,12 +240,12 @@ function ProjectItem({
     budget.status === "ok" && plafond(budget.data).minuten > 0
       ? budget.data
       : null;
-  const melding =
-    budget.status !== "ok"
-      ? budget.status === "fout"
-        ? "Budget kon niet worden opgehaald uit Orbit"
-        : "Niet verbonden met Orbit"
-      : "Geen uren gepland in Orbit";
+  const melding = {
+    ok: "Geen uren gepland in Orbit",
+    laden: "Wordt opgehaald",
+    fout: "Budget kon niet worden opgehaald uit Orbit",
+    "niet-verbonden": "Niet verbonden met Orbit",
+  }[budget.status];
 
   if (!data && !feiten) {
     return (

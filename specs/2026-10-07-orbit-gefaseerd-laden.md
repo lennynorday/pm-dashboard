@@ -12,7 +12,7 @@
 
 - **Wel:** eerst alleen de projectlijsten ophalen (2 tot 4 aanroepen), zodat het overzicht met platforms en projecten meteen staat.
 - **Wel:** klant-id's, budgetten en offertes daarna op de achtergrond ophalen, getemperd tot maximaal 20 aanroepen per minuut.
-- **Wel:** zolang er op de achtergrond geladen wordt, een melding bovenaan: "Nog even geduld, we halen alles voor je op uit Orbit. Dat kan een paar minuten duren." De pagina ververst zichzelf tot alles binnen is.
+- **Wel:** zolang er op de achtergrond geladen wordt, wordt de Verversen-knop rechtsboven een voortgangsbalk ("12 van 46") en staat boven de feed: "Nog even geduld, we halen alles voor je op uit Orbit. Dat kan een paar minuten duren." De pagina ververst zichzelf tot alles binnen is.
 - **Wel:** wat al bewaard is, blijft zichtbaar. Ook na Verversen staan de oude cijfers er tot de nieuwe binnen zijn.
 - **Niet:** een andere bron voor de uren (rapportage-tools), zie hierboven.
 - **Niet:** de cache-tijden (15 minuten budget, 24 uur offerte) aanpassen.
@@ -27,7 +27,7 @@
 6. Na Verversen blijven de vorige cijfers staan tot de nieuwe binnen zijn.
 7. Loopt Orbit toch tegen de limiet aan, dan pauzeert de achtergrond een minuut en gaat daarna verder; de gebruiker ziet de melding, geen fout.
 
-## Open vragen
+## Besluiten
 
-- Is 20 per minuut veilig? Bij het testen ging ±26 aanroepen achter elkaar goed en een tweede keer binnen een minuut niet. 20 is een gok aan de veilige kant; de eerste login duurt daarmee 5 à 6 minuten.
-- Moet de melding een voortgang tonen ("23 van 70 opgehaald"), of is de algemene zin genoeg?
+- 20 aanroepen per minuut (2026-10-07, Lenny). Bij het testen ging ±26 achter elkaar goed en een tweede keer binnen een minuut niet; de eerste login duurt daarmee 5 à 6 minuten.
+- Voortgang tonen in de Verversen-knop (2026-10-07, Lenny).

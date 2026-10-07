@@ -1,4 +1,5 @@
-import { bewaar, lees } from "@/lib/db";
+import { bewaar, lees, vers } from "@/lib/db";
+import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 
 /**
@@ -16,36 +17,40 @@ export function parseKlantId(text: string, naam: string): string | null {
   return index >= 0 ? (ids[index] ?? null) : null;
 }
 
-/** Een id verandert niet, dus eenmaal gevonden blijft het bewaard. */
-async function fetchKlantId(
-  email: string,
-  naam: string,
-): Promise<string | null> {
-  const sleutel = `klant-id:v1:${naam}`;
-  const hit = lees<string>(sleutel);
-  if (hit) return hit.waarde;
-  const result = await callOrbitTool(email, "ListClients", {
-    text: naam,
-    pageSize: 50,
-  });
-  if (result.status !== "ok") return null;
-  const id = parseKlantId(result.text, naam);
-  if (id) bewaar(sleutel, id);
-  return id;
+// Een naam die Orbit niet (exact) kent, proberen we pas na een dag opnieuw.
+const ONBEKEND_MS = 24 * 60 * 60 * 1000;
+
+const sleutelVan = (naam: string) => `klant-id:v1:${naam}`;
+
+/** Een id verandert niet, dus eenmaal gevonden blijft het bewaard; een onbekende naam een dag. */
+async function fetchKlantId(email: string, naam: string): Promise<void> {
+  const result = await callOrbitTool(
+    email,
+    "ListClients",
+    { text: naam, pageSize: 50 },
+    true,
+  );
+  if (result.status !== "ok") return;
+  bewaar(sleutelVan(naam), parseKlantId(result.text, naam));
 }
 
 /**
  * Orbit-klant-id per klantnaam; ListProjects geeft alleen de naam.
- * Na elkaar, om onder de rate limit van Orbit te blijven.
+ * Alleen wat bewaard is; ontbrekende id's worden op de achtergrond opgehaald.
  */
-export async function fetchKlantIds(
+export function fetchKlantIds(
   email: string,
   namen: string[],
-): Promise<Map<string, string>> {
+): Map<string, string> {
   const ids = new Map<string, string>();
   for (const naam of new Set(namen)) {
-    const id = await fetchKlantId(email, naam);
-    if (id) ids.set(naam, id);
+    const hit = lees<string | null>(sleutelVan(naam));
+    if (hit?.waarde) {
+      ids.set(naam, hit.waarde);
+      continue;
+    }
+    if (hit && vers(hit.opgehaald, ONBEKEND_MS)) continue;
+    opAchtergrond(sleutelVan(naam), () => fetchKlantId(email, naam));
   }
   return ids;
 }
