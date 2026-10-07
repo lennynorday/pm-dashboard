@@ -15,7 +15,7 @@ import {
   TodoIcon,
 } from "@/components/icons";
 import { logoutAction } from "@/app/actions";
-import { initialen, NavAccount } from "@/lib/navigation";
+import { initialen, NavPlatform } from "@/lib/navigation";
 import {
   GroepStand,
   MENU_COOKIE,
@@ -23,12 +23,12 @@ import {
   OVERIGE_COOKIE,
 } from "@/lib/preferences";
 import type { Gebruiker } from "@/lib/session";
-import { AccountNav } from "./AccountNav";
+import { PlatformNav } from "./PlatformNav";
 import { setPreferenceCookie } from "./cookies";
 import styles from "./Sidebar.module.css";
 
 type Props = {
-  accounts: NavAccount[];
+  platforms: NavPlatform[];
   inboxUrl: string;
   todoUrl: string;
   initialStand: MenuStand;
@@ -36,12 +36,12 @@ type Props = {
   user: Gebruiker;
 };
 
-function currentAccount(pathname: string): string | null {
+function currentPlatform(pathname: string): string | null {
   return /^\/platforms\/([^/]+)/.exec(pathname)?.[1] ?? null;
 }
 
 export function Sidebar({
-  accounts,
+  platforms,
   inboxUrl,
   todoUrl,
   initialStand,
@@ -49,14 +49,14 @@ export function Sidebar({
   user,
 }: Props) {
   const pathname = usePathname();
-  const current = currentAccount(pathname);
+  const current = currentPlatform(pathname);
   const [stand, setStand] = useState<MenuStand>(initialStand);
-  const mijn = accounts.filter((account) => account.mijn);
-  const overige = accounts.filter((account) => !account.mijn);
-  // Open als ik het zo had achtergelaten, of als ik op een van deze accounts ben.
+  const mijn = platforms.filter((platform) => platform.mijn);
+  const overige = platforms.filter((platform) => !platform.mijn);
+  // Open als ik het zo had achtergelaten, of als ik op een van deze platforms ben.
   const [overigeOpen, setOverigeOpen] = useState(
     initialOverige === "open" ||
-      overige.some((account) => account.slug === current),
+      overige.some((platform) => platform.slug === current),
   );
   // Het mobiele menu is open voor de pagina waarop je het opende; navigeren sluit het.
   const [openOn, setOpenOn] = useState<string | null>(null);
@@ -250,12 +250,12 @@ export function Sidebar({
           </ul>
         </nav>
 
-        <nav aria-label="Accounts" className={styles.section}>
+        <nav aria-label="Platforms" className={styles.section}>
           <h2 className={styles.sectionTitle}>Mijn platforms</h2>
           {mijn.length === 0 && (
             <p className={styles.empty}>Geen platforms uit Orbit geladen.</p>
           )}
-          <AccountNav accounts={mijn} currentAccount={current} />
+          <PlatformNav platforms={mijn} currentPlatform={current} />
 
           {overige.length > 0 && (
             <>
@@ -277,7 +277,7 @@ export function Sidebar({
                 </button>
               </h2>
               <div id="overige-platforms" hidden={!overigeOpen}>
-                <AccountNav accounts={overige} currentAccount={current} />
+                <PlatformNav platforms={overige} currentPlatform={current} />
               </div>
             </>
           )}

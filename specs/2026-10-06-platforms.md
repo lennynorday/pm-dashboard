@@ -12,7 +12,7 @@
 ## Scope
 
 - **Wel:** een platformpagina vervangt de accountpagina; de klant krijgt geen eigen pagina meer.
-- **Wel:** het menu toont alleen platforms; de klant staat er secundair bij ([ontwerp](../public/mockups/platforms-menu.html), variant A).
+- **Wel:** het menu toont alleen platforms; de klant staat er secundair bij (variant A uit het ontwerp).
 - **Wel:** het overzicht (feed en budgetten) per platform in plaats van per klant.
 - **Wel:** de PM van een platform is de projectverantwoordelijke (eigenaar) van zijn open projecten in Orbit; "mijn platforms" zijn de platforms met een open project waarvan ik eigenaar ben.
 - **Wel:** Orbit-projecten zelf koppelen aan een platform; bij een klant met één platform gaat dat vanzelf.

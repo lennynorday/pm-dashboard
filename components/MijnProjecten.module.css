@@ -12,6 +12,13 @@
   letter-spacing: var(--heading-letter-spacing);
 }
 
+.klant {
+  font: var(--type-label-small);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+
 .platformNaam a {
   text-decoration: none;
 }

@@ -5,7 +5,7 @@ import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { config } from "@/config/dashboard";
 import { loadDashboard } from "@/lib/dashboard";
-import { toNavAccounts } from "@/lib/navigation";
+import { toNavPlatforms } from "@/lib/navigation";
 import {
   MENU_COOKIE,
   OVERIGE_COOKIE,
@@ -56,8 +56,8 @@ export default async function RootLayout({
   const stand = parseMenuStand(cookieStore.get(MENU_COOKIE)?.value);
   const overige = parseGroepStand(cookieStore.get(OVERIGE_COOKIE)?.value);
   const dashboard = await loadDashboard();
-  const accounts =
-    dashboard.status === "ok" ? toNavAccounts(dashboard.platforms) : [];
+  const platforms =
+    dashboard.status === "ok" ? toNavPlatforms(dashboard.platforms) : [];
 
   return (
     <html lang="nl" className={barlow.variable}>
@@ -67,7 +67,7 @@ export default async function RootLayout({
         </a>
         <div className={styles.shell}>
           <Sidebar
-            accounts={accounts}
+            platforms={platforms}
             inboxUrl={config.links.inbox}
             todoUrl={config.links.todo}
             initialStand={stand}
