@@ -1,5 +1,5 @@
 import { bewaar, lees, vers } from "./db";
-import type { LinkUrls } from "./links";
+import type { EigenLink, LinkUrls } from "./links";
 import { fetchTabel, saveKoppelingRijen, savePlatformRij } from "./superhuman";
 
 export type Contactpersoon = {
@@ -31,6 +31,8 @@ export type PlatformGegevens = {
   supportOrganizations: string[];
   contactpersonen: Contactpersoon[];
   links: LinkUrls;
+  /** Hooguit vier, met een eigen naam; de groep Overig op de platformpagina. */
+  eigenLinks: EigenLink[];
 };
 
 export type AccountGegevens = KlantVelden & { platforms: PlatformGegevens[] };
@@ -48,6 +50,7 @@ export const LEEG_PLATFORM: PlatformGegevens = {
   supportOrganizations: [],
   contactpersonen: [],
   links: {},
+  eigenLinks: [],
 };
 
 export type GegevensResult = {
@@ -56,7 +59,7 @@ export type GegevensResult = {
   fout: string | null;
 };
 
-const SLEUTEL = "superhuman:accountgegevens:v3";
+const SLEUTEL = "superhuman:accountgegevens:v4";
 const CACHE_MS = 24 * 60 * 60 * 1000;
 
 function melding(error: unknown): string {

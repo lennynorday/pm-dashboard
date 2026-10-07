@@ -146,3 +146,72 @@ export function LinkIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function SlackIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 3.5v9M15 11.5v9M3.5 15h9M11.5 9h9" />
+    </Icon>
+  );
+}
+
+export function DocIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v4h4M9 12h6M9 16h6" />
+    </Icon>
+  );
+}
+
+export function FolderIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 6.5h6l2 2h10V19H3z" />
+    </Icon>
+  );
+}
+
+export function BoardIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M9 4.5v15M15 4.5v9" />
+    </Icon>
+  );
+}
+
+export function GlobeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5" />
+    </Icon>
+  );
+}
+
+export function CmsIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M3.5 9h17M8 13h5M8 16h8" />
+    </Icon>
+  );
+}
+
+export function FigmaIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3H9a3 3 0 0 0 0 6h3zM12 9H9a3 3 0 0 0 0 6h3zM12 3h3a3 3 0 0 1 0 6h-3zM12 15H9a3 3 0 1 0 3 3z" />
+      <circle cx="15" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}

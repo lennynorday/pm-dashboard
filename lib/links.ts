@@ -1,16 +1,15 @@
 export const LINK_TYPES = [
-  "superhuman-intern",
-  "superhuman-gedeeld",
   "slack-intern",
   "slack-klant",
+  "superhuman-intern",
+  "superhuman-gedeeld",
   "jira-board",
   "drive",
-  "offerte",
+  "figma",
   "omgeving-acc",
   "omgeving-prod",
   "cms-acc",
   "cms-prod",
-  "overig",
 ] as const;
 
 export type LinkType = (typeof LINK_TYPES)[number];
@@ -24,22 +23,44 @@ export type Link = {
 /** Per type hooguit één link, zoals in de tabel in Superhuman. */
 export type LinkUrls = Partial<Record<LinkType, string>>;
 
+/** Een link die de PM zelf bij een platform zet, met een eigen naam. */
+export type EigenLink = { naam: string; url: string };
+
+export const MAX_EIGEN_LINKS = 4;
+
 export const LINK_TYPE_LABELS: Record<LinkType, string> = {
-  "superhuman-intern": "Superhuman intern",
-  "superhuman-gedeeld": "Superhuman gedeeld",
   "slack-intern": "Slack intern",
   "slack-klant": "Slack met klant",
+  "superhuman-intern": "Superhuman intern",
+  "superhuman-gedeeld": "Superhuman gedeeld",
   "jira-board": "Jira",
   drive: "Drive",
-  offerte: "Offerte",
+  figma: "Figma",
   "omgeving-acc": "Acceptatie",
   "omgeving-prod": "Productie",
   "cms-acc": "CMS acceptatie",
   "cms-prod": "CMS productie",
-  overig: "Overig",
 };
 
-/** De links van een account, met de host als titel. */
+/** De vaste indeling op de platformpagina; Overig bevat de eigen links. */
+export const LINK_GROEPEN: { naam: string; typen: LinkType[] }[] = [
+  {
+    naam: "Samenwerken",
+    typen: [
+      "slack-intern",
+      "slack-klant",
+      "superhuman-intern",
+      "superhuman-gedeeld",
+    ],
+  },
+  { naam: "Tools", typen: ["jira-board", "drive", "figma"] },
+  {
+    naam: "Omgevingen",
+    typen: ["omgeving-acc", "omgeving-prod", "cms-acc", "cms-prod"],
+  },
+];
+
+/** De links van een platform, met de host als titel. */
 export function toLinks(urls: LinkUrls): Link[] {
   return LINK_TYPES.flatMap((type) => {
     const url = urls[type];
@@ -47,12 +68,19 @@ export function toLinks(urls: LinkUrls): Link[] {
   });
 }
 
-export type LinkGroup = { type: LinkType; links: Link[] };
+/** Eén per regel: "Naam https://adres"; regels zonder geldig adres vallen weg. */
+export function parseEigenLinks(waarde: string): EigenLink[] {
+  return waarde
+    .split("\n")
+    .flatMap((regel) => {
+      const url = /https?:\/\/\S+$/.exec(regel.trim())?.[0];
+      if (!url || !URL.canParse(url)) return [];
+      const naam = regel.trim().slice(0, -url.length).trim();
+      return [{ naam: naam || new URL(url).host, url }];
+    })
+    .slice(0, MAX_EIGEN_LINKS);
+}
 
-/** Groepeert links per type, in de volgorde van LINK_TYPES. */
-export function groupLinks(links: Link[]): LinkGroup[] {
-  return LINK_TYPES.map((type) => ({
-    type,
-    links: links.filter((link) => link.type === type),
-  })).filter((group) => group.links.length > 0);
+export function formatEigenLinks(links: EigenLink[]): string {
+  return links.map((link) => `${link.naam} ${link.url}`).join("\n");
 }

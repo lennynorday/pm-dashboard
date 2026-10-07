@@ -1,12 +1,12 @@
 import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { ontkoppelProjectAction } from "@/app/actions";
+import { addEigenLinkAction, ontkoppelProjectAction } from "@/app/actions";
 import { AccountPeople } from "@/components/AccountPeople";
 import { AccountProjects } from "@/components/AccountProjects";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
-import { LinkList } from "@/components/LinkList";
+import { LinkGroepen } from "@/components/LinkGroepen";
 import { Melding } from "@/components/Melding";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
@@ -104,6 +104,21 @@ export default async function PlatformPage({
       )}
       <AttentionBand signalen={signalen} toonAccount={false} />
 
+      <section className={styles.section} aria-labelledby="links">
+        <h2 id="links" className={styles.sectionTitle}>
+          Links
+        </h2>
+        <LinkGroepen
+          links={platform.links}
+          eigenLinks={platform.eigenLinks}
+          toevoegen={
+            platform.klant.orbitId && !dashboard.gegevensFout
+              ? addEigenLinkAction.bind(null, platform.slug)
+              : undefined
+          }
+        />
+      </section>
+
       <section className={styles.section} aria-labelledby="projecten">
         <h2 id="projecten" className={styles.sectionTitle}>
           Projecten in Orbit
@@ -133,13 +148,6 @@ export default async function PlatformPage({
           toonAccount={false}
         />
         <TicketDetails data={data} />
-      </section>
-
-      <section className={styles.section} aria-labelledby="links">
-        <h2 id="links" className={styles.sectionTitle}>
-          Links van dit platform
-        </h2>
-        <LinkList links={platform.links} />
       </section>
     </>
   );

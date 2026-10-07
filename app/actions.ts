@@ -3,13 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { FormState, readFormWaarden, validateForm } from "@/lib/account-form";
+import {
+  eigenLinkFouten,
+  FormState,
+  readFormWaarden,
+  validateForm,
+} from "@/lib/account-form";
 import {
   clearAccountGegevensCache,
   saveKoppelingen,
   savePlatformGegevens,
 } from "@/lib/accountgegevens";
 import { type KlantProject, loadDashboard, slugify } from "@/lib/dashboard";
+import { MAX_EIGEN_LINKS } from "@/lib/links";
 import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -267,4 +273,69 @@ export async function ontkoppelProjectAction(
     project.number === nummer ? null : huidig(project),
   );
   if (fout) throw new Error(fout);
+}
+
+export type LinkState = {
+  fouten: { naam?: string; url?: string; opslaan?: string };
+  waarden: { naam: string; url: string };
+} | null;
+
+/** Zet een eigen link bij een platform; daarna staat hij meteen onder Overig. */
+export async function addEigenLinkAction(
+  slug: string,
+  _vorige: LinkState,
+  formData: FormData,
+): Promise<LinkState> {
+  if (!(await currentUser()) || !/^[a-z0-9-]+$/.test(slug)) redirect("/");
+  const lees = (name: string) => {
+    const waarde = formData.get(name);
+    return typeof waarde === "string" ? waarde.trim() : "";
+  };
+  const link = { naam: lees("naam"), url: lees("url") };
+  const fouten = eigenLinkFouten(link);
+  if (fouten.naam || fouten.url) return { fouten, waarden: link };
+
+  const dashboard = await loadDashboard();
+  const platform =
+    dashboard.status === "ok"
+      ? dashboard.platforms.find((item) => item.slug === slug)
+      : undefined;
+  const orbitId = platform?.klant.orbitId;
+  const opslaan = (melding: string): LinkState => ({
+    fouten: { opslaan: melding },
+    waarden: link,
+  });
+  if (!platform || !orbitId || dashboard.status !== "ok") {
+    return opslaan("Dit platform is niet in Orbit gevonden.");
+  }
+  // Zonder actuele gegevens zou opslaan wat er in Superhuman staat overschrijven.
+  if (dashboard.gegevensFout) {
+    return opslaan(
+      `De accountgegevens konden niet uit Superhuman worden opgehaald. ${dashboard.gegevensFout}`,
+    );
+  }
+  if (platform.eigenLinks.length >= MAX_EIGEN_LINKS) {
+    return opslaan(
+      `Er staan al ${MAX_EIGEN_LINKS} eigen links bij dit platform.`,
+    );
+  }
+  try {
+    await savePlatformGegevens(
+      orbitId,
+      platform.klant.orbitNaam,
+      platform.klant.velden,
+      {
+        ...platform.gegevens,
+        naam: platform.naam,
+        eigenLinks: [...platform.eigenLinks, link],
+      },
+      platform.gegevens.naam,
+    );
+  } catch (error) {
+    return opslaan(
+      `Opslaan in Superhuman is mislukt. ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  revalidatePath("/", "layout");
+  return null;
 }
