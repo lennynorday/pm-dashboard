@@ -5,7 +5,8 @@ import { herstelMeldingenAction, negeerMeldingAction } from "@/app/actions";
 import type { FeedItem, FeedSoort } from "@/lib/feed";
 import styles from "./Feed.module.css";
 
-type Groep = "budget" | "support" | "sprint";
+/** "koppelen" heeft geen eigen filter en staat alleen onder Alles. */
+type Groep = "budget" | "koppelen" | "support" | "sprint";
 
 const SOORT: Record<FeedSoort, { label: string; groep: Groep; icoon: string }> =
   {
@@ -20,6 +21,12 @@ const SOORT: Record<FeedSoort, { label: string; groep: Groep; icoon: string }> =
       groep: "budget",
       icoon:
         "M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+    },
+    koppelen: {
+      label: "Koppelen",
+      groep: "koppelen",
+      icoon:
+        "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
     },
     "eerste-reactie": {
       label: "Eerste reactie",
@@ -96,7 +103,7 @@ export function Feed({ items, genegeerd }: Props) {
           <ul className={styles.lijst}>
             {zichtbaar.map((item) => {
               const { label, icoon } = SOORT[item.soort];
-              const extern = !item.url.startsWith("#");
+              const extern = !/^[#/]/.test(item.url);
               return (
                 <li key={item.id} className={styles.item}>
                   <span

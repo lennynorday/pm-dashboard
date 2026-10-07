@@ -25,6 +25,11 @@
   display: contents;
 }
 
+.knoppen {
+  display: flex;
+  gap: var(--space-02);
+}
+
 .name {
   margin: 0;
   font: var(--type-body-2);

@@ -107,7 +107,9 @@ const URL_START = /^https?:\/\/\S+$/;
 /** Controleert het formulier; geeft de gegevens, of de fouten per veld. */
 export function validateForm(
   waarden: FormWaarden,
-): { klant: KlantVelden; platform: PlatformVelden } | { fouten: FormFouten } {
+):
+  | { klant: Omit<KlantVelden, "zonderPlatform">; platform: PlatformVelden }
+  | { fouten: FormFouten } {
   const fouten: FormFouten = {};
 
   if (!waarden.platform) {

@@ -6,6 +6,7 @@ import {
   Contactpersoon,
   KlantVelden,
   LEEG_PLATFORM,
+  LEGE_KLANT,
   PlatformGegevens,
   readAccountGegevens,
 } from "./accountgegevens";
@@ -33,6 +34,19 @@ export type Project = {
   mijn: boolean;
 };
 
+/** Een open project van een klant en waar het bij hoort. */
+export type KlantProject = {
+  number: string;
+  naam: string;
+  eigenaar: string;
+  mijn: boolean;
+  zichtbaarheid: Zichtbaarheid;
+  /** De naam van het platform; null als het er (nog) bij geen hoort. */
+  platform: string | null;
+  /** Hoort uitdrukkelijk bij de hele klant, zoals een accountproject. */
+  zonderPlatform: boolean;
+};
+
 /** Een klant uit Orbit; heeft geen eigen pagina, maar wel een of meer platforms. */
 export type Klant = {
   /** Het klant-id in Orbit; null als Orbit de klant niet kon vinden. */
@@ -43,7 +57,20 @@ export type Klant = {
   am: string | null;
   /** Zoals in Superhuman, om te bewerken. */
   velden: KlantVelden;
+  /** Meer dan één platform: dan moet je projecten koppelen. */
+  meerPlatforms: boolean;
+  projecten: KlantProject[];
 };
+
+/** Zichtbare projecten van de klant die nog nergens bij horen. */
+export function ongekoppeld(klant: Klant): KlantProject[] {
+  return klant.projecten.filter(
+    (project) =>
+      project.platform === null &&
+      !project.zonderPlatform &&
+      project.zichtbaarheid === "zichtbaar",
+  );
+}
 
 /** Een website van een klant: wat een PM beheert. */
 export type Platform = {
@@ -142,24 +169,49 @@ export function buildPlatforms(
     .flatMap((orbitKlant) => {
       const orbitId = klantIds.get(orbitKlant) ?? null;
       const account: AccountGegevens = (orbitId && gegevens[orbitId]) || {
+        ...LEGE_KLANT,
         platforms: [],
-      };
-      const klant: Klant = {
-        orbitId,
-        naam: account.naam || displayName(orbitKlant),
-        orbitNaam: displayName(orbitKlant),
-        am: account.am ?? null,
-        velden: { naam: account.naam, am: account.am },
       };
       const platforms =
         account.platforms.length > 0 ? account.platforms : [LEEG_PLATFORM];
+      const naam = account.naam || displayName(orbitKlant);
       const vanKlant = orbitProjecten.filter(
         (orbit) => orbit.client === orbitKlant,
       );
+      const klant: Klant = {
+        orbitId,
+        naam,
+        orbitNaam: displayName(orbitKlant),
+        am: account.am ?? null,
+        velden: {
+          naam: account.naam,
+          am: account.am,
+          zonderPlatform: account.zonderPlatform,
+        },
+        meerPlatforms: platforms.length > 1,
+        projecten: vanKlant
+          .map((orbit) => {
+            const platform = platformVan(orbit.number, platforms);
+            return {
+              number: orbit.number,
+              naam: orbit.name,
+              eigenaar: orbit.owner,
+              mijn: mijnNummers.has(orbit.number),
+              zichtbaarheid: hidden.includes(orbit.number)
+                ? ("verborgen" as const)
+                : ("zichtbaar" as const),
+              platform: platform ? platform.naam || naam : null,
+              zonderPlatform:
+                platform === null &&
+                account.zonderPlatform.includes(orbit.number),
+            };
+          })
+          .sort((a, b) => a.naam.localeCompare(b.naam, "nl")),
+      };
 
       return platforms.map((platform): Platform => {
-        const naam = platform.naam || klant.naam;
-        const slug = uniekeSlug(naam, klant.naam, bezet);
+        const platformNaam = platform.naam || klant.naam;
+        const slug = uniekeSlug(platformNaam, klant.naam, bezet);
         bezet.add(slug);
         const projecten = vanKlant
           .filter((orbit) => platformVan(orbit.number, platforms) === platform)
@@ -167,7 +219,7 @@ export function buildPlatforms(
             number: orbit.number,
             naam: orbit.name,
             platformSlug: slug,
-            platformNaam: naam,
+            platformNaam,
             status: orbit.state,
             einddatum: orbit.endDate,
             eigenaar: orbit.owner,
@@ -180,7 +232,7 @@ export function buildPlatforms(
           .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
         return {
           slug,
-          naam,
+          naam: platformNaam,
           gegevens: platform,
           klant,
           pms: [...new Set(projecten.map((project) => project.eigenaar))]
