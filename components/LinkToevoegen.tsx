@@ -1,16 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import type { LinkState } from "@/app/actions";
 import { PlusIcon } from "./icons";
 import styles from "./LinkGroepen.module.css";
 
 type Props = {
   action: (vorige: LinkState, formData: FormData) => Promise<LinkState>;
+  /** Een vast linktype, zoals Figma: dan alleen een adres. Zonder: een eigen link met naam. */
+  linktype?: string;
 };
 
-/** Knop die een klein formulier opent voor een eigen link: naam en adres. */
-export function LinkToevoegen({ action }: Props) {
+/** Knop die een klein formulier opent voor een link: adres, en bij een eigen link ook een naam. */
+export function LinkToevoegen({ action, linktype }: Props) {
   const [open, setOpen] = useState(false);
   const [state, formAction, bezig] = useActionState(
     async (vorige: LinkState, formData: FormData) => {
@@ -21,12 +23,13 @@ export function LinkToevoegen({ action }: Props) {
     },
     null,
   );
-  const naam = useRef<HTMLInputElement>(null);
+  const eerste = useRef<HTMLInputElement>(null);
+  const id = useId();
   const knop = useRef<HTMLButtonElement>(null);
   const fouten = state?.fouten ?? {};
 
   useEffect(() => {
-    if (open) naam.current?.focus();
+    if (open) eerste.current?.focus();
   }, [open, state]);
 
   function sluit() {
@@ -44,7 +47,8 @@ export function LinkToevoegen({ action }: Props) {
         onClick={() => setOpen(true)}
       >
         <PlusIcon className={styles.plus} />
-        Link toevoegen
+        {linktype ?? "Link toevoegen"}
+        {linktype && <span className="visually-hidden"> toevoegen</span>}
       </button>
     );
   }
@@ -55,7 +59,7 @@ export function LinkToevoegen({ action }: Props) {
       key={JSON.stringify(state)}
       action={formAction}
       className={styles.formulier}
-      aria-label="Eigen link toevoegen"
+      aria-label={linktype ? `${linktype} toevoegen` : "Eigen link toevoegen"}
       noValidate
     >
       {fouten.opslaan && (
@@ -63,39 +67,44 @@ export function LinkToevoegen({ action }: Props) {
           {fouten.opslaan}
         </p>
       )}
-      <label className={styles.label}>
-        Naam
-        <input
-          ref={naam}
-          name="naam"
-          autoComplete="off"
-          placeholder="Bijvoorbeeld Statuspagina"
-          defaultValue={state?.waarden.naam}
-          aria-invalid={fouten.naam ? true : undefined}
-          aria-describedby={fouten.naam ? "eigen-naam-fout" : undefined}
-          className={styles.input}
-        />
-      </label>
-      {fouten.naam && (
-        <p id="eigen-naam-fout" className={styles.fout}>
-          {fouten.naam}
-        </p>
+      {!linktype && (
+        <>
+          <label className={styles.label}>
+            Naam
+            <input
+              ref={eerste}
+              name="naam"
+              autoComplete="off"
+              placeholder="Bijvoorbeeld Statuspagina"
+              defaultValue={state?.waarden.naam}
+              aria-invalid={fouten.naam ? true : undefined}
+              aria-describedby={fouten.naam ? `${id}-naam-fout` : undefined}
+              className={styles.input}
+            />
+          </label>
+          {fouten.naam && (
+            <p id={`${id}-naam-fout`} className={styles.fout}>
+              {fouten.naam}
+            </p>
+          )}
+        </>
       )}
       <label className={styles.label}>
         Adres
         <input
+          ref={linktype ? eerste : undefined}
           name="url"
           type="url"
           autoComplete="off"
           placeholder="https://"
           defaultValue={state?.waarden.url}
           aria-invalid={fouten.url ? true : undefined}
-          aria-describedby={fouten.url ? "eigen-url-fout" : undefined}
+          aria-describedby={fouten.url ? `${id}-url-fout` : undefined}
           className={styles.input}
         />
       </label>
       {fouten.url && (
-        <p id="eigen-url-fout" className={styles.fout}>
+        <p id={`${id}-url-fout`} className={styles.fout}>
           {fouten.url}
         </p>
       )}

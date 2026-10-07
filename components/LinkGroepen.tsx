@@ -1,4 +1,4 @@
-import type { LinkState } from "@/app/actions";
+import { addLinkAction } from "@/app/actions";
 import {
   type EigenLink,
   type Link,
@@ -38,8 +38,8 @@ const ICOON: Record<LinkType, typeof LinkIcon> = {
 type Props = {
   links: Link[];
   eigenLinks: EigenLink[];
-  /** Ontbreekt als toevoegen nu niet kan, zoals zonder Orbit-klant. */
-  toevoegen?: (vorige: LinkState, formData: FormData) => Promise<LinkState>;
+  /** De slug om links aan toe te voegen; ontbreekt als dat nu niet kan, zoals zonder Orbit-klant. */
+  toevoegenVoor?: string;
 };
 
 function Tegel({
@@ -74,27 +74,41 @@ function Tegel({
 }
 
 /** De links van een platform in vaste groepen; Overig bevat de eigen links. */
-export function LinkGroepen({ links, eigenLinks, toevoegen }: Props) {
+export function LinkGroepen({ links, eigenLinks, toevoegenVoor }: Props) {
+  // Kun je toevoegen, dan staan alle groepen er, met een knop voor elk leeg linktype.
   const groepen = LINK_GROEPEN.map((groep) => ({
     naam: groep.naam,
     links: links.filter((link) => groep.typen.includes(link.type)),
-  })).filter((groep) => groep.links.length > 0);
+    leeg: toevoegenVoor
+      ? groep.typen.filter((type) => !links.some((link) => link.type === type))
+      : [],
+  })).filter((groep) => groep.links.length > 0 || groep.leeg.length > 0);
 
   return (
     <div className={styles.groepen}>
       {groepen.map((groep, index) => (
         <div key={groep.naam} className={styles.groep} data-groep={index}>
           <h3 className={styles.kop}>{groep.naam}</h3>
-          <ul className={styles.lijst}>
-            {groep.links.map((link) => (
-              <Tegel
-                key={link.type}
-                naam={LINK_TYPE_LABELS[link.type]}
-                url={link.url}
-                Icoon={ICOON[link.type]}
+          {groep.links.length > 0 && (
+            <ul className={styles.lijst}>
+              {groep.links.map((link) => (
+                <Tegel
+                  key={link.type}
+                  naam={LINK_TYPE_LABELS[link.type]}
+                  url={link.url}
+                  Icoon={ICOON[link.type]}
+                />
+              ))}
+            </ul>
+          )}
+          {toevoegenVoor &&
+            groep.leeg.map((type) => (
+              <LinkToevoegen
+                key={type}
+                action={addLinkAction.bind(null, toevoegenVoor, type)}
+                linktype={LINK_TYPE_LABELS[type]}
               />
             ))}
-          </ul>
         </div>
       ))}
       <div className={styles.groep} data-groep="overig">
@@ -116,8 +130,10 @@ export function LinkGroepen({ links, eigenLinks, toevoegen }: Props) {
             ))}
           </ul>
         )}
-        {toevoegen && eigenLinks.length < MAX_EIGEN_LINKS && (
-          <LinkToevoegen action={toevoegen} />
+        {toevoegenVoor && eigenLinks.length < MAX_EIGEN_LINKS && (
+          <LinkToevoegen
+            action={addLinkAction.bind(null, toevoegenVoor, "eigen")}
+          />
         )}
       </div>
     </div>

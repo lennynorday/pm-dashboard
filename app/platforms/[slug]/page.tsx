@@ -1,7 +1,7 @@
 import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { addEigenLinkAction, ontkoppelProjectAction } from "@/app/actions";
+import { ontkoppelProjectAction } from "@/app/actions";
 import { AccountPeople } from "@/components/AccountPeople";
 import { AttentionBand } from "@/components/AttentionBand";
 import { HiddenProjects } from "@/components/HiddenProjects";
@@ -116,9 +116,9 @@ export default async function PlatformPage({
         <LinkGroepen
           links={platform.links}
           eigenLinks={platform.eigenLinks}
-          toevoegen={
+          toevoegenVoor={
             platform.klant.orbitId && !dashboard.gegevensFout
-              ? addEigenLinkAction.bind(null, platform.slug)
+              ? platform.slug
               : undefined
           }
         />
