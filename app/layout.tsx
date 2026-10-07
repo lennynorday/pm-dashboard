@@ -3,7 +3,6 @@ import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
 import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
-import { config } from "@/config/dashboard";
 import { loadDashboard } from "@/lib/dashboard";
 import { toNavPlatforms } from "@/lib/navigation";
 import {
@@ -68,8 +67,6 @@ export default async function RootLayout({
         <div className={styles.shell}>
           <Sidebar
             platforms={platforms}
-            inboxUrl={config.links.inbox}
-            todoUrl={config.links.todo}
             initialStand={stand}
             initialOverige={overige}
             user={user}

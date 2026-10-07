@@ -77,6 +77,11 @@
   scrollbar-color: rgb(255 255 255 / 0.25) transparent;
 }
 
+/* Is er meer inhoud dan ruimte, dan scrolt het paneel; de blokken krimpen niet. */
+.panel > * {
+  flex-shrink: 0;
+}
+
 .panel :focus-visible {
   outline-color: var(--norday-yellow);
 }
@@ -310,13 +315,6 @@
   opacity: 0.72;
 }
 
-.item .external {
-  width: 16px;
-  height: 16px;
-  margin-left: auto;
-  color: var(--color-on-dark-muted);
-}
-
 .initials {
   display: grid;
   place-items: center;
@@ -405,7 +403,6 @@
     white-space: nowrap;
   }
 
-  .sidebar[data-stand="ingeklapt"] .external,
   .sidebar[data-stand="ingeklapt"] .empty {
     display: none;
   }

@@ -204,10 +204,10 @@ function FeitenRij({ project, ontkoppel }: { project: Project } & Feiten) {
   return (
     <div className={styles.feiten}>
       <span>
-        Projectnummer <strong>{project.number}</strong>
+        Projectnummer: <strong>{project.number}</strong>
       </span>
       <span>
-        Status{" "}
+        Status:{" "}
         <strong>{PROJECT_STATE_LABELS[project.status].toLowerCase()}</strong>
       </span>
       {project.einddatum && (

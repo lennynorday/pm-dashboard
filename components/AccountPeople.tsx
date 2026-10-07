@@ -13,19 +13,19 @@ export function AccountPeople({ klant, pms, am, contactpersonen }: Props) {
   return (
     <dl className={styles.people}>
       <div>
-        <dt>Klant</dt>
+        <dt>Klant:</dt>
         <dd>{klant}</dd>
       </div>
       <div>
-        <dt>{pms.length > 1 ? "PM's" : "PM"}</dt>
+        <dt>{pms.length > 1 ? "PM's:" : "PM:"}</dt>
         <dd>{pms.length > 0 ? pms.join(", ") : "Geen open projecten"}</dd>
       </div>
       <div>
-        <dt>Accountmanager</dt>
+        <dt>Accountmanager:</dt>
         <dd>{am ?? "Nog niet ingevuld"}</dd>
       </div>
       <div>
-        <dt>Contactpersonen</dt>
+        <dt>Contactpersonen:</dt>
         <dd>
           {contactpersonen.length === 0 && "Nog niet ingevuld"}
           {contactpersonen.map((persoon, index) => (

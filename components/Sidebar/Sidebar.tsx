@@ -6,13 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronIcon,
   CloseIcon,
-  ExternalIcon,
   HomeIcon,
-  InboxIcon,
   LogoutIcon,
   MenuIcon,
   PanelIcon,
-  TodoIcon,
 } from "@/components/icons";
 import { logoutAction } from "@/app/actions";
 import { initialen, NavPlatform } from "@/lib/navigation";
@@ -30,8 +27,6 @@ import styles from "./Sidebar.module.css";
 
 type Props = {
   platforms: NavPlatform[];
-  inboxUrl: string;
-  todoUrl: string;
   initialStand: MenuStand;
   initialOverige: GroepStand;
   user: Gebruiker;
@@ -43,8 +38,6 @@ function currentPlatform(pathname: string): string | null {
 
 export function Sidebar({
   platforms,
-  inboxUrl,
-  todoUrl,
   initialStand,
   initialOverige,
   user,
@@ -208,44 +201,6 @@ export function Sidebar({
                   Overzicht
                 </span>
               </NextLink>
-            </li>
-            <li>
-              <a
-                href={inboxUrl}
-                className={styles.item}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <InboxIcon />
-                <span className={styles.label}>Gmail-inbox</span>
-                <ExternalIcon className={styles.external} />
-                <span className="visually-hidden">
-                  {" "}
-                  (opent in nieuw tabblad)
-                </span>
-                <span className={styles.tooltip} aria-hidden="true">
-                  Gmail-inbox
-                </span>
-              </a>
-            </li>
-            <li>
-              <a
-                href={todoUrl}
-                className={styles.item}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <TodoIcon />
-                <span className={styles.label}>To-do&apos;s in Superhuman</span>
-                <ExternalIcon className={styles.external} />
-                <span className="visually-hidden">
-                  {" "}
-                  (opent in nieuw tabblad)
-                </span>
-                <span className={styles.tooltip} aria-hidden="true">
-                  To-do&apos;s in Superhuman
-                </span>
-              </a>
             </li>
           </ul>
         </nav>
