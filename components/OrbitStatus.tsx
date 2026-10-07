@@ -7,7 +7,7 @@ import styles from "./OrbitStatus.module.css";
 
 type Props = { dashboard: Dashboard };
 
-/** Toont wanneer de Orbit-data is opgehaald, of waarom dat niet lukte. */
+/** Toont wanneer de data is opgehaald, of waarom dat niet lukte; Verversen haalt alles opnieuw op. */
 export function OrbitStatus({ dashboard }: Props) {
   if (dashboard.status === "niet-verbonden") {
     return (
@@ -42,21 +42,28 @@ export function OrbitStatus({ dashboard }: Props) {
   }
 
   const tijd = formatTime(dashboard.fetchedAt);
-  const zin = `Projecten uit Orbit opgehaald om ${tijd}`;
+  const zin = `Projecten uit Orbit opgehaald om ${tijd}. Verversen haalt Orbit, Jira en Superhuman opnieuw op.`;
   return (
     <div className={styles.sync}>
       <p className={styles.tijd} title={zin}>
         <span className={styles.punt} aria-hidden="true" />
-        <span aria-hidden="true">Orbit {tijd}</span>
+        <span aria-hidden="true">Bijgewerkt {tijd}</span>
         <span className="visually-hidden">
           Projecten uit Orbit opgehaald om{" "}
           <time dateTime={dashboard.fetchedAt.toISOString()}>{tijd}</time>
         </span>
       </p>
       <form action={refreshData}>
-        <button className={styles.knop} type="submit">
+        <button
+          className={styles.knop}
+          type="submit"
+          title="Orbit, Jira en Superhuman opnieuw ophalen"
+        >
           <RefreshIcon className={styles.icoon} />
           Verversen
+          <span className="visually-hidden">
+            : Orbit, Jira en Superhuman opnieuw ophalen
+          </span>
         </button>
       </form>
     </div>
