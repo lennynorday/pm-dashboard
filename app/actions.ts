@@ -24,10 +24,12 @@ import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
 
+/** Haalt alles opnieuw op: Orbit, Jira en de accountgegevens uit Superhuman. */
 export async function refreshData(): Promise<void> {
   clearProjectCache();
   clearBudgetCache();
   clearJiraCache();
+  clearAccountGegevensCache();
   revalidatePath("/", "layout");
 }
 
