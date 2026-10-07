@@ -69,9 +69,11 @@ const PAGE_SIZE = 100;
 export type ProjectFilter = { mine: true } | { folderId: string };
 
 const cache = new Map<string, { projects: OrbitProject[]; fetchedAt: Date }>();
+let geldigVanaf = 0;
 
+/** Alles verloopt meteen, maar blijft bewaard als terugval. */
 export function clearProjectCache(): void {
-  cache.clear();
+  geldigVanaf = Date.now();
 }
 
 /** Alle pagina's van ListProjects, tot een pagina niet meer vol is. */
@@ -102,18 +104,23 @@ async function fetchAllPages(
   return { status: "ok", projects, fetchedAt: new Date() };
 }
 
-/** Open projecten volgens het filter, met een cache van 15 minuten per gebruiker. */
+/** Open projecten volgens het filter, met een cache van 15 minuten per gebruiker; bij een fout de vorige lijst. */
 export async function fetchProjects(
   email: string,
   filter: ProjectFilter,
 ): Promise<ProjectListResult> {
   const key = JSON.stringify([email, filter]);
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.fetchedAt.getTime() < CACHE_MS) {
+  if (
+    hit &&
+    hit.fetchedAt.getTime() >= geldigVanaf &&
+    Date.now() - hit.fetchedAt.getTime() < CACHE_MS
+  ) {
     return { status: "ok", ...hit };
   }
 
   const result = await fetchAllPages(email, filter);
   if (result.status === "ok") cache.set(key, result);
+  if (result.status === "fout" && hit) return { status: "ok", ...hit };
   return result;
 }

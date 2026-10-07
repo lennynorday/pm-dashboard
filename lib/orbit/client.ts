@@ -1,5 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  StreamableHTTPClientTransport,
+  StreamableHTTPError,
+} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ORBIT_MCP_URL } from "./config";
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
 import { refreshToken } from "./oauth";
@@ -77,6 +80,8 @@ export async function callOrbitTool(
   } catch (error) {
     // Bij een verlopen sessie of netwerkfout de volgende keer opnieuw verbinden.
     verbindingen.delete(email);
+    // Orbit meldt de rate limit soms als HTTP-fout (IIS) in plaats van als RATE_LIMITED.
+    if (error instanceof StreamableHTTPError) pauzeTot = Date.now() + PAUZE_MS;
     const message = error instanceof Error ? error.message : String(error);
     return { status: "fout", message };
   }
