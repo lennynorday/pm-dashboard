@@ -45,6 +45,14 @@
   text-wrap: balance;
 }
 
+.titelRij {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03) 14px;
+  min-width: 0;
+}
+
 .aside {
   justify-self: end;
 }

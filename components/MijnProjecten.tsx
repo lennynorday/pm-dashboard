@@ -1,7 +1,7 @@
 import NextLink from "next/link";
 import type { Platform, Project } from "@/lib/dashboard";
 import { orbitProjectUrl } from "@/lib/dashboard";
-import { formatUren } from "@/lib/format";
+import { formatDate, formatUren, PROJECT_STATE_LABELS } from "@/lib/format";
 import type { JiraResult, SupportOverzicht } from "@/lib/jira/overview";
 import {
   type BudgetMap,
@@ -9,12 +9,14 @@ import {
   type ProjectBudget,
   type ProjectBudgetResult,
 } from "@/lib/orbit/budget";
-import { ExternalLink } from "./ExternalLink";
+import { AlertIcon, ChevronIcon, ExternalIcon } from "./icons";
+import { VisibilityButton } from "./VisibilityButton";
+import knop from "./VisibilityButton.module.css";
 import styles from "./MijnProjecten.module.css";
 
 export type ProjectRij = { project: Project; budget: ProjectBudgetResult };
 
-export type AccountRij = {
+export type PlatformRij = {
   platform: Platform;
   support: JiraResult<SupportOverzicht> | null;
   projecten: ProjectRij[];
@@ -49,63 +51,11 @@ function Cel({ label, children }: { label: string; children: string }) {
   );
 }
 
-function Chevron() {
-  return (
-    <svg
-      className={styles.chevron}
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M9 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-function SupportKolom({
-  aantal,
-  max,
-  label,
-  url,
-  soort,
-}: {
-  aantal: number;
-  max: number;
-  label: string;
-  url: string;
-  soort: "ons" | "klant" | "overig";
-}) {
-  const hoogte = aantal === 0 ? 0 : Math.max(procent(aantal, max), 6);
-  return (
-    <a
-      href={url}
-      className={styles.kolom}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span className={styles.kolomGetal}>{aantal}</span>
-      <span className={styles.kolomBak} aria-hidden="true">
-        <span data-soort={soort} style={{ height: `${hoogte}%` }} />
-      </span>
-      <span className={styles.kolomLabel}>{label}</span>
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
-    </a>
-  );
-}
-
-function Support({
+/** Lila knop naar de open supporttickets, of waarom die er niet is. */
+function SupportKnop({
   platform,
   support,
-}: {
-  platform: Platform;
-  support: AccountRij["support"];
-}) {
+}: Pick<PlatformRij, "platform" | "support">) {
   if (support === null) {
     return (
       <p className={styles.muted}>
@@ -127,48 +77,19 @@ function Support({
       </p>
     );
   }
-  const { open, opNorday, wachtOpKlant, overig } = support.data;
-  const max = Math.max(opNorday.aantal, wachtOpKlant.aantal, overig.aantal);
+  const { open } = support.data;
   return (
-    <>
-      <details className={styles.kaart}>
-        <summary className={styles.kaartKop}>
-          <span className={styles.bol}>{open.aantal}</span>
-          <span className={styles.kaartLabel}>Open tickets</span>
-          <span className={styles.kaartPijl} aria-hidden="true">
-            <Chevron />
-          </span>
-        </summary>
-        <div className={styles.kolommen}>
-          <SupportKolom
-            aantal={opNorday.aantal}
-            max={max}
-            label="Bij ons"
-            url={opNorday.url}
-            soort="ons"
-          />
-          <SupportKolom
-            aantal={wachtOpKlant.aantal}
-            max={max}
-            label="Wachten op de klant"
-            url={wachtOpKlant.url}
-            soort="klant"
-          />
-          {overig.aantal > 0 && (
-            <SupportKolom
-              aantal={overig.aantal}
-              max={max}
-              label="In sprint of on hold"
-              url={overig.url}
-              soort="overig"
-            />
-          )}
-        </div>
-      </details>
-      <ExternalLink href={open.url} className={styles.subLink}>
-        Openen in Beheer &amp; Support
-      </ExternalLink>
-    </>
+    <a
+      href={open.url}
+      className={styles.support}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span className={styles.supportAantal}>{open.aantal}</span>
+      {open.aantal === 1 ? "open supportticket" : "open supporttickets"}
+      <ExternalIcon className={styles.supportIcoon} />
+      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+    </a>
   );
 }
 
@@ -218,7 +139,26 @@ function MapRijen({ map }: { map: BudgetMap }) {
   );
 }
 
-function Uitklap({ project, data }: { project: Project; data: ProjectBudget }) {
+/** Naam van het project met de Teamleader-link als pijlicoon erachter. */
+function Naam({ project, uitklap }: { project: Project; uitklap: boolean }) {
+  return (
+    <span className={styles.naamCel}>
+      {uitklap && <ChevronIcon className={styles.chevron} />}
+      <span className={styles.naam}>{project.naam}</span>
+      <a
+        href={orbitProjectUrl(project.number)}
+        className={styles.teamleader}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${project.naam} openen in Teamleader (opent in nieuw tabblad)`}
+      >
+        <ExternalIcon className={styles.teamleaderIcoon} />
+      </a>
+    </span>
+  );
+}
+
+function Cijfers({ project, data }: { project: Project; data: ProjectBudget }) {
   const { minuten, soort } = plafond(data);
   const percentage = procent(data.geschreven, minuten);
   const over = data.geschreven > minuten;
@@ -229,116 +169,181 @@ function Uitklap({ project, data }: { project: Project; data: ProjectBudget }) {
         ? "?"
         : "geen";
   return (
-    <details>
-      <summary className={`${styles.rij} ${styles.projectRij}`}>
-        <span className={styles.naamCel}>
-          <Chevron />
-          <span className={styles.naam}>{project.naam}</span>
+    <>
+      <Naam project={project} uitklap />
+      <Balk percentage={percentage} />
+      <span className={`${styles.getal} ${styles.pct}`} data-over={over}>
+        <span className={`visually-hidden ${styles.celLabel}`}>
+          Verbruikt van {soort}:{" "}
         </span>
-        <Balk percentage={percentage} />
-        <Cel label={`Verbruikt van ${soort}`}>{`${percentage}%`}</Cel>
-        <span className={`${styles.getal} ${over ? styles.over : ""}`}>
-          <span className={`visually-hidden ${styles.celLabel}`}>
-            Geschreven:{" "}
+        {percentage}%
+      </span>
+      <Cel label="Geschreven">{formatUren(data.geschreven)}</Cel>
+      <Cel label="Beschikbaar">{formatUren(data.beschikbaar)}</Cel>
+      <Cel label="Offerte">{offerte}</Cel>
+      <span className={styles.status}>
+        {over && (
+          <span className={styles.over}>
+            <AlertIcon className={styles.overIcoon} />+
+            {formatUren(data.geschreven - minuten)} u
+            <span className="visually-hidden"> boven {soort}</span>
           </span>
-          {formatUren(data.geschreven)}
-        </span>
-        <Cel label="Beschikbaar">{formatUren(data.beschikbaar)}</Cel>
-        <Cel label="Offerte">{offerte}</Cel>
-        <span className={styles.status}>
-          {over && (
-            <span className={styles.label}>
-              +{formatUren(data.geschreven - minuten)} u
-              <span className="visually-hidden"> boven {soort}</span>
-            </span>
-          )}
-        </span>
-      </summary>
-      <ul className={styles.mappen}>
-        {data.mappen.map((map) => (
-          <MapRijen key={map.id || map.naam} map={map} />
-        ))}
-      </ul>
-    </details>
+        )}
+      </span>
+    </>
   );
 }
 
-function ProjectItem({ project, budget }: ProjectRij) {
+type Feiten = {
+  /** Haalt een project van dit platform af; alleen bij klanten met meer platforms. */
+  ontkoppel?: (formData: FormData) => Promise<void>;
+};
+
+/** Projectnummer, status, looptijd en de knoppen, in de uitgeklapte regel. */
+function FeitenRij({ project, ontkoppel }: { project: Project } & Feiten) {
+  return (
+    <div className={styles.feiten}>
+      <span>
+        Projectnummer <strong>{project.number}</strong>
+      </span>
+      <span>
+        Status{" "}
+        <strong>{PROJECT_STATE_LABELS[project.status].toLowerCase()}</strong>
+      </span>
+      {project.einddatum && (
+        <span>
+          Loopt tot <strong>{formatDate(project.einddatum)}</strong>
+        </span>
+      )}
+      <span className={styles.feitKnoppen}>
+        {ontkoppel && (
+          <form action={ontkoppel}>
+            <input type="hidden" name="projectnummer" value={project.number} />
+            <button type="submit" className={knop.button}>
+              Ontkoppelen
+              <span className="visually-hidden">: {project.naam}</span>
+            </button>
+          </form>
+        )}
+        <VisibilityButton project={project} />
+      </span>
+    </div>
+  );
+}
+
+function ProjectItem({
+  project,
+  budget,
+  feiten,
+}: ProjectRij & { feiten?: Feiten }) {
+  const data =
+    budget.status === "ok" && plafond(budget.data).minuten > 0
+      ? budget.data
+      : null;
   const melding =
     budget.status !== "ok"
       ? budget.status === "fout"
         ? "Budget kon niet worden opgehaald uit Orbit"
         : "Niet verbonden met Orbit"
-      : plafond(budget.data).minuten === 0
-        ? "Geen uren gepland in Orbit"
-        : null;
-  return (
-    <li id={`project-${project.number}`} className={styles.project}>
-      {budget.status === "ok" && melding === null ? (
-        <Uitklap project={project} data={budget.data} />
-      ) : (
+      : "Geen uren gepland in Orbit";
+
+  if (!data && !feiten) {
+    return (
+      <li id={`project-${project.number}`} className={styles.project}>
         <div className={`${styles.rij} ${styles.projectRij}`}>
-          <span className={styles.naamCel}>
-            <span className={styles.naam}>{project.naam}</span>
-          </span>
+          <Naam project={project} uitklap={false} />
           <span className={styles.melding}>{melding}</span>
         </div>
-      )}
-      <ExternalLink
-        href={orbitProjectUrl(project.number)}
-        className={styles.orbit}
-      >
-        Openen in Teamleader
-      </ExternalLink>
+      </li>
+    );
+  }
+
+  return (
+    <li id={`project-${project.number}`} className={styles.project}>
+      <details>
+        <summary className={`${styles.rij} ${styles.projectRij}`}>
+          {data ? (
+            <Cijfers project={project} data={data} />
+          ) : (
+            <>
+              <Naam project={project} uitklap />
+              <span className={styles.melding}>{melding}</span>
+            </>
+          )}
+        </summary>
+        <div className={styles.uitklap}>
+          {feiten && <FeitenRij project={project} {...feiten} />}
+          {data && data.mappen.length > 0 && (
+            <ul className={styles.mappen}>
+              {data.mappen.map((map) => (
+                <MapRijen key={map.id || map.naam} map={map} />
+              ))}
+            </ul>
+          )}
+        </div>
+      </details>
     </li>
   );
 }
 
-/** Mijn platforms met Beheer & Support en de projecten, grootste urenbudget eerst. */
-export function MijnProjecten({ rijen }: { rijen: AccountRij[] }) {
+/**
+ * Projecten met hun budget, grootste urenbudget eerst. Met `feiten` staan
+ * projectnummer, status, looptijd en de knoppen in de uitgeklapte regel.
+ */
+export function ProjectLijst({
+  rijen,
+  feiten,
+}: {
+  rijen: ProjectRij[];
+  feiten?: Feiten;
+}) {
+  return (
+    <div className={styles.lijst}>
+      <div className={`${styles.rij} ${styles.kolomKop}`} aria-hidden="true">
+        <span>Project</span>
+        <span>Verbruik</span>
+        <span className={styles.getal}>%</span>
+        <span className={styles.getal}>Geschreven</span>
+        <span className={styles.getal}>Beschikbaar</span>
+        <span className={styles.getal}>Offerte</span>
+        <span>Status</span>
+      </div>
+      <ul className={styles.projecten}>
+        {[...rijen]
+          .sort((a, b) => sorteerwaarde(b) - sorteerwaarde(a))
+          .map((rij) => (
+            <ProjectItem key={rij.project.number} {...rij} feiten={feiten} />
+          ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Mijn platforms, elk als kaart met de supportknop en de projecten. */
+export function MijnProjecten({ rijen }: { rijen: PlatformRij[] }) {
   return (
     <div className={styles.platforms}>
       {rijen.map(({ platform, support, projecten }) => (
         <section
           key={platform.slug}
+          className={styles.kaart}
           aria-labelledby={`platform-${platform.slug}`}
         >
-          <h2 id={`platform-${platform.slug}`} className={styles.platformNaam}>
-            <NextLink href={`/platforms/${platform.slug}`}>
-              {platform.naam}
-            </NextLink>
-            {platform.klant.meerPlatforms && (
-              <span className={styles.klant}> · {platform.klant.naam}</span>
-            )}
-          </h2>
-          <div className={styles.blokken}>
-            <div>
-              <h3 className={styles.blokKop}>Beheer &amp; Support</h3>
-              <Support platform={platform} support={support} />
-            </div>
-            <div>
-              <h3 className={styles.blokKop}>Projecten</h3>
-              <div
-                className={`${styles.rij} ${styles.kolomKop}`}
-                aria-hidden="true"
-              >
-                <span>Project</span>
-                <span>Verbruik</span>
-                <span className={styles.getal}>%</span>
-                <span className={styles.getal}>Geschreven</span>
-                <span className={styles.getal}>Beschikbaar</span>
-                <span className={styles.getal}>Offerte</span>
-                <span className={styles.getal}>Status</span>
-              </div>
-              <ul className={styles.projecten}>
-                {[...projecten]
-                  .sort((a, b) => sorteerwaarde(b) - sorteerwaarde(a))
-                  .map((rij) => (
-                    <ProjectItem key={rij.project.number} {...rij} />
-                  ))}
-              </ul>
-            </div>
-          </div>
+          <header className={styles.kop}>
+            <h2
+              id={`platform-${platform.slug}`}
+              className={styles.platformNaam}
+            >
+              <NextLink href={`/platforms/${platform.slug}`}>
+                {platform.naam}
+              </NextLink>
+              {platform.klant.meerPlatforms && (
+                <span className={styles.klant}> · {platform.klant.naam}</span>
+              )}
+            </h2>
+            <SupportKnop platform={platform} support={support} />
+          </header>
+          <ProjectLijst rijen={projecten} />
         </section>
       ))}
     </div>

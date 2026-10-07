@@ -75,6 +75,13 @@ export function Feed({ items, genegeerd }: Props) {
               aria-pressed={filter === groep}
               onClick={() => setFilter(groep)}
             >
+              {groep && (
+                <span
+                  className={styles.punt}
+                  data-groep={groep}
+                  aria-hidden="true"
+                />
+              )}
               {label}{" "}
               <span className={styles.filterAantal}>
                 {
@@ -126,9 +133,7 @@ export function Feed({ items, genegeerd }: Props) {
                   </span>
                   <span className={styles.tekst}>
                     <span className={styles.meta}>
-                      <span className={styles.soort} data-soort={item.soort}>
-                        {label}
-                      </span>
+                      <span className="visually-hidden">{label}: </span>
                       <a href={`/platforms/${item.platformSlug}`}>
                         {item.platformNaam}
                       </a>
