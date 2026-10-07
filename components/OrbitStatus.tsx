@@ -1,6 +1,7 @@
 import { refreshData } from "@/app/actions";
 import type { Dashboard } from "@/lib/dashboard";
 import { formatTime } from "@/lib/format";
+import { RefreshIcon } from "./icons";
 import { Melding } from "./Melding";
 import styles from "./OrbitStatus.module.css";
 
@@ -40,17 +41,22 @@ export function OrbitStatus({ dashboard }: Props) {
     );
   }
 
+  const tijd = formatTime(dashboard.fetchedAt);
+  const zin = `Projecten uit Orbit opgehaald om ${tijd}`;
   return (
-    <div className={styles.status}>
-      <p className={styles.text}>
-        Projecten uit Orbit opgehaald om{" "}
-        <time dateTime={dashboard.fetchedAt.toISOString()}>
-          {formatTime(dashboard.fetchedAt)}
-        </time>
+    <div className={styles.sync}>
+      <p className={styles.tijd} title={zin}>
+        <span className={styles.punt} aria-hidden="true" />
+        <span aria-hidden="true">Orbit {tijd}</span>
+        <span className="visually-hidden">
+          Projecten uit Orbit opgehaald om{" "}
+          <time dateTime={dashboard.fetchedAt.toISOString()}>{tijd}</time>
+        </span>
       </p>
       <form action={refreshData}>
-        <button className={styles.button} type="submit">
-          Alles opnieuw ophalen
+        <button className={styles.knop} type="submit">
+          <RefreshIcon className={styles.icoon} />
+          Verversen
         </button>
       </form>
     </div>

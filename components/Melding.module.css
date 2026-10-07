@@ -4,6 +4,7 @@
   align-items: center;
   gap: var(--space-03);
   padding: var(--space-03) var(--space-04);
+  border-radius: var(--radius-md);
   background: var(--norday-yellow);
   color: var(--norday-dark);
 }
@@ -14,6 +15,7 @@
   flex: none;
   width: 32px;
   height: 32px;
+  border-radius: 50%;
   background: var(--norday-dark);
   color: var(--norday-yellow);
 }

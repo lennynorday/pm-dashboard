@@ -1,9 +1,9 @@
 .heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: center;
   gap: var(--space-03) var(--space-06);
-  margin-bottom: var(--space-06);
+  margin-bottom: var(--space-07);
 }
 
 .nav,
@@ -18,7 +18,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font: var(--type-label-small);
+  font: var(--type-label);
   color: var(--color-text-muted);
 }
 
@@ -38,7 +38,7 @@
 
 .title {
   margin: 0;
-  font: var(--type-h5);
+  font: 700 clamp(40px, 4.4vw, 64px) / 0.95 var(--font-heading);
   text-transform: uppercase;
   letter-spacing: var(--heading-letter-spacing);
   overflow-wrap: anywhere;
