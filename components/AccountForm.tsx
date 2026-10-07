@@ -213,6 +213,32 @@ export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
         ))}
       </fieldset>
 
+      <fieldset className={styles.groep}>
+        <legend className={styles.legend}>Eigen links</legend>
+        <p className={styles.hint}>
+          Hooguit vier, met een eigen naam; ze staan onder Overig. Maak een rij
+          leeg om een link te verwijderen.
+        </p>
+        {huidig.eigenLinks.map((link, index) => (
+          <fieldset key={index} className={styles.rij}>
+            <legend className={styles.rijLegend}>Eigen link {index + 1}</legend>
+            <Veld
+              name={`eigen-${index}-naam`}
+              label="Naam"
+              defaultValue={link.naam}
+              fout={fouten[`eigen-${index}-naam`]}
+            />
+            <Veld
+              name={`eigen-${index}-url`}
+              label="Adres"
+              type="url"
+              defaultValue={link.url}
+              fout={fouten[`eigen-${index}-url`]}
+            />
+          </fieldset>
+        ))}
+      </fieldset>
+
       <div className={styles.acties}>
         <button
           id="opslaan"

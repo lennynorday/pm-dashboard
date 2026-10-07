@@ -63,6 +63,11 @@
   --type-big-numbers: 700 50px/1 var(--font-heading);
   --heading-letter-spacing: -0.03em; /* koppen in Apercu: altijd hoofdletters */
 
+  /* Afronding */
+  --radius-md: 12px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
   /* Spacing-schaal */
   --space-01: 4px;
   --space-02: 8px;

@@ -1,0 +1,195 @@
+.groepen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-03);
+}
+
+.groep {
+  padding: var(--space-04) var(--space-03) var(--space-03);
+  border-radius: var(--radius-xl);
+  background: rgb(61 16 40 / 0.06);
+}
+
+.kop {
+  margin: 0 var(--space-02) var(--space-03);
+  font: var(--type-label);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.max {
+  margin-left: var(--space-01);
+  font-weight: 400;
+}
+
+.lijst {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tegel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  padding: var(--space-02) var(--space-03) var(--space-02) var(--space-02);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.7);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background 120ms ease-out;
+}
+
+.tegel:hover {
+  background: var(--norday-white);
+}
+
+.icoon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--norday-white);
+}
+
+.groep[data-groep="0"] .icoon {
+  background: var(--norday-lilac);
+}
+
+.groep[data-groep="1"] .icoon {
+  background: var(--norday-yellow);
+}
+
+.groep[data-groep="2"] .icoon {
+  background: #ffd6e0;
+}
+
+.svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tekst {
+  min-width: 0;
+}
+
+.tekst strong {
+  display: block;
+  font: var(--type-body-2);
+  font-weight: 600;
+}
+
+.tekst small {
+  display: block;
+  overflow: hidden;
+  font: var(--type-label-small);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extern {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.toevoegen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-02);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-02);
+  border: 1px dashed var(--color-line-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: var(--type-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.toevoegen:hover {
+  border-style: solid;
+  background: rgb(255 255 255 / 0.7);
+}
+
+.plus {
+  width: 16px;
+  height: 16px;
+}
+
+.formulier {
+  display: grid;
+  gap: var(--space-02);
+  margin-top: var(--space-02);
+  padding: var(--space-03);
+  border-radius: var(--radius-md);
+  background: var(--norday-white);
+}
+
+.label {
+  display: grid;
+  gap: var(--space-01);
+  font: var(--type-label-small);
+  font-weight: 600;
+}
+
+.input {
+  min-height: 40px;
+  padding: var(--space-02) var(--space-03);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--norday-white);
+  color: var(--color-text);
+  font: var(--type-body-2);
+}
+
+.input[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--color-accent);
+}
+
+.fout {
+  margin: 0;
+  font: var(--type-label-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.knoppen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02);
+}
+
+.opslaan,
+.annuleren {
+  min-height: 36px;
+  padding: 0 var(--space-04);
+  border-radius: var(--radius-pill);
+  font: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opslaan {
+  border: 0;
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.annuleren {
+  border: 1px solid var(--color-line-subtle);
+  background: transparent;
+  color: var(--color-text);
+}

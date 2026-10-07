@@ -11,7 +11,7 @@ import {
   readAccountGegevens,
 } from "./accountgegevens";
 import { readHiddenProjects } from "./hidden-projects";
-import { Link, toLinks } from "./links";
+import { EigenLink, Link, toLinks } from "./links";
 import { CULTURE_FOLDER_ID } from "./orbit/config";
 import { fetchKlantIds } from "./orbit/klanten";
 import { fetchProjects, OrbitProject, ProjectState } from "./orbit/projects";
@@ -87,6 +87,7 @@ export type Platform = {
   supportOrganizations: string[];
   contactpersonen: Contactpersoon[];
   links: Link[];
+  eigenLinks: EigenLink[];
   projecten: Project[];
 };
 
@@ -243,6 +244,7 @@ export function buildPlatforms(
           supportOrganizations: platform.supportOrganizations,
           contactpersonen: platform.contactpersonen,
           links: toLinks(platform.links),
+          eigenLinks: platform.eigenLinks,
           projecten,
         };
       });

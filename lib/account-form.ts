@@ -1,5 +1,11 @@
 import type { KlantVelden, PlatformGegevens } from "./accountgegevens";
-import { LINK_TYPES, LinkType, LinkUrls } from "./links";
+import {
+  EigenLink,
+  LINK_TYPES,
+  LinkType,
+  LinkUrls,
+  MAX_EIGEN_LINKS,
+} from "./links";
 
 /** Lege rijen onder de bestaande, om contactpersonen toe te voegen. */
 export const LEGE_RIJEN = 2;
@@ -15,6 +21,8 @@ export type FormWaarden = {
   supportOrganizations: string;
   contactpersonen: ContactRij[];
   links: Record<LinkType, string>;
+  /** Altijd vier rijen; lege rijen tellen niet. */
+  eigenLinks: EigenLink[];
 };
 
 /** Foutmelding per veld; de sleutel is de name van het invoerveld. */
@@ -23,6 +31,7 @@ export type FormFouten = Record<string, string>;
 export type FormState = { fouten: FormFouten; waarden: FormWaarden } | null;
 
 const LEGE_CONTACT: ContactRij = { naam: "", rol: "", email: "" };
+const LEGE_LINK: EigenLink = { naam: "", url: "" };
 
 /** Wat het formulier van een platform oplevert; rij en koppelingen blijven zoals ze waren. */
 export type PlatformVelden = Omit<PlatformGegevens, "rijId" | "orbitProjecten">;
@@ -45,6 +54,10 @@ export function toFormWaarden(
     links: Object.fromEntries(
       LINK_TYPES.map((type) => [type, gegevens.links[type] ?? ""]),
     ) as Record<LinkType, string>,
+    eigenLinks: Array.from(
+      { length: MAX_EIGEN_LINKS },
+      (_, index) => gegevens.eigenLinks[index] ?? LEGE_LINK,
+    ),
   };
 }
 
@@ -90,6 +103,10 @@ export function readFormWaarden(formData: FormData): FormWaarden {
     links: Object.fromEntries(
       LINK_TYPES.map((type) => [type, text(formData, `link-${type}`)]),
     ) as Record<LinkType, string>,
+    eigenLinks: Array.from({ length: MAX_EIGEN_LINKS }, (_, index) => ({
+      naam: text(formData, `eigen-${index}-naam`),
+      url: text(formData, `eigen-${index}-url`),
+    })),
   };
 }
 
@@ -103,6 +120,22 @@ function lijst(value: string): string[] {
 const JIRA_KEY = /^[A-Z][A-Z0-9_]*$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_START = /^https?:\/\/\S+$/;
+
+const URL_FOUT =
+  "Een link begint met https:// of http://, zoals https://www.kunsthal.nl.";
+
+/** Controleert één eigen link; geeft de fout per veld, leeg als hij klopt. */
+export function eigenLinkFouten(link: EigenLink): {
+  naam?: string;
+  url?: string;
+} {
+  return {
+    ...(link.naam ? {} : { naam: "Vul een naam in, zoals Statuspagina." }),
+    ...(URL_START.test(link.url) && URL.canParse(link.url)
+      ? {}
+      : { url: URL_FOUT }),
+  };
+}
 
 /** Controleert het formulier; geeft de gegevens, of de fouten per veld. */
 export function validateForm(
@@ -146,12 +179,19 @@ export function validateForm(
       const url = waarden.links[type];
       if (!url) return [];
       if (!URL_START.test(url) || !URL.canParse(url)) {
-        fouten[`link-${type}`] =
-          "Een link begint met https:// of http://, zoals https://www.kunsthal.nl.";
+        fouten[`link-${type}`] = URL_FOUT;
       }
       return [[type, url]];
     }),
   );
+
+  const eigenLinks = waarden.eigenLinks.flatMap((link, index) => {
+    if (!link.naam && !link.url) return [];
+    const linkFouten = eigenLinkFouten(link);
+    if (linkFouten.naam) fouten[`eigen-${index}-naam`] = linkFouten.naam;
+    if (linkFouten.url) fouten[`eigen-${index}-url`] = linkFouten.url;
+    return [link];
+  });
 
   if (Object.keys(fouten).length > 0) return { fouten };
   return {
@@ -162,6 +202,7 @@ export function validateForm(
       supportOrganizations: lijst(waarden.supportOrganizations),
       contactpersonen,
       links,
+      eigenLinks,
     },
   };
 }

@@ -4,7 +4,13 @@ import type {
   KlantVelden,
   PlatformGegevens,
 } from "./accountgegevens";
-import { LINK_TYPES, LinkType, LinkUrls } from "./links";
+import {
+  formatEigenLinks,
+  LINK_TYPES,
+  LinkType,
+  LinkUrls,
+  parseEigenLinks,
+} from "./links";
 
 /** De tabel op de pagina Shortcuts in Culture Rotterdam Mission Control. */
 const TABEL_URL =
@@ -26,6 +32,7 @@ const KOLOM = {
   jiraKeys: "c-tUsRlLHmYz",
   supportOrganizations: "c-4-fKHAXd6d",
   contactpersonen: "c-zYeBW-ImGY",
+  eigenLinks: "c-4PSZpd5BLm",
 } as const;
 
 const LINK_KOLOM: Record<LinkType, string> = {
@@ -35,12 +42,11 @@ const LINK_KOLOM: Record<LinkType, string> = {
   "slack-klant": "c-0NIx0b5Jlb",
   "jira-board": "c-bWOcV9NxJl",
   drive: "c-19LH-bHx2g",
-  offerte: "c-W1cvzHrhxI",
+  figma: "c-aAwUPFYIor",
   "omgeving-acc": "c-Qj6ml7we-K",
   "omgeving-prod": "c-xQA47jnGKo",
   "cms-acc": "c-k2JYz6vZS-",
   "cms-prod": "c-eqY6-Oi5ZO",
-  overig: "c-ic7q-uARcr",
 };
 
 async function request(pad: string, init?: RequestInit): Promise<unknown> {
@@ -147,6 +153,7 @@ function parseRij(data: unknown): Rij | null {
         tekst(waarden, KOLOM.contactpersonen),
       ),
       links: parseLinks(waarden),
+      eigenLinks: parseEigenLinks(tekst(waarden, KOLOM.eigenLinks)),
     },
   };
 }
@@ -270,6 +277,7 @@ export async function savePlatformRij(
       [KOLOM.jiraKeys, platform.jiraKeys.join(", ")],
       [KOLOM.supportOrganizations, platform.supportOrganizations.join(", ")],
       [KOLOM.contactpersonen, formatContactpersonen(platform.contactpersonen)],
+      [KOLOM.eigenLinks, formatEigenLinks(platform.eigenLinks)],
       ...LINK_TYPES.map((type): [string, string] => [
         LINK_KOLOM[type],
         platform.links[type] ?? "",
