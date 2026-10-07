@@ -15,7 +15,12 @@ import {
   savePlatformGegevens,
 } from "@/lib/accountgegevens";
 import { type KlantProject, loadDashboard, slugify } from "@/lib/dashboard";
-import { MAX_EIGEN_LINKS } from "@/lib/links";
+import {
+  LINK_TYPE_LABELS,
+  LINK_TYPES,
+  type LinkType,
+  MAX_EIGEN_LINKS,
+} from "@/lib/links";
 import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
@@ -282,18 +287,31 @@ export type LinkState = {
   waarden: { naam: string; url: string };
 } | null;
 
-/** Zet een eigen link bij een platform; daarna staat hij meteen onder Overig. */
-export async function addEigenLinkAction(
+/**
+ * Zet een link bij een platform: een eigen link met naam onder Overig, of een
+ * vast linktype dat nog leeg is. Daarna staat hij er meteen.
+ */
+export async function addLinkAction(
   slug: string,
+  soort: LinkType | "eigen",
   _vorige: LinkState,
   formData: FormData,
 ): Promise<LinkState> {
-  if (!(await currentUser()) || !/^[a-z0-9-]+$/.test(slug)) redirect("/");
+  if (
+    !(await currentUser()) ||
+    !/^[a-z0-9-]+$/.test(slug) ||
+    !(soort === "eigen" || LINK_TYPES.includes(soort))
+  ) {
+    redirect("/");
+  }
   const lees = (name: string) => {
     const waarde = formData.get(name);
     return typeof waarde === "string" ? waarde.trim() : "";
   };
-  const link = { naam: lees("naam"), url: lees("url") };
+  const link = {
+    naam: soort === "eigen" ? lees("naam") : LINK_TYPE_LABELS[soort],
+    url: lees("url"),
+  };
   const fouten = eigenLinkFouten(link);
   if (fouten.naam || fouten.url) return { fouten, waarden: link };
 
@@ -316,9 +334,14 @@ export async function addEigenLinkAction(
       `De accountgegevens konden niet uit Superhuman worden opgehaald. ${dashboard.gegevensFout}`,
     );
   }
-  if (platform.eigenLinks.length >= MAX_EIGEN_LINKS) {
+  if (soort === "eigen" && platform.eigenLinks.length >= MAX_EIGEN_LINKS) {
     return opslaan(
       `Er staan al ${MAX_EIGEN_LINKS} eigen links bij dit platform.`,
+    );
+  }
+  if (soort !== "eigen" && platform.gegevens.links[soort]) {
+    return opslaan(
+      `Er staat al een link voor ${LINK_TYPE_LABELS[soort]}; wijzig hem via Gegevens bewerken.`,
     );
   }
   try {
@@ -326,11 +349,17 @@ export async function addEigenLinkAction(
       orbitId,
       platform.klant.orbitNaam,
       platform.klant.velden,
-      {
-        ...platform.gegevens,
-        naam: platform.naam,
-        eigenLinks: [...platform.eigenLinks, link],
-      },
+      soort === "eigen"
+        ? {
+            ...platform.gegevens,
+            naam: platform.naam,
+            eigenLinks: [...platform.eigenLinks, link],
+          }
+        : {
+            ...platform.gegevens,
+            naam: platform.naam,
+            links: { ...platform.gegevens.links, [soort]: link.url },
+          },
       platform.gegevens.naam,
     );
   } catch (error) {
