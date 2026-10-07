@@ -140,7 +140,7 @@ export function TicketKaarten({ data }: Props) {
                 <h3 id={`jira-${key}`} className={styles.titel}>
                   Jira
                 </h3>
-                <Sublink href={overzicht.boardUrl}>{`Project ${key}`}</Sublink>
+                <Sublink href={overzicht.boardUrl}>{`Project: ${key}`}</Sublink>
               </div>
             </header>
             <ul className={styles.aantallen}>
@@ -168,7 +168,7 @@ export function TicketKaarten({ data }: Props) {
               </h3>
               {support && (
                 <Sublink href={support.open.url}>
-                  {`Organisatie ${support.organizations.join(", ")}`}
+                  {`Organisatie: ${support.organizations.join(", ")}`}
                 </Sublink>
               )}
             </div>

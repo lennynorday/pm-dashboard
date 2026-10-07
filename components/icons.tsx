@@ -33,24 +33,6 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
-export function InboxIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M3 13h5l1.5 3h5L16 13h5" />
-      <path d="M5 5h14l2 8v6H3v-6z" />
-    </Icon>
-  );
-}
-
-export function TodoIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <rect x="4" y="4" width="16" height="16" rx="3" />
-      <path d="m8.5 12 2.5 2.5 4.5-5" />
-    </Icon>
-  );
-}
-
 export function ChevronIcon(props: IconProps) {
   return (
     <Icon {...props}>
