@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 import type { KoppelState } from "@/app/actions";
 import type { KlantProject } from "@/lib/dashboard";
+import { CheckIcon } from "./icons";
 import styles from "./AccountForm.module.css";
 import eigen from "./KoppelFormulier.module.css";
 
@@ -40,7 +41,7 @@ export function KoppelFormulier({
   ];
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form action={formAction} className={`${styles.form} ${eigen.formulier}`}>
       {state && (
         <div
           ref={melding}
@@ -56,27 +57,36 @@ export function KoppelFormulier({
       {projecten.map((project) => {
         const huidig = huidigeWaarde(project);
         return (
-          <fieldset key={project.number} className={eigen.project}>
-            <legend className={eigen.naam}>{project.naam}</legend>
-            <p className={eigen.meta}>
-              {project.number}
-              {project.eigenaar && ` · ${project.eigenaar}`}
-              {huidig === undefined && (
-                <span className={eigen.los}> · hoort nog nergens bij</span>
-              )}
-            </p>
-            <div className={eigen.keuzes}>
-              {keuzes.map(({ waarde, label }) => (
-                <label key={waarde} className={eigen.keuze}>
-                  <input
-                    type="radio"
-                    name={`project-${project.number}`}
-                    value={waarde}
-                    defaultChecked={huidig === waarde}
-                  />
-                  {label}
-                </label>
-              ))}
+          <fieldset key={project.number} className={eigen.groep}>
+            <legend className="visually-hidden">{project.naam}</legend>
+            <div className={eigen.project}>
+              <div>
+                <p className={eigen.naam} aria-hidden="true">
+                  {project.naam}
+                </p>
+                <p className={eigen.meta}>
+                  {project.number}
+                  {project.eigenaar && ` · ${project.eigenaar}`}
+                  {huidig === undefined && (
+                    <span className={eigen.los}> · hoort nog nergens bij</span>
+                  )}
+                </p>
+              </div>
+              <div className={eigen.segmenten}>
+                {keuzes.map(({ waarde, label }) => (
+                  <label key={waarde} className={eigen.segment}>
+                    <input
+                      type="radio"
+                      name={`project-${project.number}`}
+                      value={waarde}
+                      defaultChecked={huidig === waarde}
+                      className={eigen.radio}
+                    />
+                    <CheckIcon className={eigen.vinkje} />
+                    {label}
+                  </label>
+                ))}
+              </div>
             </div>
           </fieldset>
         );
