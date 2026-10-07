@@ -1,9 +1,9 @@
-.accounts {
+.platforms {
   display: grid;
   gap: var(--space-11);
 }
 
-.accountNaam {
+.platformNaam {
   margin: 0;
   padding-bottom: var(--space-03);
   border-bottom: 2px solid var(--color-line);
@@ -12,11 +12,11 @@
   letter-spacing: var(--heading-letter-spacing);
 }
 
-.accountNaam a {
+.platformNaam a {
   text-decoration: none;
 }
 
-.accountNaam a:hover {
+.platformNaam a:hover {
   text-decoration: underline;
 }
 

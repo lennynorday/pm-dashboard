@@ -17,6 +17,12 @@
   color: var(--color-text-muted);
 }
 
+.acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02);
+}
+
 .bewerken {
   display: inline-flex;
   align-items: center;

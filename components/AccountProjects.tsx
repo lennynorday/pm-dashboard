@@ -1,14 +1,32 @@
 import type { Project } from "@/lib/dashboard";
 import { orbitProjectUrl } from "@/lib/dashboard";
-import { formatDate, PROJECT_STATE_LABELS } from "@/lib/format";
+import { formatDate, formatUren, PROJECT_STATE_LABELS } from "@/lib/format";
+import { plafond, type ProjectBudgetResult } from "@/lib/orbit/budget";
 import { ExternalLink } from "./ExternalLink";
 import { VisibilityButton } from "./VisibilityButton";
 import styles from "./AccountProjects.module.css";
 
-type Props = { projecten: Project[] };
+type Props = {
+  projecten: Project[];
+  /** Per projectnummer; zonder budget staat er geen urenregel. */
+  budgetten?: Record<string, ProjectBudgetResult>;
+};
 
-/** Projecten van een account, elk als regel met een anker voor het zijmenu. */
-export function AccountProjects({ projecten }: Props) {
+function Budget({ budget }: { budget: ProjectBudgetResult | undefined }) {
+  if (budget?.status !== "ok") return null;
+  const { minuten, soort } = plafond(budget.data);
+  if (minuten === 0) return null;
+  const geschreven = budget.data.geschreven;
+  return (
+    <span>
+      {formatUren(geschreven)} van {formatUren(minuten)} uur {soort} (
+      {Math.round((geschreven / minuten) * 100)}%)
+    </span>
+  );
+}
+
+/** Projecten van een platform, elk als regel met een anker voor het zijmenu. */
+export function AccountProjects({ projecten, budgetten = {} }: Props) {
   return (
     <ul className={styles.list}>
       {projecten.map((project) => (
@@ -29,6 +47,7 @@ export function AccountProjects({ projecten }: Props) {
             {project.einddatum && (
               <span>Loopt tot {formatDate(project.einddatum)}</span>
             )}
+            <Budget budget={budgetten[project.number]} />
           </p>
           <ul className={styles.links}>
             <li>

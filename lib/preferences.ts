@@ -2,7 +2,7 @@ export type MenuStand = "uitgeklapt" | "ingeklapt";
 
 export const MENU_COOKIE = "pm-menu";
 
-/** Of de groep "Overige Culture-accounts" in het zijmenu open staat. */
+/** Of de groep "Overige Culture-platforms" in het zijmenu open staat. */
 export type GroepStand = "open" | "dicht";
 
 export const OVERIGE_COOKIE = "pm-overige";

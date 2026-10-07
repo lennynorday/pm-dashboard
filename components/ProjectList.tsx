@@ -14,7 +14,7 @@ export function ProjectList({ projecten }: Props) {
         <li key={project.number} className={styles.item}>
           <div className={styles.main}>
             <NextLink
-              href={projectHref(project.accountSlug, project.number)}
+              href={projectHref(project.platformSlug, project.number)}
               className={styles.name}
             >
               {project.naam}

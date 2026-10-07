@@ -1,12 +1,12 @@
 import NextLink from "next/link";
-import type { Account, Project } from "@/lib/dashboard";
+import type { Platform, Project } from "@/lib/dashboard";
 import type { AccountJira, Telling } from "@/lib/jira/overview";
 import { projectHref } from "@/lib/navigation";
 import { ExternalLink } from "./ExternalLink";
 import styles from "./TicketTable.module.css";
 
 export type TicketRij = {
-  account: Account;
+  platform: Platform;
   projecten: Project[];
   data: AccountJira;
 };
@@ -14,7 +14,7 @@ export type TicketRij = {
 type Props = {
   rijen: TicketRij[];
   caption: string;
-  /** Op de accountpagina zijn de kolommen met account en projecten overbodig. */
+  /** Op de platformpagina zijn de kolommen met platform en projecten overbodig. */
   toonAccount?: boolean;
 };
 
@@ -28,16 +28,16 @@ function Aantal({ telling, label }: { telling: Telling; label: string }) {
 }
 
 function AccountCel({ rij, rowSpan }: { rij: TicketRij; rowSpan: number }) {
-  const { account, projecten } = rij;
+  const { platform, projecten } = rij;
   return (
-    <th scope="row" rowSpan={rowSpan} className={styles.account}>
-      <NextLink href={`/accounts/${account.slug}`} className={styles.naam}>
-        {account.naam}
+    <th scope="row" rowSpan={rowSpan} className={styles.platform}>
+      <NextLink href={`/platforms/${platform.slug}`} className={styles.naam}>
+        {platform.naam}
       </NextLink>
       <ul className={styles.projecten}>
         {projecten.map((project) => (
           <li key={project.number}>
-            <NextLink href={projectHref(account.slug, project.number)}>
+            <NextLink href={projectHref(platform.slug, project.number)}>
               {project.naam}
             </NextLink>
           </li>
@@ -103,7 +103,7 @@ export function TicketTable({ rijen, caption, toonAccount = true }: Props) {
         <caption className="visually-hidden">{caption}</caption>
         <thead>
           <tr>
-            {toonAccount && <th scope="col">Account en projecten</th>}
+            {toonAccount && <th scope="col">Platform en projecten</th>}
             <th scope="col">Jira-project</th>
             <th scope="col" className={styles.getal}>
               In actieve sprint
@@ -125,7 +125,7 @@ export function TicketTable({ rijen, caption, toonAccount = true }: Props) {
         {rijen.map((rij) => {
           const keys = rij.data.jira.length > 0 ? rij.data.jira : [null];
           return (
-            <tbody key={rij.account.slug} className={styles.groep}>
+            <tbody key={rij.platform.slug} className={styles.groep}>
               {keys.map((item, index) => (
                 <tr key={item?.key ?? "geen"}>
                   {toonAccount && index === 0 && (

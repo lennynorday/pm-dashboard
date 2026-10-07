@@ -1,4 +1,4 @@
-import type { AccountGegevens } from "./accountgegevens";
+import type { KlantVelden, PlatformGegevens } from "./accountgegevens";
 import { LINK_TYPES, LinkType, LinkUrls } from "./links";
 
 /** Lege rijen onder de bestaande, om contactpersonen toe te voegen. */
@@ -8,6 +8,7 @@ export type ContactRij = { naam: string; rol: string; email: string };
 
 /** Wat er in het formulier staat, als tekst; ook na een fout, zodat niets verloren gaat. */
 export type FormWaarden = {
+  platform: string;
   naam: string;
   am: string;
   jiraKeys: string;
@@ -23,10 +24,17 @@ export type FormState = { fouten: FormFouten; waarden: FormWaarden } | null;
 
 const LEGE_CONTACT: ContactRij = { naam: "", rol: "", email: "" };
 
-export function toFormWaarden(gegevens: AccountGegevens): FormWaarden {
+/** Wat het formulier van een platform oplevert; rij en koppelingen blijven zoals ze waren. */
+export type PlatformVelden = Omit<PlatformGegevens, "rijId" | "orbitProjecten">;
+
+export function toFormWaarden(
+  klant: KlantVelden,
+  gegevens: PlatformVelden,
+): FormWaarden {
   return {
-    naam: gegevens.naam ?? "",
-    am: gegevens.am ?? "",
+    platform: gegevens.naam,
+    naam: klant.naam ?? "",
+    am: klant.am ?? "",
     jiraKeys: gegevens.jiraKeys.join(", "),
     supportOrganizations: gegevens.supportOrganizations.join(", "),
     contactpersonen: gegevens.contactpersonen.map((persoon) => ({
@@ -69,6 +77,7 @@ function rijen<T>(
 
 export function readFormWaarden(formData: FormData): FormWaarden {
   return {
+    platform: text(formData, "platform"),
     naam: text(formData, "naam"),
     am: text(formData, "am"),
     jiraKeys: text(formData, "jiraKeys"),
@@ -98,8 +107,12 @@ const URL_START = /^https?:\/\/\S+$/;
 /** Controleert het formulier; geeft de gegevens, of de fouten per veld. */
 export function validateForm(
   waarden: FormWaarden,
-): { gegevens: AccountGegevens } | { fouten: FormFouten } {
+): { klant: KlantVelden; platform: PlatformVelden } | { fouten: FormFouten } {
   const fouten: FormFouten = {};
+
+  if (!waarden.platform) {
+    fouten.platform = "Vul de naam van het platform in, zoals Oorlogsbronnen.";
+  }
 
   const jiraKeys = lijst(waarden.jiraKeys).map((key) => key.toUpperCase());
   const ongeldig = jiraKeys.filter((key) => !JIRA_KEY.test(key));
@@ -140,9 +153,9 @@ export function validateForm(
 
   if (Object.keys(fouten).length > 0) return { fouten };
   return {
-    gegevens: {
-      naam: waarden.naam || undefined,
-      am: waarden.am || undefined,
+    klant: { naam: waarden.naam || undefined, am: waarden.am || undefined },
+    platform: {
+      naam: waarden.platform,
       jiraKeys,
       supportOrganizations: lijst(waarden.supportOrganizations),
       contactpersonen,

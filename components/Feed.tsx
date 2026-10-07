@@ -122,8 +122,8 @@ export function Feed({ items, genegeerd }: Props) {
                       <span className={styles.soort} data-soort={item.soort}>
                         {label}
                       </span>
-                      <a href={`/accounts/${item.accountSlug}`}>
-                        {item.accountNaam}
+                      <a href={`/platforms/${item.platformSlug}`}>
+                        {item.platformNaam}
                       </a>
                     </span>
                     <a

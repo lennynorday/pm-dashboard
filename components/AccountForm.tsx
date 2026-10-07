@@ -66,7 +66,7 @@ function Veld({
   );
 }
 
-/** Formulier voor de accountgegevens die Orbit niet weet. */
+/** Formulier voor de gegevens van een platform die Orbit niet weet. */
 export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
   const [state, formAction, bezig] = useActionState(action, null);
   const samenvatting = useRef<HTMLDivElement>(null);
@@ -109,10 +109,24 @@ export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
       )}
 
       <fieldset className={styles.groep}>
-        <legend className={styles.legend}>Algemeen</legend>
+        <legend className={styles.legend}>Platform</legend>
+        <Veld
+          name="platform"
+          label="Naam van het platform"
+          hint="De website, zoals Oorlogsbronnen"
+          defaultValue={huidig.platform}
+          fout={fouten.platform}
+        />
+      </fieldset>
+
+      <fieldset className={styles.groep}>
+        <legend className={styles.legend}>Klant</legend>
+        <p className={styles.hint}>
+          Geldt voor alle platforms van {orbitNaam}.
+        </p>
         <Veld
           name="naam"
-          label="Kortere naam"
+          label="Kortere klantnaam"
           hint={`Laat leeg voor de naam uit Orbit: ${orbitNaam}`}
           defaultValue={huidig.naam}
           fout={fouten.naam}

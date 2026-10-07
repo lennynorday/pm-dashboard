@@ -26,17 +26,17 @@ export default async function HomePage() {
   }
 
   const bronnen = await Promise.all(
-    dashboard.accounts
-      .map((account) => ({
-        account,
-        projecten: account.projecten.filter(
+    dashboard.platforms
+      .map((platform) => ({
+        platform,
+        projecten: platform.projecten.filter(
           (p) => p.mijn && p.zichtbaarheid === "zichtbaar",
         ),
       }))
       .filter(({ projecten }) => projecten.length > 0)
-      .map(async ({ account, projecten }) => {
+      .map(async ({ platform, projecten }) => {
         const [jira, budgetten] = await Promise.all([
-          fetchAccountJira(account),
+          fetchAccountJira(platform),
           Promise.all(
             projecten.map((project) =>
               fetchProjectBudget(user.email, project.number),
@@ -44,7 +44,7 @@ export default async function HomePage() {
           ),
         ]);
         return {
-          account,
+          platform,
           jira,
           projecten: projecten.map((project, index) => ({
             project,
@@ -55,8 +55,8 @@ export default async function HomePage() {
   );
   const genegeerd = readGenegeerd(user.email);
   const feed = bouwFeed(bronnen, new Date());
-  const verborgen = dashboard.accounts
-    .flatMap((account) => account.projecten)
+  const verborgen = dashboard.platforms
+    .flatMap((platform) => platform.projecten)
     .filter((project) => project.zichtbaarheid === "verborgen");
 
   return (
@@ -75,8 +75,8 @@ export default async function HomePage() {
         </p>
       ) : (
         <MijnProjecten
-          rijen={bronnen.map(({ account, jira, projecten }) => ({
-            account,
+          rijen={bronnen.map(({ platform, jira, projecten }) => ({
+            platform,
             support: jira.support,
             projecten,
           }))}
