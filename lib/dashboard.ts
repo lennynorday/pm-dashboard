@@ -173,11 +173,16 @@ export function buildPlatforms(
   const klantNamen = [...new Set(orbitProjecten.map((orbit) => orbit.client))];
   const bezet = new Set<string>();
   const alleRijen = Object.values(gegevens).flatMap((item) => item.platforms);
-  const rijenVan = (orbitKlant: string) => {
-    const orbitId = klantIds.get(orbitKlant);
-    const rijen = (orbitId && gegevens[orbitId]?.platforms) || [];
-    return rijen.length > 0 ? rijen : [LEEG_PLATFORM];
-  };
+  // Elke klant een eigen leeg platform; een gedeeld object zou alle klanten
+  // zonder rij op één platform zetten.
+  const rijenPerKlant = new Map(
+    klantNamen.map((orbitKlant) => {
+      const orbitId = klantIds.get(orbitKlant);
+      const rijen = (orbitId && gegevens[orbitId]?.platforms) || [];
+      return [orbitKlant, rijen.length > 0 ? rijen : [{ ...LEEG_PLATFORM }]];
+    }),
+  );
+  const rijenVan = (orbitKlant: string) => rijenPerKlant.get(orbitKlant) ?? [];
   const platformPerProject = new Map(
     orbitProjecten.map((orbit) => [
       orbit.number,
