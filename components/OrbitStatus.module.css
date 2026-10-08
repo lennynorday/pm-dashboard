@@ -54,3 +54,20 @@
   width: 16px;
   height: 16px;
 }
+
+.knop:disabled {
+  background: var(--color-raised);
+  color: var(--color-text-muted);
+  box-shadow: inset 0 0 0 1px var(--color-line-soft);
+  cursor: default;
+}
+
+.draait {
+  animation: draai 0.9s linear infinite;
+}
+
+@keyframes draai {
+  to {
+    transform: rotate(360deg);
+  }
+}
