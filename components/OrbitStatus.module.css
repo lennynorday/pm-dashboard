@@ -71,3 +71,24 @@
     transform: rotate(360deg);
   }
 }
+
+/* De knop als voortgangsbalk: een gele balk die langs de onderrand meegroeit. */
+.voortgang {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.voortgang:hover {
+  background: var(--norday-dark);
+}
+
+.balk {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  block-size: 3px;
+  background: var(--norday-yellow);
+  transition: inline-size 0.6s var(--ease);
+}

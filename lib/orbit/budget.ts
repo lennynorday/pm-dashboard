@@ -1,4 +1,5 @@
 import { bewaar, database, lees, vers } from "@/lib/db";
+import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 
 /** Eén taak in Orbit waarop uren geschreven worden. Uren in minuten. */
@@ -27,6 +28,7 @@ export type ProjectBudget = {
 
 export type ProjectBudgetResult =
   | { status: "ok"; data: ProjectBudget }
+  | { status: "laden" }
   | { status: "niet-verbonden" }
   | { status: "fout"; message: string };
 
@@ -142,42 +144,61 @@ export function clearBudgetCache(): void {
   database().prepare("UPDATE orbit_cache SET opgehaald = 0").run();
 }
 
-/** Budget en uren van één project, met een cache van 15 minuten per gebruiker. */
-export async function fetchProjectBudget(
+// Na een mislukte poging even niet opnieuw, zodat de achtergrond niet blijft draaien.
+const FOUT_MS = 5 * 60 * 1000;
+const fouten = new Map<string, number>();
+
+/**
+ * Budget en uren van één project, met een cache van 15 minuten per gebruiker.
+ * Wat ontbreekt of verlopen is, wordt op de achtergrond opgehaald; tot dan de
+ * bewaarde cijfers, of "laden".
+ */
+export function fetchProjectBudget(
   email: string,
   number: string,
-): Promise<ProjectBudgetResult> {
+): ProjectBudgetResult {
   const sleutel = `budget:v1:${email}:${number}`;
   const hit = lees<ProjectBudget>(sleutel);
   if (hit && vers(hit.opgehaald, CACHE_MS)) {
     return { status: "ok", data: hit.waarde };
   }
+  const mislukt = fouten.get(sleutel);
+  if (mislukt && vers(mislukt, FOUT_MS)) {
+    return hit
+      ? { status: "ok", data: hit.waarde }
+      : {
+          status: "fout",
+          message: "Het budget kon niet worden opgehaald uit Orbit.",
+        };
+  }
 
-  const result = rij.then(() => fetchUncached(email, number));
-  rij = result.catch(() => undefined);
-  const nieuw = await result;
-  if (nieuw.status === "ok") {
+  opAchtergrond(sleutel, async () => {
+    const nieuw = await fetchUncached(email, number);
+    if (nieuw.status !== "ok") {
+      fouten.set(sleutel, Date.now());
+      return;
+    }
+    fouten.delete(sleutel);
     // Zonder offerte-uren meteen verlopen, zodat de volgende keer de offerte opnieuw wordt geprobeerd.
     bewaar(
       sleutel,
       nieuw.data,
       nieuw.data.offerte.status === "fout" ? 0 : undefined,
     );
-    return nieuw;
-  }
-  return hit ? { status: "ok", data: hit.waarde } : nieuw;
+  });
+  return hit ? { status: "ok", data: hit.waarde } : { status: "laden" };
 }
-
-// ponytail: Orbit remt af bij veel aanroepen tegelijk, dus één project tegelijk; een pool als dat te traag wordt.
-let rij: Promise<unknown> = Promise.resolve();
 
 async function fetchUncached(
   email: string,
   number: string,
 ): Promise<ProjectBudgetResult> {
-  const project = await callOrbitTool(email, "GetProject", {
-    projectId: number,
-  });
+  const project = await callOrbitTool(
+    email,
+    "GetProject",
+    { projectId: number },
+    true,
+  );
   if (project.status !== "ok") return project;
   return {
     status: "ok",
@@ -197,13 +218,16 @@ async function fetchOfferteMinuten(
   const hit = lees<number | null>(sleutel);
   if (hit && vers(hit.opgehaald, OFFERTE_CACHE_MS)) return hit.waarde;
 
-  const offer = await callOrbitTool(email, "GetOffer", { offerId });
+  const offer = await callOrbitTool(email, "GetOffer", { offerId }, true);
   if (offer.status !== "ok") return hit ? hit.waarde : "fout";
   const versie = parseActieveVersie(offer.text);
   const version = versie
-    ? await callOrbitTool(email, "GetOfferVersion", {
-        offerVersionId: versie,
-      })
+    ? await callOrbitTool(
+        email,
+        "GetOfferVersion",
+        { offerVersionId: versie },
+        true,
+      )
     : null;
   if (version && version.status !== "ok") return hit ? hit.waarde : "fout";
   const minuten = version ? parseOfferteMinuten(version.text) : null;

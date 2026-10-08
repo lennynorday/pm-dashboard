@@ -8,6 +8,7 @@ import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
 import { fetchAccountJira } from "@/lib/jira/overview";
+import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
 import { currentUser } from "@/lib/session";
 import styles from "./grid.module.css";
@@ -65,6 +66,12 @@ export default async function HomePage() {
         title="Overzicht"
         aside={<OrbitStatus dashboard={dashboard} />}
       />
+      {voortgang() && (
+        <p className={styles.muted} role="status">
+          Nog even geduld, we halen alles voor je op uit Orbit. Dat kan een paar
+          minuten duren.
+        </p>
+      )}
       <Feed
         items={feed.filter((item) => !genegeerd.includes(item.id))}
         genegeerd={feed.filter((item) => genegeerd.includes(item.id)).length}

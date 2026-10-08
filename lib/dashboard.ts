@@ -263,7 +263,7 @@ export const loadDashboard = cache(async (): Promise<Dashboard> => {
   const hidden = readHiddenProjects(user.email);
   if (mine.status !== "ok") return mine;
   if (culture.status !== "ok") return culture;
-  const klantIds = await fetchKlantIds(
+  const klantIds = fetchKlantIds(
     user.email,
     [...mine.projects, ...culture.projects].map((orbit) => orbit.client),
   );
