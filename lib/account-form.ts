@@ -15,6 +15,7 @@ export type ContactRij = { naam: string; rol: string; email: string };
 /** Wat er in het formulier staat, als tekst; ook na een fout, zodat niets verloren gaat. */
 export type FormWaarden = {
   platform: string;
+  orbitProjecten: string;
   naam: string;
   am: string;
   jiraKeys: string;
@@ -33,8 +34,8 @@ export type FormState = { fouten: FormFouten; waarden: FormWaarden } | null;
 const LEGE_CONTACT: ContactRij = { naam: "", rol: "", email: "" };
 const LEGE_LINK: EigenLink = { naam: "", url: "" };
 
-/** Wat het formulier van een platform oplevert; rij en koppelingen blijven zoals ze waren. */
-export type PlatformVelden = Omit<PlatformGegevens, "rijId" | "orbitProjecten">;
+/** Wat het formulier van een platform oplevert; de rij blijft zoals die was. */
+export type PlatformVelden = Omit<PlatformGegevens, "rijId">;
 
 export function toFormWaarden(
   klant: KlantVelden,
@@ -42,6 +43,7 @@ export function toFormWaarden(
 ): FormWaarden {
   return {
     platform: gegevens.naam,
+    orbitProjecten: gegevens.orbitProjecten.join(", "),
     naam: klant.naam ?? "",
     am: klant.am ?? "",
     jiraKeys: gegevens.jiraKeys.join(", "),
@@ -91,6 +93,7 @@ function rijen<T>(
 export function readFormWaarden(formData: FormData): FormWaarden {
   return {
     platform: text(formData, "platform"),
+    orbitProjecten: text(formData, "orbitProjecten"),
     naam: text(formData, "naam"),
     am: text(formData, "am"),
     jiraKeys: text(formData, "jiraKeys"),
@@ -149,6 +152,12 @@ export function validateForm(
     fouten.platform = "Vul de naam van het platform in, zoals Oorlogsbronnen.";
   }
 
+  const orbitProjecten = lijst(waarden.orbitProjecten);
+  const geenNummer = orbitProjecten.filter((number) => !/^\d+$/.test(number));
+  if (geenNummer.length > 0) {
+    fouten.orbitProjecten = `Geen projectnummer: ${geenNummer.join(", ")}. Een projectnummer bestaat uit cijfers, zoals 2885.`;
+  }
+
   const jiraKeys = lijst(waarden.jiraKeys).map((key) => key.toUpperCase());
   const ongeldig = jiraKeys.filter((key) => !JIRA_KEY.test(key));
   if (ongeldig.length > 0) {
@@ -198,6 +207,7 @@ export function validateForm(
     klant: { naam: waarden.naam || undefined, am: waarden.am || undefined },
     platform: {
       naam: waarden.platform,
+      orbitProjecten,
       jiraKeys,
       supportOrganizations: lijst(waarden.supportOrganizations),
       contactpersonen,
