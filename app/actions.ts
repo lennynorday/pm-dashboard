@@ -152,12 +152,8 @@ async function savePlatform(
         zonderPlatform: platform.klant.velden.zonderPlatform,
       },
       nieuw
-        ? { ...uitkomst.platform, orbitProjecten: [] }
-        : {
-            ...uitkomst.platform,
-            rijId: platform.gegevens.rijId,
-            orbitProjecten: platform.gegevens.orbitProjecten,
-          },
+        ? uitkomst.platform
+        : { ...uitkomst.platform, rijId: platform.gegevens.rijId },
       nieuw ? null : platform.gegevens.naam,
     );
   } catch (error) {

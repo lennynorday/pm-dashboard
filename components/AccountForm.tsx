@@ -117,6 +117,13 @@ export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
           defaultValue={huidig.platform}
           fout={fouten.platform}
         />
+        <Veld
+          name="orbitProjecten"
+          label="Orbit-projecten"
+          hint="Projectnummers gescheiden door komma's, bijvoorbeeld 2851, 2885. Ook van een andere klant, zoals bij een consortium."
+          defaultValue={huidig.orbitProjecten}
+          fout={fouten.orbitProjecten}
+        />
       </fieldset>
 
       <fieldset className={styles.groep}>
