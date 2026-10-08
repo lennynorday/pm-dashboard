@@ -228,13 +228,19 @@ async function bewaarKoppelingen(
       zusters.map((zuster) => ({
         ...zuster.gegevens,
         naam: zuster.naam,
-        orbitProjecten: keuzes
-          .filter(
-            (item) =>
-              typeof item.keuze === "object" &&
-              item.keuze?.platform === zuster.naam,
-          )
-          .map((item) => item.number),
+        orbitProjecten: [
+          // Projecten van een andere klant staan hier niet in de keuzes.
+          ...zuster.gegevens.orbitProjecten.filter(
+            (number) => !keuzes.some((item) => item.number === number),
+          ),
+          ...keuzes
+            .filter(
+              (item) =>
+                typeof item.keuze === "object" &&
+                item.keuze?.platform === zuster.naam,
+            )
+            .map((item) => item.number),
+        ],
       })),
     );
   } catch (error) {

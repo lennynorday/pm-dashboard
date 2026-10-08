@@ -130,13 +130,19 @@ export function orbitProjectUrl(number: string): string {
   return `${config.orbitSite}/project/${encodeURIComponent(number)}`;
 }
 
-/** Bij welk platform een project hoort; null als het niet gekoppeld is. */
+/**
+ * Bij welk platform een project hoort; null als het niet gekoppeld is. Een
+ * projectnummer in een platformrij telt ook als het platform bij een andere
+ * klant hoort (een consortium zoals Ons Land).
+ */
 export function platformVan(
   number: string,
   platforms: PlatformGegevens[],
+  alle: PlatformGegevens[],
 ): PlatformGegevens | null {
-  if (platforms.length === 1) return platforms[0];
-  return platforms.find((item) => item.orbitProjecten.includes(number)) ?? null;
+  const gekoppeld = alle.find((item) => item.orbitProjecten.includes(number));
+  if (gekoppeld) return gekoppeld;
+  return platforms.length === 1 ? platforms[0] : null;
 }
 
 /** Uniek in de hele lijst; bij een dubbele naam komt de klant ervoor. */
@@ -149,7 +155,8 @@ function uniekeSlug(naam: string, klant: string, bezet: Set<string>): string {
  * Bouwt de platforms op uit mijn projecten, de Culture-projecten en de
  * accountgegevens. Een project dat in beide lijsten staat, telt één keer.
  * Een project van een klant met meer platforms dat niet gekoppeld is, staat
- * op geen enkel platform.
+ * op geen enkel platform. Een project dat bij het platform van een andere klant
+ * staat, hoort bij dat platform.
  */
 export function buildPlatforms(
   mine: OrbitProject[],
@@ -165,6 +172,18 @@ export function buildPlatforms(
   ];
   const klantNamen = [...new Set(orbitProjecten.map((orbit) => orbit.client))];
   const bezet = new Set<string>();
+  const alleRijen = Object.values(gegevens).flatMap((item) => item.platforms);
+  const rijenVan = (orbitKlant: string) => {
+    const orbitId = klantIds.get(orbitKlant);
+    const rijen = (orbitId && gegevens[orbitId]?.platforms) || [];
+    return rijen.length > 0 ? rijen : [LEEG_PLATFORM];
+  };
+  const platformPerProject = new Map(
+    orbitProjecten.map((orbit) => [
+      orbit.number,
+      platformVan(orbit.number, rijenVan(orbit.client), alleRijen),
+    ]),
+  );
 
   return klantNamen
     .flatMap((orbitKlant) => {
@@ -173,8 +192,7 @@ export function buildPlatforms(
         ...LEGE_KLANT,
         platforms: [],
       };
-      const platforms =
-        account.platforms.length > 0 ? account.platforms : [LEEG_PLATFORM];
+      const platforms = rijenVan(orbitKlant);
       const naam = account.naam || displayName(orbitKlant);
       const vanKlant = orbitProjecten.filter(
         (orbit) => orbit.client === orbitKlant,
@@ -192,7 +210,7 @@ export function buildPlatforms(
         meerPlatforms: platforms.length > 1,
         projecten: vanKlant
           .map((orbit) => {
-            const platform = platformVan(orbit.number, platforms);
+            const platform = platformPerProject.get(orbit.number) ?? null;
             return {
               number: orbit.number,
               naam: orbit.name,
@@ -214,8 +232,8 @@ export function buildPlatforms(
         const platformNaam = platform.naam || klant.naam;
         const slug = uniekeSlug(platformNaam, klant.naam, bezet);
         bezet.add(slug);
-        const projecten = vanKlant
-          .filter((orbit) => platformVan(orbit.number, platforms) === platform)
+        const projecten = orbitProjecten
+          .filter((orbit) => platformPerProject.get(orbit.number) === platform)
           .map((orbit): Project => ({
             number: orbit.number,
             naam: orbit.name,
