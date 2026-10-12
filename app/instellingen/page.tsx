@@ -39,6 +39,7 @@ const KOPPELINGEN: BronInfo[] = [
       href: "https://id.atlassian.com/manage-profile/apps",
     },
   },
+  { bron: "slack", naam: "Slack", kort: "Slack" },
 ];
 
 export default async function InstellingenPage() {

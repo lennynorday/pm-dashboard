@@ -10,6 +10,7 @@ import {
   LogoutIcon,
   MenuIcon,
   PanelIcon,
+  TodoIcon,
 } from "@/components/icons";
 import { logoutAction } from "@/app/actions";
 import { initialen, NavPlatform } from "@/lib/navigation";
@@ -199,6 +200,19 @@ export function Sidebar({
                 <span className={styles.label}>Overzicht</span>
                 <span className={styles.tooltip} aria-hidden="true">
                   Overzicht
+                </span>
+              </NextLink>
+            </li>
+            <li>
+              <NextLink
+                href="/todos"
+                className={styles.item}
+                aria-current={pathname === "/todos" ? "page" : undefined}
+              >
+                <TodoIcon />
+                <span className={styles.label}>To-do&apos;s</span>
+                <span className={styles.tooltip} aria-hidden="true">
+                  To-do&apos;s
                 </span>
               </NextLink>
             </li>

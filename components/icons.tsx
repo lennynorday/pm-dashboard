@@ -217,3 +217,12 @@ export function PencilIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function TodoIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </Icon>
+  );
+}
