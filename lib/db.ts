@@ -46,6 +46,23 @@ function open(): DatabaseSync {
       id TEXT NOT NULL,
       PRIMARY KEY (email, id)
     );
+    CREATE TABLE IF NOT EXISTS taken (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      bron TEXT NOT NULL,
+      bron_id TEXT,
+      titel TEXT NOT NULL,
+      auteur TEXT,
+      plek TEXT,
+      tijd INTEGER,
+      url TEXT,
+      soort TEXT,
+      lijst TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'niet-gestart',
+      prio INTEGER NOT NULL DEFAULT 3,
+      toegevoegd INTEGER NOT NULL,
+      UNIQUE (email, bron, bron_id)
+    );
   `);
   return db;
 }

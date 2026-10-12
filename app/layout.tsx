@@ -11,6 +11,7 @@ import {
   parseGroepStand,
   parseMenuStand,
 } from "@/lib/preferences";
+import { tellingen } from "@/lib/todos";
 import { currentUser, LOGIN_MELDING_COOKIE, LoginMelding } from "@/lib/session";
 import "./globals.css";
 import styles from "./layout.module.css";
@@ -70,6 +71,7 @@ export default async function RootLayout({
             initialStand={stand}
             initialOverige={overige}
             user={user}
+            telling={tellingen(user.email)}
           />
           <main id="inhoud" className={styles.main}>
             {children}

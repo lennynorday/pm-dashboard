@@ -28,6 +28,8 @@ import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { parseLijst, parsePrio, parseStatus } from "@/lib/taak";
+import { nieuweTaak, verplaats, zetPrio, zetStatus } from "@/lib/todos";
 
 /** Haalt alles opnieuw op: Orbit, Jira en de accountgegevens uit Superhuman. */
 export async function refreshData(): Promise<void> {
@@ -371,4 +373,43 @@ export async function addLinkAction(
   }
   revalidatePath("/", "layout");
   return null;
+}
+
+/** De tellers in het zijmenu staan in de layout, dus die verversen mee. */
+async function bijTaken(doe: (email: string) => void): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  doe(user.email);
+  revalidatePath("/", "layout");
+}
+
+export async function verplaatsTaakAction(
+  id: number,
+  lijst: string,
+): Promise<void> {
+  const naar = parseLijst(lijst);
+  if (naar) await bijTaken((email) => verplaats(email, id, naar));
+}
+
+export async function zetStatusAction(
+  id: number,
+  status: string,
+): Promise<void> {
+  const nieuw = parseStatus(status);
+  if (nieuw) await bijTaken((email) => zetStatus(email, id, nieuw));
+}
+
+export async function zetPrioAction(id: number, prio: number): Promise<void> {
+  const nieuw = parsePrio(prio);
+  if (nieuw) await bijTaken((email) => zetPrio(email, id, nieuw));
+}
+
+export async function nieuweTaakAction(
+  titel: string,
+  status: string,
+): Promise<void> {
+  const kolom = parseStatus(status);
+  const schoon = titel.trim();
+  if (kolom && schoon)
+    await bijTaken((email) => nieuweTaak(email, schoon, kolom));
 }

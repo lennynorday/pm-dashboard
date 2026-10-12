@@ -30,3 +30,4 @@
 
 - `is:saved` met een gebruikerstoken (`search:read`) geeft de bewaarde berichten terug; getest op 2026-10-12. Slack heeft eerder bewaarde berichten omgezet naar To-do's, dus alleen wat daar nog als bewaard staat, komt mee.
 - Alleen lezen: afronden doe je in Slack. Slack biedt daar geen officiële API voor (2026-10-12, Lenny).
+- Opgevolgd door [inbox-en-todos](2026-10-12-inbox-en-todos.md): de pagina To-do's is daar een eigen lijst met kanban geworden en de bewaarde berichten komen binnen via de Inbox.

@@ -226,3 +226,12 @@ export function TodoIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function InboxIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 13h5l1.5 3h5L16 13h5" />
+      <path d="M5 5h14l2 8v6H3v-6z" />
+    </Icon>
+  );
+}

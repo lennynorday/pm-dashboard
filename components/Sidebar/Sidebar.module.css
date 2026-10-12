@@ -305,6 +305,21 @@
   outline-color: var(--norday-white);
 }
 
+.count {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+  font: var(--type-label);
+  text-align: center;
+}
+
+.item[aria-current="page"] .count {
+  background: var(--norday-white);
+}
+
 .label {
   overflow-wrap: anywhere;
 }
@@ -393,6 +408,7 @@
 
   /* Ingeklapt: tekst alleen voor screenreaders, iconen en beginletters in beeld. */
   .sidebar[data-stand="ingeklapt"] .label,
+  .sidebar[data-stand="ingeklapt"] .count,
   .sidebar[data-stand="ingeklapt"] .sectionTitle {
     position: absolute;
     width: 1px;

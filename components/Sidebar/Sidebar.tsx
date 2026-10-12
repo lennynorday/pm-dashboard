@@ -7,6 +7,7 @@ import {
   ChevronIcon,
   CloseIcon,
   HomeIcon,
+  InboxIcon,
   LogoutIcon,
   MenuIcon,
   PanelIcon,
@@ -31,6 +32,7 @@ type Props = {
   initialStand: MenuStand;
   initialOverige: GroepStand;
   user: Gebruiker;
+  telling: { inbox: number; open: number };
 };
 
 function currentPlatform(pathname: string): string | null {
@@ -42,6 +44,7 @@ export function Sidebar({
   initialStand,
   initialOverige,
   user,
+  telling,
 }: Props) {
   const pathname = usePathname();
   const current = currentPlatform(pathname);
@@ -205,12 +208,31 @@ export function Sidebar({
             </li>
             <li>
               <NextLink
+                href="/inbox"
+                className={styles.item}
+                aria-current={pathname === "/inbox" ? "page" : undefined}
+              >
+                <InboxIcon />
+                <span className={styles.label}>Inbox</span>
+                {telling.inbox > 0 && (
+                  <span className={styles.count}>{telling.inbox}</span>
+                )}
+                <span className={styles.tooltip} aria-hidden="true">
+                  Inbox
+                </span>
+              </NextLink>
+            </li>
+            <li>
+              <NextLink
                 href="/todos"
                 className={styles.item}
                 aria-current={pathname === "/todos" ? "page" : undefined}
               >
                 <TodoIcon />
                 <span className={styles.label}>To-do&apos;s</span>
+                {telling.open > 0 && (
+                  <span className={styles.count}>{telling.open}</span>
+                )}
                 <span className={styles.tooltip} aria-hidden="true">
                   To-do&apos;s
                 </span>
