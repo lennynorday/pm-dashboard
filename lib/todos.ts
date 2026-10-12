@@ -1,5 +1,5 @@
 import { database } from "./db";
-import type { SlackTodo } from "./slack/saved";
+import type { SlackTodo } from "./slack/api";
 import {
   type FeedTodo,
   type Lijst,
@@ -80,7 +80,7 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
   const insert = database().prepare(
     `INSERT OR IGNORE INTO taken
        (email, bron, bron_id, titel, bericht, auteur, plek, tijd, url, soort, lijst, toegevoegd)
-     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, ?, 'Bewaard', 'inbox', ?)`,
+     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)`,
   );
   for (const bericht of berichten) {
     insert.run(
@@ -92,6 +92,7 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
       bericht.kanaal,
       bericht.tijd,
       bericht.permalink,
+      bericht.soort,
       Date.now(),
     );
   }

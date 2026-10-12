@@ -28,6 +28,7 @@ import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { synchroniseerSlack } from "@/lib/slack/sync";
 import {
   type FeedTodo,
   MAX_TITEL,
@@ -479,4 +480,12 @@ export async function feedTodoOngedaanAction(id: string): Promise<void> {
     verwijderFeedTodo(email, id);
     herstel(email, id);
   });
+}
+
+/** Haalt nieuwe Slack-berichten op voor de teller in het menu; fouten komen op de Inbox-pagina. */
+export async function synchroniseerSlackAction(): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  await synchroniseerSlack(user.email);
+  revalidatePath("/", "layout");
 }

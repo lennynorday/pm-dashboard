@@ -6,8 +6,8 @@ const AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";
 const TOKEN_URL = "https://slack.com/api/oauth.v2.access";
 export const SLACK_REDIRECT_URI = appUrl("/api/slack/callback");
 
-/** Alleen lezen: zoeken in berichten, met de rechten van de gebruiker zelf. */
-const USER_SCOPES = "search:read";
+/** Alleen lezen: zoeken in berichten en de DM's van de gebruiker zelf. */
+const USER_SCOPES = "search:read im:read im:history mpim:read mpim:history";
 
 function setting(name: "SLACK_CLIENT_ID" | "SLACK_CLIENT_SECRET"): string {
   const value = process.env[name];

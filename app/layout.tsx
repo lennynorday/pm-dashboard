@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
+import { InboxSync } from "@/components/InboxSync";
 import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { loadDashboard } from "@/lib/dashboard";
@@ -65,6 +66,7 @@ export default async function RootLayout({
         <a className={styles.skipLink} href="#inhoud">
           Naar de inhoud
         </a>
+        <InboxSync />
         <div className={styles.shell}>
           <Sidebar
             platforms={platforms}

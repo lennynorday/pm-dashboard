@@ -46,6 +46,10 @@ function open(): DatabaseSync {
       id TEXT NOT NULL,
       PRIMARY KEY (email, id)
     );
+    CREATE TABLE IF NOT EXISTS slack_start (
+      email TEXT PRIMARY KEY REFERENCES gebruikers (email),
+      sinds INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS taken (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT NOT NULL REFERENCES gebruikers (email),
