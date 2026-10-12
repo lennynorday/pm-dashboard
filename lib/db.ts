@@ -57,6 +57,7 @@ function open(): DatabaseSync {
       tijd INTEGER,
       url TEXT,
       soort TEXT,
+      bericht TEXT,
       lijst TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'niet-gestart',
       prio INTEGER NOT NULL DEFAULT 3,
@@ -64,6 +65,14 @@ function open(): DatabaseSync {
       UNIQUE (email, bron, bron_id)
     );
   `);
+  // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
+  const kolommen = db.prepare("PRAGMA table_info(taken)").all();
+  if (!kolommen.some((kolom) => kolom.name === "bericht")) {
+    db.exec(`
+      ALTER TABLE taken ADD COLUMN bericht TEXT;
+      UPDATE taken SET bericht = titel WHERE bron = 'slack';
+    `);
+  }
   return db;
 }
 

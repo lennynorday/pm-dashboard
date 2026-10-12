@@ -10,6 +10,9 @@
 ## Scope
 
 - **Wel:** pagina Inbox (menu, met teller): bewaarde Slack-berichten, per bericht Openen in Slack, Naar to-do of Negeren.
+- **Wel:** Naar to-do opent een popup waarin je de taak zelf uitschrijft (die tekst wordt de titel) en een prioriteit kiest; het bericht blijft zichtbaar en de taak linkt ernaar terug. Het item vervaagt uit de lijst en een melding onderin bevestigt het, met Ongedaan maken.
+- **Wel:** dezelfde Naar to-do-keuze op elke melding in Mijn feed op Overzicht; de melding verdwijnt dan uit de feed en komt met Ongedaan maken terug.
+- **Wel:** de titel van elke taak is te bewerken (⋯ → Titel bewerken).
 - **Wel:** pagina To-do's met Kanban en Lijst. Statussen Niet gestart, Bezig, Wacht / review, Klaar, Geblokkeerd; prioriteit 1 Urgent t/m 4 Laag (standaard 3 Middel); eigen taken toevoegen; zoeken; status en prioriteit wijzigen; slepen tussen kolommen.
 - **Wel:** Klaar verdwijnt uit de kanban en staat in een uitklapper onderaan de lijst.
 - **Niet:** Gmail (volgende stap), deadlines, uitvoerders, subtaken, volgorde binnen een kolom, direct antwoorden vanuit het dashboard.
@@ -18,7 +21,7 @@
 ## Acceptatiecriteria
 
 1. Een bewaard Slack-bericht verschijnt na openen van Inbox als nieuw item, één keer, ook na herhaald verversen.
-2. Naar to-do zet het op To-do's met status Niet gestart en prioriteit Middel; Negeren verbergt het en het komt niet terug bij verversen.
+2. Naar to-do opent de popup; zonder titel geeft Opslaan een foutmelding. Met titel staat het op To-do's met status Niet gestart en de gekozen prioriteit, met de eigen titel, een link naar het bericht en de bronnaam; Negeren verbergt het en het komt niet terug bij verversen.
 3. Op To-do's wisselen Kanban en Lijst; de keuze blijft bewaard.
 4. Een kaart slepen naar een andere kolom wijzigt de status; het ⋯-menu en het statuslabel doen hetzelfde zonder slepen.
 5. Een taak op Klaar staat niet meer op de kanban en wel in de uitklapper Klaar onder de lijst; ongedaan maken kan.
@@ -28,4 +31,4 @@
 
 ## Domeinmodel
 
-Eén taak met `lijst` (inbox, todo, genegeerd), `status` en `prio`. Een inbox-item is een taak die nog niet gekozen is; Naar to-do wijzigt alleen de lijst. Een item blijft bestaan als het uit de bron verdwijnt.
+Eén taak met `lijst` (inbox, todo, genegeerd), `status` en `prio`. Een inbox-item is een taak die nog niet gekozen is; Naar to-do wijzigt alleen de lijst. Een item blijft bestaan als het uit de bron verdwijnt. 9. Naar to-do op een melding in Mijn feed zet een taak (bron Feed, titel voorgevuld) en haalt de melding uit de feed; Ongedaan maken zet hem terug en verwijdert de taak.

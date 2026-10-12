@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import {
   useEffect,
   useOptimistic,
@@ -8,12 +9,14 @@ import {
   useTransition,
 } from "react";
 import {
+  hernoemTaakAction,
   nieuweTaakAction,
   verplaatsTaakAction,
   zetPrioAction,
   zetStatusAction,
 } from "@/app/actions";
 import {
+  BRON_LABELS,
   PRIO_LABELS,
   PRIOS,
   STATUS_LABELS,
@@ -23,17 +26,25 @@ import {
   type Taak,
 } from "@/lib/taak";
 import { setPreferenceCookie } from "./Sidebar/cookies";
-import { BoardIcon, CheckIcon, ChevronIcon, MenuIcon, PlusIcon } from "./icons";
+import {
+  BoardIcon,
+  CheckIcon,
+  ChevronIcon,
+  ExternalIcon,
+  MenuIcon,
+  PlusIcon,
+} from "./icons";
 import styles from "./Todos.module.css";
+import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
+import { useToast } from "./Toast";
 import { TodosMenu, type MenuItem } from "./TodosMenu";
 import { TODOS_COOKIE, type Weergave } from "./TodosWeergave";
 
 type Patch = Pick<Taak, "id"> &
-  Partial<Pick<Taak, "status" | "prio" | "lijst">>;
+  Partial<Pick<Taak, "status" | "prio" | "lijst" | "titel">>;
 
 /** Klaar is geen kolom maar een afrondzone. */
 const KOLOMMEN = STATUSSEN.filter((status) => status !== "klaar");
-const MELDING_DUUR = 6000;
 
 const statusKlasse = (status: Status) => styles[`st-${status}`];
 const prioKlasse = (prio: Prio) => styles[`pr-${prio}`];
@@ -77,16 +88,29 @@ function MoreIcon() {
   );
 }
 
+const berichtTekst = (taak: Taak) => taak.bericht ?? taak.titel;
+
+function dialoogBron(taak: Taak): DialoogBron | undefined {
+  if (taak.bron === "eigen") return undefined;
+  const wie = (taak.bron === "slack" ? [taak.auteur, taak.plek] : [taak.plek])
+    .filter(Boolean)
+    .join(" · ");
+  return {
+    label: BRON_LABELS[taak.bron],
+    wie,
+    tekst: taak.bericht ?? "",
+    url: taak.url,
+  };
+}
+
 type Props = { taken: Taak[]; weergave: Weergave };
 
 export function Todos({ taken, weergave: start }: Props) {
   const [weergave, setWeergave] = useState(start);
   const [zoek, setZoek] = useState("");
   const [nieuw, setNieuw] = useState<Status | null>(null);
-  const [afgerond, setAfgerond] = useState<{
-    id: number;
-    vorige: Status;
-  } | null>(null);
+  const [bewerk, setBewerk] = useState<Taak | null>(null);
+  const { toon, element: melding } = useToast();
   const [sleepId, setSleepId] = useState<number | null>(null);
   const [over, setOver] = useState<Status | null>(null);
   const [, startTransition] = useTransition();
@@ -98,12 +122,6 @@ export function Todos({ taken, weergave: start }: Props) {
         .filter((taak) => taak.lijst === "todo"),
   );
   const nieuwVeld = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!afgerond) return;
-    const timer = setTimeout(() => setAfgerond(null), MELDING_DUUR);
-    return () => clearTimeout(timer);
-  }, [afgerond]);
 
   useEffect(() => {
     if (nieuw) nieuwVeld.current?.focus();
@@ -122,7 +140,15 @@ export function Todos({ taken, weergave: start }: Props) {
 
   function zetStatus(taak: Taak, status: Status) {
     if (status === taak.status) return;
-    if (status === "klaar") setAfgerond({ id: taak.id, vorige: taak.status });
+    if (status === "klaar") {
+      const vorige = taak.status;
+      toon("Afgerond, te vinden onder Klaar in de lijst", {
+        ongedaan: () =>
+          wijzig({ id: taak.id, status: vorige }, () =>
+            zetStatusAction(taak.id, vorige),
+          ),
+      });
+    }
     wijzig({ id: taak.id, status }, () => zetStatusAction(taak.id, status));
   }
 
@@ -130,12 +156,10 @@ export function Todos({ taken, weergave: start }: Props) {
     wijzig({ id: taak.id, prio }, () => zetPrioAction(taak.id, prio));
   }
 
-  function ongedaan() {
-    if (!afgerond) return;
-    wijzig({ id: afgerond.id, status: afgerond.vorige }, () =>
-      zetStatusAction(afgerond.id, afgerond.vorige),
-    );
-    setAfgerond(null);
+  function hernoem(taak: Taak, titel: string) {
+    setBewerk(null);
+    wijzig({ id: taak.id, titel }, () => hernoemTaakAction(taak.id, titel));
+    toon("Titel aangepast");
   }
 
   function kiesWeergave(nieuweWeergave: Weergave) {
@@ -152,9 +176,10 @@ export function Todos({ taken, weergave: start }: Props) {
     e.currentTarget.reset();
   }
 
-  function statusItems(taak: Taak): MenuItem[] {
-    return STATUSSEN.map((status) => ({
+  function statusItems(taak: Taak, scheiding = false): MenuItem[] {
+    return STATUSSEN.map((status, nummer) => ({
       label: STATUS_LABELS[status],
+      scheiding: nummer === 0 ? scheiding : undefined,
       stip: statusKlasse(status),
       gekozen: status === taak.status,
       kies: () => zetStatus(taak, status),
@@ -171,7 +196,10 @@ export function Todos({ taken, weergave: start }: Props) {
   }
 
   function actieItems(taak: Taak): MenuItem[] {
-    const items = statusItems(taak);
+    const items = [
+      { label: "Titel bewerken", kies: () => setBewerk(taak) },
+      ...statusItems(taak, true),
+    ];
     if (taak.bron !== "slack") return items;
     return [
       ...items,
@@ -196,10 +224,46 @@ export function Todos({ taken, weergave: start }: Props) {
     </TodosMenu>
   );
 
-  const bron = (taak: Taak) =>
-    taak.bron === "slack" ? (
-      <span className={`${styles.chip} ${styles.slack}`}>Slack</span>
-    ) : null;
+  const bron = (taak: Taak) => {
+    if (taak.bron === "eigen") return null;
+    const naam = BRON_LABELS[taak.bron];
+    if (!taak.url)
+      return <span className={`${styles.chip} ${styles.slack}`}>{naam}</span>;
+    const extern = /^https?:/.test(taak.url);
+    const label = `Openen in ${naam}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
+    const inhoud = (
+      <>
+        {naam}
+        <ExternalIcon aria-hidden="true" />
+      </>
+    );
+    const klasse = `${styles.chip} ${styles.slack} ${styles.chipLink}`;
+    return extern ? (
+      <a
+        href={taak.url}
+        className={klasse}
+        aria-label={label}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {inhoud}
+      </a>
+    ) : (
+      <NextLink href={taak.url} className={klasse} aria-label={label}>
+        {inhoud}
+      </NextLink>
+    );
+  };
+
+  const context = (taak: Taak) => {
+    const tekst = (
+      taak.bron === "slack" ? [taak.auteur, taak.plek] : [taak.plek]
+    )
+      .filter(Boolean)
+      .join(" · ");
+    if (taak.bron === "eigen" || !tekst) return null;
+    return <span className={styles.context}>{tekst}</span>;
+  };
 
   const meer = (taak: Taak) => (
     <TodosMenu
@@ -228,6 +292,7 @@ export function Todos({ taken, weergave: start }: Props) {
         }}
       >
         <span className={styles.titel}>{taak.titel}</span>
+        {context(taak)}
         <div className={styles.voet}>
           {prioKnop(taak)}
           {bron(taak)}
@@ -309,7 +374,10 @@ export function Todos({ taken, weergave: start }: Props) {
         >
           <CheckIcon />
         </button>
-        <span className={styles.titel}>{taak.titel}</span>
+        <span className={styles.titelBlok}>
+          <span className={styles.titel}>{taak.titel}</span>
+          {context(taak)}
+        </span>
         <TodosMenu
           knopClass={`${styles.chip} ${styles.chipKnop} ${statusKlasse(taak.status)}`}
           ariaLabel={`${STATUS_LABELS[taak.status]}, status wijzigen: ${taak.titel}`}
@@ -440,20 +508,16 @@ export function Todos({ taken, weergave: start }: Props) {
         lijst()
       )}
 
-      <div role="status" className={styles.meldingRuimte}>
-        {afgerond && (
-          <p className={styles.melding}>
-            Afgerond, te vinden onder Klaar in de lijst
-            <button
-              type="button"
-              className={styles.ongedaan}
-              onClick={ongedaan}
-            >
-              Ongedaan maken
-            </button>
-          </p>
-        )}
-      </div>
+      {bewerk && (
+        <TodoDialoog
+          modus="bewerk"
+          titel={bewerk.titel}
+          bron={dialoogBron(bewerk)}
+          onSluit={() => setBewerk(null)}
+          onBevestig={(titel) => hernoem(bewerk, titel)}
+        />
+      )}
+      {melding}
     </>
   );
 }

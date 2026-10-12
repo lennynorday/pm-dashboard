@@ -482,36 +482,39 @@
   background: var(--color-line-soft);
 }
 
-/* Melding na afronden */
-.meldingRuimte {
-  position: fixed;
-  right: var(--space-06);
-  bottom: var(--space-06);
-  z-index: 30;
+/* Bron en context bij taken uit Slack of de feed */
+.chipLink {
+  text-decoration: none;
+  color: var(--color-text);
 }
 
-.melding {
-  display: flex;
-  align-items: center;
-  gap: var(--space-04);
-  margin: 0;
-  padding: var(--space-03) var(--space-04) var(--space-03) var(--space-05);
-  border-radius: var(--radius-pill);
-  background: var(--norday-dark);
-  color: var(--norday-white);
-  font: var(--type-label);
-  font-size: 14px;
+.chipLink:hover {
+  filter: brightness(0.95);
 }
 
-.ongedaan {
-  padding: 4px 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
+.chipLink:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.chipLink svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.7;
+}
+
+.titelBlok {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.context {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.kaart > .context {
+  margin-top: -4px;
 }

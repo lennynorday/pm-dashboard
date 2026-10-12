@@ -306,14 +306,17 @@
 }
 
 .count {
-  margin-left: auto;
+  display: grid;
+  flex: none;
+  place-items: center;
   min-width: 24px;
-  padding: 2px 8px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 8px;
   border-radius: var(--radius-pill);
   background: var(--norday-lilac);
   color: var(--norday-dark);
-  font: var(--type-label);
-  text-align: center;
+  font: 600 12px/1 var(--font-text);
 }
 
 .item[aria-current="page"] .count {

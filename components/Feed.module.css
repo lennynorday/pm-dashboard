@@ -125,6 +125,53 @@
   padding: 14px 14px 14px var(--space-04);
   border-radius: var(--radius-md);
   background: var(--color-raised);
+  max-height: 400px;
+  overflow: hidden;
+  transition:
+    opacity 0.25s var(--ease),
+    max-height 0.35s var(--ease) 0.1s,
+    padding 0.35s var(--ease) 0.1s,
+    margin 0.35s var(--ease) 0.1s,
+    visibility 0s 0.45s;
+}
+
+/* Naar de to-do's: vervaagt, klapt dicht en verdwijnt ook uit de leesvolgorde. */
+.item[data-weg] {
+  max-height: 0;
+  margin-bottom: calc(var(--space-02) * -1);
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.acties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-02);
+}
+
+.naarTodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: 500 14px/1 var(--font-text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.naarTodo:hover {
+  background: #5a1a3b;
 }
 
 .icoon {
@@ -224,6 +271,12 @@
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
 }
 
 @media (max-width: 760px) {

@@ -29,9 +29,30 @@ export const PRIO_LABELS: Record<Prio, string> = {
 export const LIJSTEN = ["inbox", "todo", "genegeerd"] as const;
 export type Lijst = (typeof LIJSTEN)[number];
 
+export const BRONNEN_TAAK = ["slack", "feed", "eigen"] as const;
+export type Bron = (typeof BRONNEN_TAAK)[number];
+
+export const BRON_LABELS: Record<Bron, string> = {
+  slack: "Slack",
+  feed: "Feed",
+  eigen: "Eigen",
+};
+
+export const MAX_TITEL = 120;
+
+/** Een melding uit Mijn feed op Overzicht die naar de to-do's gaat. */
+export type FeedTodo = {
+  id: string;
+  titel: string;
+  detail: string;
+  /** Platform of klant waar de melding bij hoort. */
+  plek: string;
+  url: string;
+};
+
 export type Taak = {
   id: number;
-  bron: "slack" | "eigen";
+  bron: Bron;
   titel: string;
   auteur: string | null;
   /** Kanaal of "Direct bericht"; leeg bij eigen taken. */
@@ -39,6 +60,8 @@ export type Taak = {
   /** Unix-seconden. */
   tijd: number | null;
   url: string | null;
+  /** De tekst van het oorspronkelijke bericht of de melding; de titel is de eigen tekst. */
+  bericht: string | null;
   /** Waarom het in de inbox staat, zoals "Bewaard". */
   soort: string | null;
   lijst: Lijst;
@@ -51,5 +74,7 @@ export const parseStatus = (waarde: unknown): Status | null =>
   STATUSSEN.find((status) => status === waarde) ?? null;
 export const parsePrio = (waarde: unknown): Prio | null =>
   PRIOS.find((prio) => prio === waarde) ?? null;
+export const parseBron = (waarde: unknown): Bron | null =>
+  BRONNEN_TAAK.find((bron) => bron === waarde) ?? null;
 export const parseLijst = (waarde: unknown): Lijst | null =>
   LIJSTEN.find((lijst) => lijst === waarde) ?? null;

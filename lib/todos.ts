@@ -1,10 +1,12 @@
 import { database } from "./db";
 import type { SlackTodo } from "./slack/saved";
 import {
+  type FeedTodo,
   type Lijst,
   type Prio,
   type Status,
   type Taak,
+  parseBron,
   parseLijst,
   parsePrio,
   parseStatus,
@@ -18,7 +20,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
   const status = parseStatus(row.status);
   const prio = parsePrio(row.prio);
   const lijst = parseLijst(row.lijst);
-  const bron = row.bron === "slack" || row.bron === "eigen" ? row.bron : null;
+  const bron = parseBron(row.bron);
   if (
     typeof row.id !== "number" ||
     typeof row.titel !== "string" ||
@@ -37,6 +39,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
     plek: tekst(row.plek),
     tijd: typeof row.tijd === "number" ? row.tijd : null,
     url: tekst(row.url),
+    bericht: tekst(row.bericht),
     soort: tekst(row.soort),
     lijst,
     status,
@@ -76,13 +79,14 @@ export function tellingen(email: string): { inbox: number; open: number } {
 export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
   const insert = database().prepare(
     `INSERT OR IGNORE INTO taken
-       (email, bron, bron_id, titel, auteur, plek, tijd, url, soort, lijst, toegevoegd)
-     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, 'Bewaard', 'inbox', ?)`,
+       (email, bron, bron_id, titel, bericht, auteur, plek, tijd, url, soort, lijst, toegevoegd)
+     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, ?, 'Bewaard', 'inbox', ?)`,
   );
   for (const bericht of berichten) {
     insert.run(
       email,
       bericht.permalink,
+      bericht.text,
       bericht.text,
       bericht.auteur,
       bericht.kanaal,
@@ -118,4 +122,58 @@ export function zetPrio(email: string, id: number, prio: Prio): void {
   database()
     .prepare("UPDATE taken SET prio = ? WHERE email = ? AND id = ?")
     .run(prio, email, id);
+}
+
+/** Een inbox-item wordt een taak, met de titel die de gebruiker zelf schreef. */
+export function naarTodo(
+  email: string,
+  id: number,
+  titel: string,
+  prio: Prio,
+): void {
+  database()
+    .prepare(
+      "UPDATE taken SET lijst = 'todo', titel = ?, prio = ? WHERE email = ? AND id = ?",
+    )
+    .run(titel, prio, email, id);
+}
+
+export function hernoem(email: string, id: number, titel: string): void {
+  database()
+    .prepare("UPDATE taken SET titel = ? WHERE email = ? AND id = ?")
+    .run(titel, email, id);
+}
+
+/** Een melding uit Mijn feed als taak; dezelfde melding wordt niet dubbel toegevoegd. */
+export function voegFeedToe(
+  email: string,
+  melding: FeedTodo,
+  titel: string,
+  prio: Prio,
+): void {
+  database()
+    .prepare(
+      `INSERT OR IGNORE INTO taken
+         (email, bron, bron_id, titel, bericht, plek, url, lijst, prio, toegevoegd)
+       VALUES (?, 'feed', ?, ?, ?, ?, ?, 'todo', ?, ?)`,
+    )
+    .run(
+      email,
+      melding.id,
+      titel,
+      `${melding.titel}. ${melding.detail}`,
+      melding.plek,
+      melding.url,
+      prio,
+      Date.now(),
+    );
+}
+
+/** Maakt "Naar to-do" op een feedmelding ongedaan. */
+export function verwijderFeedTodo(email: string, bronId: string): void {
+  database()
+    .prepare(
+      "DELETE FROM taken WHERE email = ? AND bron = 'feed' AND bron_id = ?",
+    )
+    .run(email, bronId);
 }

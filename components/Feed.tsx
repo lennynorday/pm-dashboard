@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { herstelMeldingenAction, negeerMeldingAction } from "@/app/actions";
+import {
+  feedNaarTodoAction,
+  feedTodoOngedaanAction,
+  herstelMeldingenAction,
+  negeerMeldingAction,
+} from "@/app/actions";
 import type { FeedItem, FeedSoort } from "@/lib/feed";
+import type { Prio } from "@/lib/taak";
+import { TodoDialoog } from "./TodoDialoog";
+import { useToast } from "./Toast";
 import styles from "./Feed.module.css";
 
 /** "koppelen" heeft geen eigen filter en staat alleen onder Alles. */
@@ -52,15 +60,56 @@ type Props = { items: FeedItem[]; genegeerd: number };
 /** Mijn feed: alles wat aandacht vraagt, te filteren en te negeren. */
 export function Feed({ items, genegeerd }: Props) {
   const [filter, setFilter] = useState<Groep | null>(null);
+  const [dialoog, setDialoog] = useState<FeedItem | null>(null);
+  // Ids die naar de to-do's gaan: vervagen meteen, ook als `items` ze nog bevat.
+  const [weg, setWeg] = useState<ReadonlySet<string>>(new Set());
+  const { toon, element } = useToast();
+
+  const over = items.filter((item) => !weg.has(item.id));
   const zichtbaar = items.filter(
     (item) => filter === null || SOORT[item.soort].groep === filter,
   );
+  const aantalZichtbaar = over.filter(
+    (item) => filter === null || SOORT[item.soort].groep === filter,
+  ).length;
+
+  function zetWeg(id: string, aan: boolean) {
+    setWeg((huidig) => {
+      const nieuw = new Set(huidig);
+      if (aan) nieuw.add(id);
+      else nieuw.delete(id);
+      return nieuw;
+    });
+  }
+
+  function naarTodo(item: FeedItem, titel: string, prio: Prio) {
+    setDialoog(null);
+    zetWeg(item.id, true);
+    feedNaarTodoAction(
+      {
+        id: item.id,
+        titel: item.titel,
+        detail: item.detail,
+        plek: item.platformNaam,
+        url: item.url,
+      },
+      titel,
+      prio,
+    ).catch(() => zetWeg(item.id, false));
+    toon("Toegevoegd aan je to-do's", {
+      link: { label: "Bekijken", href: "/todos" },
+      ongedaan: () => {
+        zetWeg(item.id, false);
+        feedTodoOngedaanAction(item.id);
+      },
+    });
+  }
 
   return (
     <section aria-labelledby="feed" className={styles.feed}>
       <div className={styles.kop}>
         <h2 id="feed" className={styles.titel}>
-          Mijn feed <span className={styles.aantal}>{items.length}</span>
+          Mijn feed <span className={styles.aantal}>{over.length}</span>
         </h2>
         <div
           role="group"
@@ -85,7 +134,7 @@ export function Feed({ items, genegeerd }: Props) {
               {label}{" "}
               <span className={styles.filterAantal}>
                 {
-                  items.filter(
+                  over.filter(
                     (item) =>
                       groep === null || SOORT[item.soort].groep === groep,
                   ).length
@@ -96,7 +145,7 @@ export function Feed({ items, genegeerd }: Props) {
         </div>
       </div>
 
-      {zichtbaar.length === 0 ? (
+      {aantalZichtbaar === 0 ? (
         <p className={styles.leeg}>
           Niets meer in deze feed. Alles is afgehandeld of genegeerd.
         </p>
@@ -112,7 +161,11 @@ export function Feed({ items, genegeerd }: Props) {
               const { label, icoon } = SOORT[item.soort];
               const extern = !/^[#/]/.test(item.url);
               return (
-                <li key={item.id} className={styles.item}>
+                <li
+                  key={item.id}
+                  className={styles.item}
+                  data-weg={weg.has(item.id) || undefined}
+                >
                   <span
                     className={styles.icoon}
                     data-soort={item.soort}
@@ -157,13 +210,11 @@ export function Feed({ items, genegeerd }: Props) {
                     </a>
                     <span className={styles.detail}>{item.detail}</span>
                   </span>
-                  <form action={negeerMeldingAction}>
-                    <input type="hidden" name="id" value={item.id} />
+                  <div className={styles.acties}>
                     <button
-                      type="submit"
-                      className={styles.negeer}
-                      aria-label={`Negeren: ${item.titel}`}
-                      title="Negeren"
+                      type="button"
+                      className={styles.naarTodo}
+                      onClick={() => setDialoog(item)}
                     >
                       <svg
                         width="16"
@@ -175,10 +226,34 @@ export function Feed({ items, genegeerd }: Props) {
                         strokeLinecap="round"
                         aria-hidden="true"
                       >
-                        <path d="M6 6l12 12M18 6L6 18" />
+                        <path d="M12 5v14M5 12h14" />
                       </svg>
+                      Naar to-do
+                      <span className="visually-hidden">: {item.titel}</span>
                     </button>
-                  </form>
+                    <form action={negeerMeldingAction}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <button
+                        type="submit"
+                        className={styles.negeer}
+                        aria-label={`Negeren: ${item.titel}`}
+                        title="Negeren"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          strokeLinecap="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
                 </li>
               );
             })}
@@ -196,6 +271,23 @@ export function Feed({ items, genegeerd }: Props) {
           </button>
         </form>
       )}
+      {dialoog && (
+        <TodoDialoog
+          modus="nieuw"
+          titel={dialoog.titel}
+          bron={{
+            label: "Feed",
+            wie: dialoog.klantNaam
+              ? `${dialoog.platformNaam} · ${dialoog.klantNaam}`
+              : dialoog.platformNaam,
+            tekst: `${dialoog.titel}. ${dialoog.detail}`,
+            url: dialoog.url,
+          }}
+          onSluit={() => setDialoog(null)}
+          onBevestig={(titel, prio) => naarTodo(dialoog, titel, prio)}
+        />
+      )}
+      {element}
     </section>
   );
 }
