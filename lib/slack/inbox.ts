@@ -7,6 +7,7 @@ import {
   zoekBerichten,
 } from "./api";
 import { deelGesprekkenIn, isGesprek } from "./gesprekken";
+import { haalNamenOp } from "./namen";
 
 // ponytail: de laatste 100 DM-berichten bepalen welke gesprekken op je wachten; bij heel veel eigen DM-verkeer valt een ouder gesprek eruit. Pagineren als dat gebeurt.
 const DM_AANTAL = 100;
@@ -55,13 +56,15 @@ export async function fetchSlackInbox(
   // Nieuwste eerst, dus het eerste bericht per gesprek is het laatste.
   const { wachtOpJou, beantwoord } = deelGesprekkenIn(dms, ik);
 
+  const namen = await haalNamenOp(email, [...vermeldingen, ...wachtOpJou]);
+
   // Een vermelding in een DM valt onder het gesprek, niet apart.
   const items = [
     ...vermeldingen
       .filter((match) => match.user !== ik && !isGesprek(match))
-      .map((match) => parseBericht(match, "Vermelding")),
+      .map((match) => parseBericht(match, "Vermelding", namen)),
     ...wachtOpJou.map((match) => {
-      const bericht = parseBericht(match, "Direct bericht");
+      const bericht = parseBericht(match, "Direct bericht", namen);
       const gesprek = record(match.channel).id;
       return bericht && typeof gesprek === "string"
         ? { ...bericht, gesprek }
