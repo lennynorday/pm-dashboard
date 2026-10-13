@@ -75,17 +75,26 @@ export function tellingen(email: string): { inbox: number; open: number } {
   };
 }
 
-/** Zet nieuwe bewaarde berichten in de inbox; wat al bekend is, blijft zoals het is. */
+/**
+ * Zet nieuwe Slack-berichten in de inbox; wat al bekend is, blijft zoals het is.
+ * Een DM-gesprek is één item (bron_id dm:<kanaal>): een nieuwer bericht werkt het
+ * bij en haalt het terug uit genegeerd, op To-do's blijft het ongemoeid.
+ */
 export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
   const insert = database().prepare(
-    `INSERT OR IGNORE INTO taken
+    `INSERT INTO taken
        (email, bron, bron_id, titel, bericht, auteur, plek, tijd, url, soort, lijst, toegevoegd)
-     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)`,
+     VALUES (?, 'slack', ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)
+     ON CONFLICT (email, bron, bron_id) DO UPDATE SET
+       titel = excluded.titel, bericht = excluded.bericht,
+       auteur = excluded.auteur, plek = excluded.plek, tijd = excluded.tijd,
+       url = excluded.url, lijst = 'inbox'
+     WHERE taken.lijst != 'todo' AND excluded.tijd > taken.tijd`,
   );
   for (const bericht of berichten) {
     insert.run(
       email,
-      bericht.permalink,
+      bericht.gesprek ? `dm:${bericht.gesprek}` : bericht.permalink,
       bericht.text,
       bericht.text,
       bericht.auteur,
@@ -96,6 +105,18 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
       Date.now(),
     );
   }
+}
+
+/** Haalt DM-gesprekken waarin de gebruiker zelf als laatste reageerde uit de inbox. */
+export function verwijderBeantwoorde(
+  email: string,
+  gesprekken: string[],
+): void {
+  const verwijder = database().prepare(
+    `DELETE FROM taken
+     WHERE email = ? AND bron = 'slack' AND lijst = 'inbox' AND bron_id = ?`,
+  );
+  for (const gesprek of gesprekken) verwijder.run(email, `dm:${gesprek}`);
 }
 
 export function nieuweTaak(email: string, titel: string, status: Status): void {

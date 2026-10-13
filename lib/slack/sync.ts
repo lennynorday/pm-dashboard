@@ -1,4 +1,4 @@
-import { voegSlackToe } from "@/lib/todos";
+import { verwijderBeantwoorde, voegSlackToe } from "@/lib/todos";
 import { SlackNietVerbondenError } from "./api";
 import { fetchSlackInbox } from "./inbox";
 import { fetchSlackTodos } from "./saved";
@@ -7,21 +7,22 @@ export type SlackProbleem = { verbinden: true } | { fout: string } | null;
 
 /**
  * Haalt bewaarde berichten, vermeldingen en DM's op en zet nieuwe in de inbox.
- * Wat al bekend is, blijft zoals het is. Eén mislukte bron stopt de andere niet.
+ * Een DM-gesprek is één item dat meegroeit met het laatste bericht en verdwijnt
+ * zodra jij zelf reageert. Eén mislukte bron stopt de andere niet.
  */
 export async function synchroniseerSlack(
   email: string,
 ): Promise<SlackProbleem> {
   const resultaten = await Promise.allSettled([
-    fetchSlackTodos(email),
-    fetchSlackInbox(email),
+    fetchSlackTodos(email).then((todos) => voegSlackToe(email, todos)),
+    fetchSlackInbox(email).then(({ items, beantwoord }) => {
+      voegSlackToe(email, items);
+      verwijderBeantwoorde(email, beantwoord);
+    }),
   ]);
   let probleem: SlackProbleem = null;
   for (const resultaat of resultaten) {
-    if (resultaat.status === "fulfilled") {
-      voegSlackToe(email, resultaat.value);
-      continue;
-    }
+    if (resultaat.status === "fulfilled") continue;
     if (resultaat.reason instanceof SlackNietVerbondenError) {
       return { verbinden: true };
     }

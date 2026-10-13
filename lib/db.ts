@@ -77,6 +77,19 @@ function open(): DatabaseSync {
       UPDATE taken SET bericht = titel WHERE bron = 'slack';
     `);
   }
+  // DM's werden per bericht bewaard; nu is een gesprek één item (bron_id dm:<kanaal>).
+  // Inbox-items maakt de sync opnieuw aan, de rest krijgt de nieuwe sleutel.
+  const oudeDms = `bron = 'slack' AND soort = 'Direct bericht' AND bron_id NOT LIKE 'dm:%'`;
+  db.exec(`DELETE FROM taken WHERE lijst = 'inbox' AND ${oudeDms}`);
+  const omzetten = db.prepare(
+    "UPDATE OR IGNORE taken SET bron_id = ? WHERE id = ?",
+  );
+  for (const rij of db
+    .prepare(`SELECT id, bron_id FROM taken WHERE ${oudeDms}`)
+    .all()) {
+    const kanaal = String(rij.bron_id).split("/archives/")[1]?.split("/")[0];
+    if (kanaal) omzetten.run(`dm:${kanaal}`, Number(rij.id));
+  }
   return db;
 }
 

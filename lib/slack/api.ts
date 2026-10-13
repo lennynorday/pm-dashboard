@@ -10,6 +10,8 @@ export type SlackTodo = {
   permalink: string;
   /** Waarom het in de inbox komt: "Bewaard", "Vermelding" of "Direct bericht". */
   soort: string;
+  /** Kanaal-id van het DM-gesprek; dat gesprek is dan één inbox-item. Anders null. */
+  gesprek: string | null;
 };
 
 /** De gebruiker heeft Slack niet verbonden, of de koppeling is ingetrokken. */
@@ -100,5 +102,6 @@ export function parseBericht(
     tijd,
     permalink: match.permalink,
     soort,
+    gesprek: null,
   };
 }
