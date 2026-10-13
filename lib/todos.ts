@@ -78,7 +78,8 @@ export function tellingen(email: string): { inbox: number; open: number } {
 /**
  * Zet nieuwe Slack-berichten in de inbox; wat al bekend is, blijft zoals het is.
  * Een DM-gesprek is één item (bron_id dm:<kanaal>): een nieuwer bericht werkt het
- * bij en haalt het terug uit genegeerd, op To-do's blijft het ongemoeid.
+ * bij en haalt het terug uit genegeerd, op To-do's blijft het ongemoeid. Een
+ * item zonder tekst (app-berichten van voor de blocks-ondersteuning) wordt ook bijgewerkt.
  */
 export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
   const insert = database().prepare(
@@ -89,7 +90,8 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
        titel = excluded.titel, bericht = excluded.bericht,
        auteur = excluded.auteur, plek = excluded.plek, tijd = excluded.tijd,
        url = excluded.url, lijst = 'inbox'
-     WHERE taken.lijst != 'todo' AND excluded.tijd > taken.tijd`,
+     WHERE taken.lijst != 'todo'
+       AND (excluded.tijd > taken.tijd OR COALESCE(taken.bericht, '') = '')`,
   );
   for (const bericht of berichten) {
     insert.run(
