@@ -10,7 +10,6 @@ import {
   InboxIcon,
   LogoutIcon,
   MenuIcon,
-  PanelIcon,
   TodoIcon,
 } from "@/components/icons";
 import { logoutAction } from "@/app/actions";
@@ -150,6 +149,21 @@ export function Sidebar({
           </NextLink>
           <button
             type="button"
+            className={styles.collapse}
+            aria-expanded={!ingeklapt}
+            aria-controls="zijmenu"
+            onClick={toggleStand}
+          >
+            <ChevronIcon />
+            <span className="visually-hidden">
+              {ingeklapt ? "Menu uitklappen" : "Menu inklappen"}
+            </span>
+            <span className={styles.tooltip} aria-hidden="true">
+              {ingeklapt ? "Menu uitklappen" : "Menu inklappen"}
+            </span>
+          </button>
+          <button
+            type="button"
             className={styles.closeButton}
             onClick={closeMobile}
           >
@@ -284,19 +298,6 @@ export function Sidebar({
               </span>
             </button>
           </form>
-          <button
-            type="button"
-            className={styles.collapse}
-            onClick={toggleStand}
-          >
-            <PanelIcon />
-            <span className={styles.label}>
-              {ingeklapt ? "Menu uitklappen" : "Menu inklappen"}
-            </span>
-            <span className={styles.tooltip} aria-hidden="true">
-              {ingeklapt ? "Menu uitklappen" : "Menu inklappen"}
-            </span>
-          </button>
         </div>
       </div>
     </div>

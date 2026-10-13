@@ -41,15 +41,6 @@ export function ChevronIcon(props: IconProps) {
   );
 }
 
-export function PanelIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <path d="M9 4v16" />
-    </Icon>
-  );
-}
-
 export function LogoutIcon(props: IconProps) {
   return (
     <Icon {...props}>
