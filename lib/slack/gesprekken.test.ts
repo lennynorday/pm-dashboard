@@ -15,9 +15,26 @@ test("het laatste bericht per gesprek bepaalt wie er aan de beurt is", () => {
     bericht("D2", "ik", "5"),
     bericht("D2", "andere", "4"),
   ];
-  const { wachtOpJou, beantwoord } = deelGesprekkenIn(dms, "ik");
+  const { wachtOpJou, beantwoord } = deelGesprekkenIn(
+    dms,
+    (b) => b.user === "ik",
+  );
   assert.deepStrictEqual(wachtOpJou, [dms[0]]);
   assert.deepStrictEqual(beantwoord, ["D2"]);
+});
+
+test("een gesprek met een emoji-reactie of van een app is afgehandeld", () => {
+  const dms = [
+    bericht("D1", "andere", "3"),
+    bericht("D2", "app", "5"),
+    bericht("D3", "andere", "7"),
+  ];
+  const { wachtOpJou, beantwoord } = deelGesprekkenIn(
+    dms,
+    (b) => b.user === "app" || b.ts === "3",
+  );
+  assert.deepStrictEqual(wachtOpJou, [dms[2]]);
+  assert.deepStrictEqual(beantwoord, ["D1", "D2"]);
 });
 
 test("alleen DM's en groeps-DM's zijn een gesprek", () => {

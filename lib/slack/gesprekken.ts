@@ -14,12 +14,12 @@ export function isGesprek(bericht: Bericht): boolean {
 
 /**
  * Deelt DM-berichten (nieuwste eerst) in per gesprek, op het laatste bericht:
- * `wachtOpJou` zijn die laatste berichten van een ander, `beantwoord` de
- * kanaal-id's waarin jij als laatste reageerde.
+ * `wachtOpJou` zijn die laatste berichten die nog niet `afgehandeld` zijn,
+ * `beantwoord` de kanaal-id's waarvan het laatste bericht dat wel is.
  */
 export function deelGesprekkenIn(
   dms: Bericht[],
-  ik: string,
+  afgehandeld: (bericht: Bericht) => boolean,
 ): { wachtOpJou: Bericht[]; beantwoord: string[] } {
   const laatsteVanGesprek = new Map<string, Bericht>();
   for (const bericht of dms) {
@@ -31,10 +31,10 @@ export function deelGesprekkenIn(
   const laatste = [...laatsteVanGesprek];
   return {
     wachtOpJou: laatste
-      .filter(([, bericht]) => bericht.user !== ik)
+      .filter(([, bericht]) => !afgehandeld(bericht))
       .map(([, bericht]) => bericht),
     beantwoord: laatste
-      .filter(([, bericht]) => bericht.user === ik)
+      .filter(([, bericht]) => afgehandeld(bericht))
       .map(([id]) => id),
   };
 }

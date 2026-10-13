@@ -21,6 +21,25 @@ function leesStart(email: string): number | null {
   return typeof row?.sinds === "number" ? row.sinds : null;
 }
 
+/**
+ * De berichten waarop jij met een emoji reageerde, als `kanaal:ts`; de laatste 100.
+ * Zonder de scope reactions:read (nog niet opnieuw verbonden) tellen ze niet mee.
+ */
+async function mijnReacties(email: string): Promise<Set<string>> {
+  try {
+    const body = await slackPost(email, "reactions.list", { count: "100" });
+    const items = Array.isArray(body.items) ? body.items.map(record) : [];
+    return new Set(
+      items.map((item) => `${item.channel}:${record(item.message).ts}`),
+    );
+  } catch (fout) {
+    if (fout instanceof Error && fout.message.endsWith(": missing_scope")) {
+      return new Set();
+    }
+    throw fout;
+  }
+}
+
 /** Slack zoekt op datum; we filteren daarna op het exacte moment. */
 function datumVanaf(sinds: number): string {
   return new Date((sinds - 24 * 60 * 60) * 1000).toISOString().slice(0, 10);
@@ -28,8 +47,9 @@ function datumVanaf(sinds: number): string {
 
 /**
  * Wat om aandacht vraagt sinds de eerste synchronisatie: vermeldingen, en
- * DM-gesprekken waarvan het laatste bericht niet van jou is. Per gesprek één
- * item; `beantwoord` zijn de gesprekken waarin jij als laatste reageerde.
+ * DM-gesprekken waarvan het laatste bericht nog op jou wacht. Per gesprek één
+ * item; `beantwoord` zijn de gesprekken waarin jij als laatste reageerde (ook
+ * met een emoji) of waarvan het laatste bericht van een app komt.
  * De eerste keer haalt dit niets op, het zet alleen het startmoment: wat er
  * al lag, wordt niet binnengehaald.
  */
@@ -48,20 +68,33 @@ export async function fetchSlackInbox(
   const sinds = `after:${datumVanaf(start)}`;
   const nieuw = (match: Record<string, unknown>) => Number(match.ts) > start;
 
-  const [vermeldingen, dms] = await Promise.all([
-    zoekBerichten(email, `<@${ik}> ${sinds}`, VERMELDING_AANTAL),
-    zoekBerichten(email, `is:dm ${sinds}`, DM_AANTAL),
-  ]).then((lijsten) => lijsten.map((lijst) => lijst.filter(nieuw)));
+  const [[vermeldingen, dms], gereageerd] = await Promise.all([
+    Promise.all([
+      zoekBerichten(email, `<@${ik}> ${sinds}`, VERMELDING_AANTAL),
+      zoekBerichten(email, `is:dm ${sinds}`, DM_AANTAL),
+    ]).then((lijsten) => lijsten.map((lijst) => lijst.filter(nieuw))),
+    mijnReacties(email),
+  ]);
+
+  const { namen, bots } = await haalNamenOp(email, [...vermeldingen, ...dms]);
+  const vanApp = (match: Record<string, unknown>) =>
+    typeof match.bot_id === "string" || bots.has(String(match.user));
 
   // Nieuwste eerst, dus het eerste bericht per gesprek is het laatste.
-  const { wachtOpJou, beantwoord } = deelGesprekkenIn(dms, ik);
-
-  const namen = await haalNamenOp(email, [...vermeldingen, ...wachtOpJou]);
+  const { wachtOpJou, beantwoord } = deelGesprekkenIn(
+    dms,
+    (match) =>
+      match.user === ik ||
+      vanApp(match) ||
+      gereageerd.has(`${record(match.channel).id}:${match.ts}`),
+  );
 
   // Een vermelding in een DM valt onder het gesprek, niet apart.
   const items = [
     ...vermeldingen
-      .filter((match) => match.user !== ik && !isGesprek(match))
+      .filter(
+        (match) => match.user !== ik && !vanApp(match) && !isGesprek(match),
+      )
       .map((match) => parseBericht(match, "Vermelding", namen)),
     ...wachtOpJou.map((match) => {
       const bericht = parseBericht(match, "Direct bericht", namen);

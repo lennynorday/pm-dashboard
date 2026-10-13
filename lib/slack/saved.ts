@@ -7,7 +7,7 @@ import { haalNamenOp } from "./namen";
  */
 export async function fetchSlackTodos(email: string): Promise<SlackTodo[]> {
   const matches = await zoekBerichten(email, "is:saved", 100);
-  const namen = await haalNamenOp(email, matches);
+  const { namen } = await haalNamenOp(email, matches);
   return matches
     .map((match) => parseBericht(match, "Bewaard", namen))
     .filter((todo): todo is SlackTodo => todo !== null);
