@@ -388,19 +388,40 @@
     border-radius: var(--radius-xl);
   }
 
+  /* Klein pijltje rechtsboven: wijst naar links om in te klappen, naar rechts om uit te klappen. */
   .collapse {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: var(--space-03);
-    min-height: 42px;
-    padding: var(--space-02) 10px;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
     border: 0;
-    border-radius: 14px;
-    background: transparent;
+    border-radius: var(--radius-pill);
+    background: rgb(255 255 255 / 0.07);
     color: var(--color-on-dark-muted);
-    font: var(--type-nav);
     cursor: pointer;
+  }
+
+  .collapse:hover {
+    color: var(--norday-white);
+  }
+
+  .collapse svg {
+    width: 18px;
+    height: 18px;
+    transform: rotate(90deg);
+    transition: transform 150ms ease;
+  }
+
+  .sidebar[data-stand="ingeklapt"] .collapse svg {
+    transform: rotate(-90deg);
+  }
+
+  /* Ingeklapt is het paneel te smal voor logo en pijltje naast elkaar. */
+  .sidebar[data-stand="ingeklapt"] .panelHeader {
+    flex-direction: column;
+    align-items: center;
   }
 
   .sidebar[data-stand="ingeklapt"] .panel {
@@ -435,7 +456,6 @@
   }
 
   .sidebar[data-stand="ingeklapt"] .item,
-  .sidebar[data-stand="ingeklapt"] .collapse,
   .sidebar[data-stand="ingeklapt"] .logout,
   .sidebar[data-stand="ingeklapt"] .user,
   .sidebar[data-stand="ingeklapt"] .groupToggle {

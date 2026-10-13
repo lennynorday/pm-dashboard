@@ -122,7 +122,10 @@ function MapRijen({ map }: { map: BudgetMap }) {
                 <span className={styles.afgesloten}> (afgesloten)</span>
               )}
             </span>
-            <span />
+            <Balk
+              percentage={procent(regel.geschreven, regel.beschikbaar)}
+              klein
+            />
             <Cel label="Verbruikt">
               {regel.beschikbaar === 0
                 ? "–"
