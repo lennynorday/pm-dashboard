@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { synchroniseerSlackAction } from "@/app/actions";
+import { synchroniseerInboxAction } from "@/app/actions";
 
 const ELKE_MS = 5 * 60 * 1000;
 
@@ -9,7 +9,7 @@ const ELKE_MS = 5 * 60 * 1000;
 export function InboxSync() {
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!document.hidden) void synchroniseerSlackAction();
+      if (!document.hidden) void synchroniseerInboxAction();
     }, ELKE_MS);
     return () => clearInterval(timer);
   }, []);

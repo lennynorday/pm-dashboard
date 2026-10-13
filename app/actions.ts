@@ -24,14 +24,23 @@ import {
 import { herstel, herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
-import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
+import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { synchroniseerGmail } from "@/lib/gmail/sync";
+import {
+  bronAan,
+  domeinVan,
+  staToe,
+  sluitUit,
+  zetBron,
+} from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
 import {
   type FeedTodo,
   MAX_TITEL,
+  parseInboxBron,
   parseLijst,
   parsePrio,
   parseStatus,
@@ -39,6 +48,7 @@ import {
 import {
   hernoem,
   naarTodo,
+  leesTaken,
   nieuweTaak,
   verplaats,
   verwijderFeedTodo,
@@ -482,10 +492,60 @@ export async function feedTodoOngedaanAction(id: string): Promise<void> {
   });
 }
 
-/** Haalt nieuwe Slack-berichten op voor de teller in het menu; fouten komen op de Inbox-pagina. */
-export async function synchroniseerSlackAction(): Promise<void> {
+/** Haalt nieuwe berichten op voor de teller in het menu; fouten komen op de Inbox-pagina. */
+export async function synchroniseerInboxAction(): Promise<void> {
   const user = await currentUser();
   if (!user) return;
-  await synchroniseerSlack(user.email);
+  await Promise.all([
+    bronAan(user.email, "slack") && synchroniseerSlack(user.email),
+    bronAan(user.email, "gmail") && synchroniseerGmail(user.email),
+  ]);
   revalidatePath("/", "layout");
+}
+
+/**
+ * Sluit de afzender of het domein van een mailitem uit en zet het item op
+ * genegeerd. Het adres komt uit de database, niet uit de browser.
+ */
+export async function sluitUitAction(id: number, soort: string): Promise<void> {
+  if (soort !== "afzender" && soort !== "domein") return;
+  await bijTaken((email) => {
+    const adres = leesTaken(email, "inbox").find(
+      (taak) => taak.id === id,
+    )?.afzender;
+    if (!adres) return;
+    sluitUit(email, {
+      waarde: soort === "afzender" ? adres : domeinVan(adres),
+      soort,
+    });
+    verplaats(email, id, "genegeerd");
+  });
+}
+
+/** Haalt een uitsluiting weg; `id` zet het item uit de toast terug in de Inbox. */
+export async function staToeAction(waarde: string, id?: number): Promise<void> {
+  if (typeof waarde !== "string") return;
+  await bijTaken((email) => {
+    staToe(email, waarde);
+    if (typeof id === "number") verplaats(email, id, "inbox");
+  });
+}
+
+/** Schakelaar op Instellingen. Gmail aanzetten zonder toegang vraagt die bij Google. */
+export async function zetBronAction(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  const bron = parseInboxBron(formData.get("bron"));
+  if (!user || !bron) return;
+  const aan = formData.get("aan") === "true";
+  zetBron(user.email, bron, aan);
+  revalidatePath("/", "layout");
+  if (aan && bron === "gmail" && !isVerbonden(user.email, "gmail")) {
+    redirect("/api/google/login");
+  }
+}
+
+/** Uitsluiting weer toestaan vanaf Instellingen. */
+export async function staToeFormAction(formData: FormData): Promise<void> {
+  const waarde = formData.get("waarde");
+  if (typeof waarde === "string") await staToeAction(waarde);
 }

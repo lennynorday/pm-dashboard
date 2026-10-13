@@ -17,6 +17,7 @@ import {
 } from "@/app/actions";
 import {
   BRON_LABELS,
+  parseInboxBron,
   PRIO_LABELS,
   PRIOS,
   STATUS_LABELS,
@@ -32,6 +33,7 @@ import {
   ChevronIcon,
   ExternalIcon,
   MenuIcon,
+  MoreIcon,
   PlusIcon,
 } from "./icons";
 import styles from "./Todos.module.css";
@@ -70,29 +72,11 @@ function SearchIcon() {
   );
 }
 
-function MoreIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M6 12h.01M12 12h.01M18 12h.01" />
-    </svg>
-  );
-}
-
 const berichtTekst = (taak: Taak) => taak.bericht ?? taak.titel;
 
 function dialoogBron(taak: Taak): DialoogBron | undefined {
   if (taak.bron === "eigen") return undefined;
-  const wie = (taak.bron === "slack" ? [taak.auteur, taak.plek] : [taak.plek])
+  const wie = (taak.bron === "feed" ? [taak.plek] : [taak.auteur, taak.plek])
     .filter(Boolean)
     .join(" · ");
   return {
@@ -200,7 +184,7 @@ export function Todos({ taken, weergave: start }: Props) {
       { label: "Titel bewerken", kies: () => setBewerk(taak) },
       ...statusItems(taak, true),
     ];
-    if (taak.bron !== "slack") return items;
+    if (!parseInboxBron(taak.bron)) return items;
     return [
       ...items,
       {
@@ -257,7 +241,7 @@ export function Todos({ taken, weergave: start }: Props) {
 
   const context = (taak: Taak) => {
     const tekst = (
-      taak.bron === "slack" ? [taak.auteur, taak.plek] : [taak.plek]
+      taak.bron === "feed" ? [taak.plek] : [taak.auteur, taak.plek]
     )
       .filter(Boolean)
       .join(" · ");

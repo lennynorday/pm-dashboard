@@ -3,6 +3,8 @@ import { Inbox } from "@/components/Inbox";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
 import { currentUser } from "@/lib/session";
+import { synchroniseerGmail } from "@/lib/gmail/sync";
+import { bronAan } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
 import { leesTaken } from "@/lib/todos";
 import grid from "../grid.module.css";
@@ -15,15 +17,17 @@ export default async function InboxPage() {
   // De layout toont het inlogscherm zonder sessie; hier is er dus altijd een.
   const user = await currentUser();
   if (!user) return null;
-  const probleem = await synchroniseerSlack(user.email);
+  const [probleem, gmail] = await Promise.all([
+    bronAan(user.email, "slack") ? synchroniseerSlack(user.email) : null,
+    bronAan(user.email, "gmail") ? synchroniseerGmail(user.email) : null,
+  ]);
   const taken = leesTaken(user.email, "inbox");
 
   return (
     <>
       <PageHeading title="Inbox" crumbs={[HOME]} />
       <p className={grid.muted}>
-        Wat om jouw aandacht vraagt in Slack: vermeldingen, DM&apos;s waarop jij
-        moet reageren en berichten die je bewaart. Per bericht kies je: nu
+        Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
         reageren, naar je to-do&apos;s, of negeren.
       </p>
 
@@ -42,6 +46,12 @@ export default async function InboxPage() {
       {probleem && "fout" in probleem && (
         <Melding titel="Ophalen uit Slack is mislukt" role="alert">
           {probleem.fout}
+        </Melding>
+      )}
+
+      {gmail && "fout" in gmail && (
+        <Melding titel="Ophalen uit Gmail is mislukt" role="alert">
+          {gmail.fout}
         </Melding>
       )}
 

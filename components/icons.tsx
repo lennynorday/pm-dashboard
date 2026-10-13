@@ -226,3 +226,19 @@ export function InboxIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function MoreIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth="2.5" />
+    </Icon>
+  );
+}
+
+export function StarIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z" />
+    </Icon>
+  );
+}
