@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "serve": "PORT=3999 next start",
+    "serve": "PORT=3999 next start -H localhost",
     "lint": "eslint",
     "format": "prettier --write ."
   },

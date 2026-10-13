@@ -15,4 +15,4 @@ Geheimen staan in `.env.local` (niet in Git). Zie `.env.example` voor de namen.
 
 ## Vaste server
 
-`npm run build` en daarna `npm run serve` draaien het dashboard op http://localhost:3999, naast `npm run dev` op 3000. Na een wijziging opnieuw bouwen en de server herstarten.
+`npm run build` en daarna `npm run serve` draaien het dashboard op http://localhost:3999 (alleen bereikbaar vanaf je eigen Mac), naast `npm run dev` op 3000. Na een wijziging opnieuw bouwen en de server herstarten.
