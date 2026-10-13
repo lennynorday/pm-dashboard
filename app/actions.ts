@@ -29,16 +29,11 @@ import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
-import {
-  bronAan,
-  domeinVan,
-  staToe,
-  sluitUit,
-  zetBron,
-} from "@/lib/inbox-bronnen";
+import { bronAan, staToe, sluitUit, zetBron } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
 import {
   type FeedTodo,
+  domeinVan,
   MAX_TITEL,
   parseInboxBron,
   parseLijst,

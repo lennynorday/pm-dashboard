@@ -1,5 +1,6 @@
 import { database } from "@/lib/db";
-import { bronAan, isUitgesloten, leesUitsluitingen } from "@/lib/inbox-bronnen";
+import { bronAan, leesUitsluitingen } from "@/lib/inbox-bronnen";
+import { isUitgesloten } from "@/lib/taak";
 import { ruimGmailOp, voegGmailToe } from "@/lib/todos";
 import { gmailGet, GmailNietVerbondenError } from "./api";
 import { beoordeelGesprek, type GmailGesprek } from "./gesprekken";

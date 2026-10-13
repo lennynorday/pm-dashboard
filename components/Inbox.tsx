@@ -7,8 +7,7 @@ import {
   staToeAction,
   verplaatsTaakAction,
 } from "@/app/actions";
-import { domeinVan } from "@/lib/inbox-bronnen";
-import { BRON_LABELS, type Prio, type Taak } from "@/lib/taak";
+import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
 import { CloseIcon, MoreIcon, PlusIcon, StarIcon } from "./icons";
 import styles from "./Inbox.module.css";

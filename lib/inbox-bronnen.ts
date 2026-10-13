@@ -46,18 +46,3 @@ export function staToe(email: string, waarde: string): void {
     .prepare("DELETE FROM gmail_uitgesloten WHERE email = ? AND waarde = ?")
     .run(email, waarde.toLowerCase());
 }
-
-/** Het domein van een e-mailadres, in kleine letters. */
-export const domeinVan = (adres: string): string =>
-  adres.slice(adres.lastIndexOf("@") + 1).toLowerCase();
-
-/** Of mail van dit adres op de uitsluitlijst staat, als adres of als domein. */
-export function isUitgesloten(
-  adres: string,
-  uitsluitingen: Uitsluiting[],
-): boolean {
-  const klein = adres.toLowerCase();
-  return uitsluitingen.some(({ waarde, soort }) =>
-    soort === "afzender" ? waarde === klein : waarde === domeinVan(klein),
-  );
-}
