@@ -1,5 +1,7 @@
 # Desktop-app als .dmg
 
+> Vervallen per PR #64: de desktop-app is weg, het dashboard draait via `npm run serve` op http://localhost:3999.
+
 `2026-10-06` · Lennart ter Haar
 
 ## Waarom

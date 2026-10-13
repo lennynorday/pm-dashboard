@@ -13,8 +13,6 @@ Open daarna http://localhost:3000.
 
 Geheimen staan in `.env.local` (niet in Git). Zie `.env.example` voor de namen.
 
-## Desktop-app
+## Vaste server
 
-`npm run dmg` bouwt `dist/PM Dashboard-<versie>-arm64.dmg` voor Macs met Apple Silicon. De secrets uit je `.env.local` gaan mee in de app; deel de .dmg dus alleen intern. De versleutelingssleutel en de database maakt de app per gebruiker aan in `~/Library/Application Support/PM Dashboard`.
-
-De app draait op poort 3999, zodat hij naast `npm run dev` kan draaien. Hij is niet ondertekend: open hem de eerste keer, klik de melding weg en kies dan _Systeeminstellingen → Privacy en beveiliging → Toch openen_.
+`npm run build` en daarna `npm run serve` draaien het dashboard op http://localhost:3999 (alleen bereikbaar vanaf je eigen Mac), naast `npm run dev` op 3000. Na een wijziging opnieuw bouwen en de server herstarten.
