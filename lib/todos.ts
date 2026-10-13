@@ -136,8 +136,12 @@ export function verplaats(email: string, id: number, lijst: Lijst): void {
 
 export function zetStatus(email: string, id: number, status: Status): void {
   database()
-    .prepare("UPDATE taken SET status = ? WHERE email = ? AND id = ?")
-    .run(status, email, id);
+    .prepare(
+      `UPDATE taken SET status = ?,
+         afgerond = CASE WHEN ? = 'klaar' THEN COALESCE(afgerond, ?) END
+       WHERE email = ? AND id = ?`,
+    )
+    .run(status, status, Date.now(), email, id);
 }
 
 export function zetPrio(email: string, id: number, prio: Prio): void {

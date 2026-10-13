@@ -226,7 +226,13 @@
 
 .aantal {
   margin-left: auto;
-  font-weight: 500;
+  font: 600 14px/1.35 var(--font-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zonder plus-knop (Klaar) evenveel ruimte rechts als links. */
+.aantal:last-child {
+  margin-right: calc(var(--space-04) - 6px);
 }
 
 .plus,
