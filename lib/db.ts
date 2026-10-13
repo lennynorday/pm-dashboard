@@ -78,6 +78,10 @@ function open(): DatabaseSync {
       UPDATE taken SET bericht = titel WHERE bron = 'slack';
     `);
   }
+  // Wanneer een taak op klaar ging (ms), voor de urenanalyse; leeg zolang hij niet klaar is.
+  if (!kolommen.some((kolom) => kolom.name === "afgerond")) {
+    db.exec("ALTER TABLE taken ADD COLUMN afgerond INTEGER");
+  }
   // DM's werden per bericht bewaard; nu is een gesprek één item (bron_id dm:<kanaal>).
   // Inbox-items maakt de sync opnieuw aan, de rest krijgt de nieuwe sleutel.
   const oudeDms = `bron = 'slack' AND soort = 'Direct bericht' AND bron_id NOT LIKE 'dm:%'`;
