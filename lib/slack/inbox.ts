@@ -6,6 +6,7 @@ import {
   type SlackTodo,
   zoekBerichten,
 } from "./api";
+import { deelGesprekkenIn, isGesprek } from "./gesprekken";
 
 // ponytail: de laatste 100 DM-berichten bepalen welke gesprekken op je wachten; bij heel veel eigen DM-verkeer valt een ouder gesprek eruit. Pagineren als dat gebeurt.
 const DM_AANTAL = 100;
@@ -27,19 +28,22 @@ function datumVanaf(sinds: number): string {
 /**
  * Wat om aandacht vraagt sinds de eerste synchronisatie: vermeldingen, en
  * DM-gesprekken waarvan het laatste bericht niet van jou is. Per gesprek één
- * item. De eerste keer haalt dit niets op, het zet alleen het startmoment:
- * wat er al lag, wordt niet binnengehaald.
+ * item; `beantwoord` zijn de gesprekken waarin jij als laatste reageerde.
+ * De eerste keer haalt dit niets op, het zet alleen het startmoment: wat er
+ * al lag, wordt niet binnengehaald.
  */
-export async function fetchSlackInbox(email: string): Promise<SlackTodo[]> {
+export async function fetchSlackInbox(
+  email: string,
+): Promise<{ items: SlackTodo[]; beantwoord: string[] }> {
   const start = leesStart(email);
   if (start === null) {
     database()
       .prepare("INSERT OR IGNORE INTO slack_start (email, sinds) VALUES (?, ?)")
       .run(email, Math.floor(Date.now() / 1000));
-    return [];
+    return { items: [], beantwoord: [] };
   }
   const ik = record(await slackPost(email, "auth.test")).user_id;
-  if (typeof ik !== "string") return [];
+  if (typeof ik !== "string") return { items: [], beantwoord: [] };
   const sinds = `after:${datumVanaf(start)}`;
   const nieuw = (match: Record<string, unknown>) => Number(match.ts) > start;
 
@@ -49,24 +53,21 @@ export async function fetchSlackInbox(email: string): Promise<SlackTodo[]> {
   ]).then((lijsten) => lijsten.map((lijst) => lijst.filter(nieuw)));
 
   // Nieuwste eerst, dus het eerste bericht per gesprek is het laatste.
-  const laatsteVanGesprek = new Map<string, Record<string, unknown>>();
-  for (const match of dms) {
-    const gesprek = record(match.channel).id;
-    if (typeof gesprek === "string" && !laatsteVanGesprek.has(gesprek)) {
-      laatsteVanGesprek.set(gesprek, match);
-    }
-  }
-  const wachtOpJou = [...laatsteVanGesprek.values()].filter(
-    (match) => match.user !== ik,
-  );
+  const { wachtOpJou, beantwoord } = deelGesprekkenIn(dms, ik);
 
+  // Een vermelding in een DM valt onder het gesprek, niet apart.
   const items = [
     ...vermeldingen
-      .filter((match) => match.user !== ik)
+      .filter((match) => match.user !== ik && !isGesprek(match))
       .map((match) => parseBericht(match, "Vermelding")),
-    ...wachtOpJou.map((match) => parseBericht(match, "Direct bericht")),
+    ...wachtOpJou.map((match) => {
+      const bericht = parseBericht(match, "Direct bericht");
+      const gesprek = record(match.channel).id;
+      return bericht && typeof gesprek === "string"
+        ? { ...bericht, gesprek }
+        : null;
+    }),
   ].filter((bericht): bericht is SlackTodo => bericht !== null);
 
-  // Een DM waarin je ook genoemd wordt, komt maar één keer voor.
-  return [...new Map(items.map((item) => [item.permalink, item])).values()];
+  return { items, beantwoord };
 }
