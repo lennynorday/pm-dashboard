@@ -2,11 +2,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-/** De desktop-app zet de map op Application Support; anders data/ in de repo. */
-const FILE = path.join(
-  process.env.PM_DATA_DIR ?? path.join(process.cwd(), "data"),
-  "dashboard.db",
-);
+const FILE = path.join(process.cwd(), "data", "dashboard.db");
 
 function open(): DatabaseSync {
   mkdirSync(path.dirname(FILE), { recursive: true });
