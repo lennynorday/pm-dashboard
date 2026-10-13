@@ -1,4 +1,5 @@
 import { database } from "./db";
+import type { GmailGesprek } from "./gmail/gesprekken";
 import type { SlackTodo } from "./slack/api";
 import {
   type FeedTodo,
@@ -206,4 +207,48 @@ export function verwijderFeedTodo(email: string, bronId: string): void {
       "DELETE FROM taken WHERE email = ? AND bron = 'feed' AND bron_id = ?",
     )
     .run(email, bronId);
+}
+
+/**
+ * Zet mailgesprekken in de inbox, één item per thread (bron_id = thread-id).
+ * Net als een DM-gesprek: nieuwere mail werkt het bij en haalt het terug uit
+ * genegeerd, op To-do's blijft het ongemoeid.
+ */
+export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
+  const insert = database().prepare(
+    `INSERT INTO taken
+       (email, bron, bron_id, titel, bericht, auteur, afzender, tijd, url, soort, lijst, toegevoegd)
+     VALUES (?, 'gmail', ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)
+     ON CONFLICT (email, bron, bron_id) DO UPDATE SET
+       titel = excluded.titel, bericht = excluded.bericht,
+       auteur = excluded.auteur, afzender = excluded.afzender,
+       tijd = excluded.tijd, url = excluded.url, soort = excluded.soort,
+       lijst = 'inbox'
+     WHERE taken.lijst != 'todo' AND excluded.tijd > taken.tijd`,
+  );
+  for (const gesprek of gesprekken) {
+    insert.run(
+      email,
+      gesprek.id,
+      gesprek.onderwerp,
+      gesprek.tekst,
+      gesprek.naam,
+      gesprek.adres,
+      gesprek.tijd,
+      `https://mail.google.com/mail/u/0/#all/${gesprek.id}`,
+      gesprek.soort,
+      Date.now(),
+    );
+  }
+}
+
+/** Haalt mailgesprekken uit de inbox die niet meer op je wachten; To-do's en genegeerd blijven. */
+export function ruimGmailOp(email: string, houden: string[]): void {
+  database()
+    .prepare(
+      `DELETE FROM taken
+       WHERE email = ? AND bron = 'gmail' AND lijst = 'inbox'
+         AND bron_id NOT IN (SELECT value FROM json_each(?))`,
+    )
+    .run(email, JSON.stringify(houden));
 }
