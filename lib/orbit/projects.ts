@@ -1,3 +1,5 @@
+import { bewaar, lees, vers } from "@/lib/db";
+import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 
 export const PROJECT_STATES = ["DRAFT", "OPEN", "CLOSED", "ARCHIVED"] as const;
@@ -68,10 +70,13 @@ const PAGE_SIZE = 100;
 /** Welke projecten: die van mij, of die in een Orbit-projectmap. */
 export type ProjectFilter = { mine: true } | { folderId: string };
 
-const cache = new Map<string, { projects: OrbitProject[]; fetchedAt: Date }>();
+const sleutelVan = (email: string, filter: ProjectFilter) =>
+  `projecten:v1:${JSON.stringify([email, filter])}`;
+
+// ponytail: Verversen geldt tot een herstart; daarna telt alleen de leeftijd van de bewaarde lijst.
 let geldigVanaf = 0;
 
-/** Alles verloopt meteen, maar blijft bewaard als terugval. */
+/** Alles verloopt meteen, zodat de volgende keer op Orbit wordt gewacht; blijft bewaard als terugval. */
 export function clearProjectCache(): void {
   geldigVanaf = Date.now();
 }
@@ -104,23 +109,45 @@ async function fetchAllPages(
   return { status: "ok", projects, fetchedAt: new Date() };
 }
 
-/** Open projecten volgens het filter, met een cache van 15 minuten per gebruiker; bij een fout de vorige lijst. */
+/**
+ * Open projecten volgens het filter, met een cache van 15 minuten per gebruiker.
+ * Is de lijst alleen oud, dan meteen de bewaarde lijst en op de achtergrond verversen;
+ * na Verversen of zonder lijst wachten op Orbit. Bij een fout de vorige lijst.
+ */
 export async function fetchProjects(
   email: string,
   filter: ProjectFilter,
 ): Promise<ProjectListResult> {
-  const key = JSON.stringify([email, filter]);
-  const hit = cache.get(key);
-  if (
-    hit &&
-    hit.fetchedAt.getTime() >= geldigVanaf &&
-    Date.now() - hit.fetchedAt.getTime() < CACHE_MS
-  ) {
-    return { status: "ok", ...hit };
+  const sleutel = sleutelVan(email, filter);
+  const hit = lees<OrbitProject[]>(sleutel);
+  const bewaard = hit && {
+    status: "ok" as const,
+    projects: hit.waarde,
+    fetchedAt: new Date(hit.opgehaald),
+  };
+  if (bewaard && hit.opgehaald >= geldigVanaf) {
+    if (!vers(hit.opgehaald, CACHE_MS)) {
+      opAchtergrond(sleutel, () => haalOp(email, filter));
+    }
+    return bewaard;
   }
 
+  const result = await haalOp(email, filter);
+  if (result.status === "fout" && bewaard) return bewaard;
+  return result;
+}
+
+async function haalOp(
+  email: string,
+  filter: ProjectFilter,
+): Promise<ProjectListResult> {
   const result = await fetchAllPages(email, filter);
-  if (result.status === "ok") cache.set(key, result);
-  if (result.status === "fout" && hit) return { status: "ok", ...hit };
+  if (result.status === "ok") {
+    bewaar(
+      sleutelVan(email, filter),
+      result.projects,
+      result.fetchedAt.getTime(),
+    );
+  }
   return result;
 }

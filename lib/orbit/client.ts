@@ -18,21 +18,25 @@ let pauzeTot = 0;
 
 const slaap = (ms: number) => new Promise((klaar) => setTimeout(klaar, ms));
 
-// Orbit begrenst aanroepen per account; met 20 per minuut blijven we er ruim onder.
-const PER_MINUUT = 20;
-let recent: number[] = [];
+// Orbit begrenst aanroepen per account, ook bij pieken; daarom gelijkmatig verspreid, 20 per minuut.
+const TUSSENPOOS_MS = (60 * 1000) / 20;
+let volgendeBeurt = 0;
 
-/** Wacht tot er binnen de laatste minuut minder dan PER_MINUUT aanroepen waren. */
-async function wachtOpBeurt(): Promise<void> {
-  for (;;) {
-    const nu = Date.now();
-    recent = recent.filter((tijd) => nu - tijd < 60 * 1000);
-    if (recent.length < PER_MINUUT) {
-      recent.push(nu);
-      return;
-    }
-    await slaap(recent[0] + 60 * 1000 - nu);
+/**
+ * Wacht op de eerstvolgende vrije beurt, zodat aanroepen nooit tegelijk vertrekken.
+ * Een pagina reserveert meteen een beurt; achtergrondwerk pakt pas een beurt als die
+ * nu vrij is, zodat een pagina nooit achter tientallen budgetten hoeft te wachten.
+ */
+async function wachtOpBeurt(achtergrond: boolean): Promise<void> {
+  if (achtergrond) {
+    while (Date.now() < volgendeBeurt) await slaap(volgendeBeurt - Date.now());
+    volgendeBeurt = Date.now() + TUSSENPOOS_MS;
+    return;
   }
+  const nu = Date.now();
+  const beurt = Math.max(nu, volgendeBeurt);
+  volgendeBeurt = beurt + TUSSENPOOS_MS;
+  await slaap(beurt - nu);
 }
 
 /** Eén verbinding per gebruiker; een nieuwe verbinding kost Orbit elke keer extra verzoeken. */
@@ -61,8 +65,8 @@ function verbinding(email: string, token: string): Promise<Client> {
 
 /**
  * Roept één tool van de officiële Orbit-connector aan met het token van de gebruiker.
- * Met `wachtBijPauze` wacht de aanroep een rate limit af en probeert het opnieuw;
- * voor achtergrondwerk, waar niemand op het antwoord wacht.
+ * Met `wachtBijPauze` wacht de aanroep een rate limit af en probeert het opnieuw,
+ * en laat hij een pagina voorgaan; voor achtergrondwerk, waar niemand op het antwoord wacht.
  */
 export async function callOrbitTool(
   email: string,
@@ -71,7 +75,7 @@ export async function callOrbitTool(
   wachtBijPauze = false,
 ): Promise<OrbitResult> {
   for (let poging = 1; ; poging++) {
-    await wachtOpBeurt();
+    await wachtOpBeurt(wachtBijPauze);
     const gepauzeerd = Date.now() < pauzeTot;
     const result: OrbitResult = gepauzeerd
       ? {
