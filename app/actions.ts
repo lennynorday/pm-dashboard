@@ -21,13 +21,31 @@ import {
   type LinkType,
   MAX_EIGEN_LINKS,
 } from "@/lib/links";
-import { herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
+import { herstel, herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
 import { BRONNEN, deleteKoppeling } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { synchroniseerSlack } from "@/lib/slack/sync";
+import {
+  type FeedTodo,
+  MAX_TITEL,
+  parseLijst,
+  parsePrio,
+  parseStatus,
+} from "@/lib/taak";
+import {
+  hernoem,
+  naarTodo,
+  nieuweTaak,
+  verplaats,
+  verwijderFeedTodo,
+  voegFeedToe,
+  zetPrio,
+  zetStatus,
+} from "@/lib/todos";
 
 /** Haalt alles opnieuw op: Orbit, Jira en de accountgegevens uit Superhuman. */
 export async function refreshData(): Promise<void> {
@@ -371,4 +389,103 @@ export async function addLinkAction(
   }
   revalidatePath("/", "layout");
   return null;
+}
+
+/** De tellers in het zijmenu staan in de layout, dus die verversen mee. */
+async function bijTaken(doe: (email: string) => void): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  doe(user.email);
+  revalidatePath("/", "layout");
+}
+
+export async function verplaatsTaakAction(
+  id: number,
+  lijst: string,
+): Promise<void> {
+  const naar = parseLijst(lijst);
+  if (naar) await bijTaken((email) => verplaats(email, id, naar));
+}
+
+export async function zetStatusAction(
+  id: number,
+  status: string,
+): Promise<void> {
+  const nieuw = parseStatus(status);
+  if (nieuw) await bijTaken((email) => zetStatus(email, id, nieuw));
+}
+
+export async function zetPrioAction(id: number, prio: number): Promise<void> {
+  const nieuw = parsePrio(prio);
+  if (nieuw) await bijTaken((email) => zetPrio(email, id, nieuw));
+}
+
+export async function nieuweTaakAction(
+  titel: string,
+  status: string,
+): Promise<void> {
+  const kolom = parseStatus(status);
+  const schoon = titel.trim().slice(0, MAX_TITEL);
+  if (kolom && schoon)
+    await bijTaken((email) => nieuweTaak(email, schoon, kolom));
+}
+
+const schoneTitel = (titel: string): string => titel.trim().slice(0, MAX_TITEL);
+
+/** Zet een inbox-item op de to-do's, met de titel en prioriteit uit de popup. */
+export async function naarTodoAction(
+  id: number,
+  titel: string,
+  prio: number,
+): Promise<void> {
+  const schoon = schoneTitel(titel);
+  const nieuw = parsePrio(prio);
+  if (schoon && nieuw)
+    await bijTaken((email) => naarTodo(email, id, schoon, nieuw));
+}
+
+export async function hernoemTaakAction(
+  id: number,
+  titel: string,
+): Promise<void> {
+  const schoon = schoneTitel(titel);
+  if (schoon) await bijTaken((email) => hernoem(email, id, schoon));
+}
+
+/** Zet een melding uit Mijn feed op de to-do's en haalt hem uit de feed. */
+export async function feedNaarTodoAction(
+  melding: FeedTodo,
+  titel: string,
+  prio: number,
+): Promise<void> {
+  const schoon = schoneTitel(titel);
+  const nieuw = parsePrio(prio);
+  const compleet = [
+    melding.id,
+    melding.titel,
+    melding.detail,
+    melding.plek,
+    melding.url,
+  ].every((waarde) => typeof waarde === "string");
+  if (!schoon || !nieuw || !compleet) return;
+  await bijTaken((email) => {
+    voegFeedToe(email, melding, schoon, nieuw);
+    negeer(email, melding.id);
+  });
+}
+
+export async function feedTodoOngedaanAction(id: string): Promise<void> {
+  if (typeof id !== "string") return;
+  await bijTaken((email) => {
+    verwijderFeedTodo(email, id);
+    herstel(email, id);
+  });
+}
+
+/** Haalt nieuwe Slack-berichten op voor de teller in het menu; fouten komen op de Inbox-pagina. */
+export async function synchroniseerSlackAction(): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  await synchroniseerSlack(user.email);
+  revalidatePath("/", "layout");
 }

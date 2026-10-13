@@ -1,0 +1,22 @@
+.melding {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-04);
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: 500 14px/1 var(--font-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s var(--ease);
+}
+
+.melding:hover {
+  background: #5a1a3b;
+}
+
+.melding:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

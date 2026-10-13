@@ -1,0 +1,104 @@
+import { parseStoredToken, validToken } from "@/lib/koppelingen";
+
+export type SlackTodo = {
+  text: string;
+  auteur: string;
+  /** "#kanaal", of "Direct bericht" voor een DM. */
+  kanaal: string;
+  /** Unix-seconden. */
+  tijd: number;
+  permalink: string;
+  /** Waarom het in de inbox komt: "Bewaard", "Vermelding" of "Direct bericht". */
+  soort: string;
+};
+
+/** De gebruiker heeft Slack niet verbonden, of de koppeling is ingetrokken. */
+export class SlackNietVerbondenError extends Error {
+  constructor() {
+    super("Niet verbonden met Slack");
+  }
+}
+
+const NIET_VERBONDEN = ["not_authed", "invalid_auth", "token_revoked"];
+
+export function record(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/** Eén aanroep van de Slack Web API met het token van de gebruiker. */
+export async function slackPost(
+  email: string,
+  methode: string,
+  params: Record<string, string> = {},
+): Promise<Record<string, unknown>> {
+  const token = await validToken(email, "slack", parseStoredToken, () =>
+    Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
+  );
+  if (!token) throw new SlackNietVerbondenError();
+
+  const response = await fetch(`https://slack.com/api/${methode}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token.accessToken}` },
+    body: new URLSearchParams(params),
+  });
+  const body = record(await response.json());
+  if (body.ok === true) return body;
+  const fout = typeof body.error === "string" ? body.error : response.status;
+  if (NIET_VERBONDEN.includes(String(fout)))
+    throw new SlackNietVerbondenError();
+  throw new Error(`Slack gaf een fout bij ${methode}: ${fout}`);
+}
+
+/** Slack-opmaak als gewone tekst: <url|label> wordt label, <@U123> wordt @gebruiker. */
+function platteTekst(text: string): string {
+  return text
+    .replace(/<@[A-Z0-9]+>/g, "@gebruiker")
+    .replace(/<#[A-Z0-9]+\|([^>]+)>/g, "#$1")
+    .replace(/<([^>|]+)\|([^>]+)>/g, "$2")
+    .replace(/<([^>]+)>/g, "$1")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+function kanaalNaam(data: unknown): string {
+  const kanaal = record(data);
+  if (kanaal.is_im === true || kanaal.is_mpim === true) return "Direct bericht";
+  return typeof kanaal.name === "string" ? `#${kanaal.name}` : "Slack";
+}
+
+/** Zoekt berichten; Slack geeft de nieuwste eerst. */
+export async function zoekBerichten(
+  email: string,
+  query: string,
+  aantal: number,
+): Promise<Record<string, unknown>[]> {
+  const body = await slackPost(email, "search.messages", {
+    query,
+    sort: "timestamp",
+    sort_dir: "desc",
+    count: String(aantal),
+  });
+  const matches = record(body.messages).matches;
+  return (Array.isArray(matches) ? matches : []).map(record);
+}
+
+export function parseBericht(
+  match: Record<string, unknown>,
+  soort: string,
+): SlackTodo | null {
+  const tijd = Number(match.ts);
+  if (typeof match.permalink !== "string" || !Number.isFinite(tijd)) {
+    return null;
+  }
+  return {
+    text: typeof match.text === "string" ? platteTekst(match.text) : "",
+    auteur: typeof match.username === "string" ? match.username : "Onbekend",
+    kanaal: kanaalNaam(match.channel),
+    tijd,
+    permalink: match.permalink,
+    soort,
+  };
+}

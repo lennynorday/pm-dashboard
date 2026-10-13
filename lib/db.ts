@@ -46,7 +46,37 @@ function open(): DatabaseSync {
       id TEXT NOT NULL,
       PRIMARY KEY (email, id)
     );
+    CREATE TABLE IF NOT EXISTS slack_start (
+      email TEXT PRIMARY KEY REFERENCES gebruikers (email),
+      sinds INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS taken (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      bron TEXT NOT NULL,
+      bron_id TEXT,
+      titel TEXT NOT NULL,
+      auteur TEXT,
+      plek TEXT,
+      tijd INTEGER,
+      url TEXT,
+      soort TEXT,
+      bericht TEXT,
+      lijst TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'niet-gestart',
+      prio INTEGER NOT NULL DEFAULT 3,
+      toegevoegd INTEGER NOT NULL,
+      UNIQUE (email, bron, bron_id)
+    );
   `);
+  // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
+  const kolommen = db.prepare("PRAGMA table_info(taken)").all();
+  if (!kolommen.some((kolom) => kolom.name === "bericht")) {
+    db.exec(`
+      ALTER TABLE taken ADD COLUMN bericht TEXT;
+      UPDATE taken SET bericht = titel WHERE bron = 'slack';
+    `);
+  }
   return db;
 }
 

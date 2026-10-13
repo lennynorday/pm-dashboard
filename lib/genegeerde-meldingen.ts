@@ -22,3 +22,10 @@ export function herstelAlles(email: string): void {
     .prepare("DELETE FROM genegeerde_meldingen WHERE email = ?")
     .run(email);
 }
+
+/** Haalt één melding uit de genegeerde, zodat hij weer in Mijn feed staat. */
+export function herstel(email: string, id: string): void {
+  database()
+    .prepare("DELETE FROM genegeerde_meldingen WHERE email = ? AND id = ?")
+    .run(email, id);
+}

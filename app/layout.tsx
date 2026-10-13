@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
+import { InboxSync } from "@/components/InboxSync";
 import { LoginScherm } from "@/components/LoginScherm";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { loadDashboard } from "@/lib/dashboard";
@@ -11,6 +12,7 @@ import {
   parseGroepStand,
   parseMenuStand,
 } from "@/lib/preferences";
+import { tellingen } from "@/lib/todos";
 import { currentUser, LOGIN_MELDING_COOKIE, LoginMelding } from "@/lib/session";
 import "./globals.css";
 import styles from "./layout.module.css";
@@ -64,12 +66,14 @@ export default async function RootLayout({
         <a className={styles.skipLink} href="#inhoud">
           Naar de inhoud
         </a>
+        <InboxSync />
         <div className={styles.shell}>
           <Sidebar
             platforms={platforms}
             initialStand={stand}
             initialOverige={overige}
             user={user}
+            telling={tellingen(user.email)}
           />
           <main id="inhoud" className={styles.main}>
             {children}
