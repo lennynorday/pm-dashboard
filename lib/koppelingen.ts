@@ -2,7 +2,8 @@ import { decrypt, encrypt } from "./crypto";
 import { database } from "./db";
 
 /** De bronnen waarmee een gebruiker zijn eigen account verbindt. */
-export const BRONNEN = ["orbit", "jira", "slack"] as const;
+/** Gmail komt mee met de Google-login; die koppeling staat niet los op Instellingen. */
+export const BRONNEN = ["orbit", "jira", "slack", "gmail"] as const;
 export type Bron = (typeof BRONNEN)[number];
 
 export type OAuthToken = {

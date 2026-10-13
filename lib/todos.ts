@@ -36,6 +36,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
     bron,
     titel: row.titel,
     auteur: tekst(row.auteur),
+    afzender: tekst(row.afzender),
     plek: tekst(row.plek),
     tijd: typeof row.tijd === "number" ? row.tijd : null,
     url: tekst(row.url),
@@ -47,11 +48,15 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
   };
 }
 
+// Inbox-items uit een bron die de gebruiker heeft uitgezet, tellen niet mee.
+const NIET_UIT = `NOT (lijst = 'inbox' AND bron IN
+  (SELECT bron FROM inbox_uit WHERE inbox_uit.email = taken.email))`;
+
 /** Inbox: nieuwste bericht eerst. To-do's: laatst toegevoegd eerst. */
 export function leesTaken(email: string, lijst: Lijst): Taak[] {
   return database()
     .prepare(
-      `SELECT * FROM taken WHERE email = ? AND lijst = ?
+      `SELECT * FROM taken WHERE email = ? AND lijst = ? AND ${NIET_UIT}
        ORDER BY COALESCE(tijd, toegevoegd / 1000) DESC, id DESC`,
     )
     .all(email, lijst)
@@ -66,7 +71,7 @@ export function tellingen(email: string): { inbox: number; open: number } {
       `SELECT
          COUNT(*) FILTER (WHERE lijst = 'inbox') AS inbox,
          COUNT(*) FILTER (WHERE lijst = 'todo' AND status != 'klaar') AS open
-       FROM taken WHERE email = ?`,
+       FROM taken WHERE email = ? AND ${NIET_UIT}`,
     )
     .get(email);
   return {
