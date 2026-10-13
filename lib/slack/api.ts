@@ -1,4 +1,5 @@
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
+import { platteTekst } from "./tekst";
 
 export type SlackTodo = {
   text: string;
@@ -21,7 +22,12 @@ export class SlackNietVerbondenError extends Error {
   }
 }
 
-const NIET_VERBONDEN = ["not_authed", "invalid_auth", "token_revoked"];
+const NIET_VERBONDEN = [
+  "not_authed",
+  "invalid_auth",
+  "token_revoked",
+  "missing_scope",
+];
 
 export function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -53,18 +59,6 @@ export async function slackPost(
   throw new Error(`Slack gaf een fout bij ${methode}: ${fout}`);
 }
 
-/** Slack-opmaak als gewone tekst: <url|label> wordt label, <@U123> wordt @gebruiker. */
-function platteTekst(text: string): string {
-  return text
-    .replace(/<@[A-Z0-9]+>/g, "@gebruiker")
-    .replace(/<#[A-Z0-9]+\|([^>]+)>/g, "#$1")
-    .replace(/<([^>|]+)\|([^>]+)>/g, "$2")
-    .replace(/<([^>]+)>/g, "$1")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
-
 function kanaalNaam(data: unknown): string {
   const kanaal = record(data);
   if (kanaal.is_im === true || kanaal.is_mpim === true) return "Direct bericht";
@@ -87,17 +81,27 @@ export async function zoekBerichten(
   return (Array.isArray(matches) ? matches : []).map(record);
 }
 
+function auteurNaam(
+  match: Record<string, unknown>,
+  namen: Map<string, string>,
+): string {
+  const naam = typeof match.user === "string" && namen.get(match.user);
+  if (naam) return naam;
+  return typeof match.username === "string" ? match.username : "Onbekend";
+}
+
 export function parseBericht(
   match: Record<string, unknown>,
   soort: string,
+  namen: Map<string, string>,
 ): SlackTodo | null {
   const tijd = Number(match.ts);
   if (typeof match.permalink !== "string" || !Number.isFinite(tijd)) {
     return null;
   }
   return {
-    text: typeof match.text === "string" ? platteTekst(match.text) : "",
-    auteur: typeof match.username === "string" ? match.username : "Onbekend",
+    text: typeof match.text === "string" ? platteTekst(match.text, namen) : "",
+    auteur: auteurNaam(match, namen),
     kanaal: kanaalNaam(match.channel),
     tijd,
     permalink: match.permalink,
