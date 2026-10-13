@@ -87,6 +87,13 @@ function open(): DatabaseSync {
   if (!kolommen.some((kolom) => kolom.name === "afgerond")) {
     db.exec("ALTER TABLE taken ADD COLUMN afgerond INTEGER");
   }
+  // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
+  const gebruikerKolommen = db
+    .prepare("PRAGMA table_info(slack_gebruikers)")
+    .all();
+  if (!gebruikerKolommen.some((kolom) => kolom.name === "bot")) {
+    db.exec("ALTER TABLE slack_gebruikers ADD COLUMN bot INTEGER");
+  }
   // DM's werden per bericht bewaard; nu is een gesprek één item (bron_id dm:<kanaal>).
   // Inbox-items maakt de sync opnieuw aan, de rest krijgt de nieuwe sleutel.
   const oudeDms = `bron = 'slack' AND soort = 'Direct bericht' AND bron_id NOT LIKE 'dm:%'`;

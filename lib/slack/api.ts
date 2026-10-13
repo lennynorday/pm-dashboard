@@ -90,6 +90,22 @@ function auteurNaam(
   return typeof match.username === "string" ? match.username : "Onbekend";
 }
 
+/**
+ * De tekst van een app-bericht (Jira, Google Calendar) staat niet in `text`
+ * maar in de secties van `blocks`; zonder vet, citaattekens en emoji-codes.
+ */
+function blokTekst(match: Record<string, unknown>): string {
+  const blocks = Array.isArray(match.blocks) ? match.blocks.map(record) : [];
+  return blocks
+    .filter((block) => block.type === "section")
+    .map((block) => record(block.text).text)
+    .filter((tekst): tekst is string => typeof tekst === "string")
+    .join("\n")
+    .replace(/^(&gt;)+ ?/gm, "")
+    .replace(/(?<![\w/]):[a-z][a-z0-9_+-]*: ?/g, "")
+    .replace(/\*/g, "");
+}
+
 export function parseBericht(
   match: Record<string, unknown>,
   soort: string,
@@ -100,7 +116,12 @@ export function parseBericht(
     return null;
   }
   return {
-    text: typeof match.text === "string" ? platteTekst(match.text, namen) : "",
+    text: platteTekst(
+      typeof match.text === "string" && match.text !== ""
+        ? match.text
+        : blokTekst(match),
+      namen,
+    ),
     auteur: auteurNaam(match, namen),
     kanaal: kanaalNaam(match.channel),
     tijd,
