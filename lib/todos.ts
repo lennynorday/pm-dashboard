@@ -235,7 +235,7 @@ export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
       gesprek.naam,
       gesprek.adres,
       gesprek.tijd,
-      `https://mail.google.com/mail/u/0/#all/${gesprek.id}`,
+      `https://mail.google.com/mail/u/${email}/#all/${gesprek.id}`,
       gesprek.soort,
       Date.now(),
     );
@@ -251,4 +251,14 @@ export function ruimGmailOp(email: string, houden: string[]): void {
          AND bron_id NOT IN (SELECT value FROM json_each(?))`,
     )
     .run(email, JSON.stringify(houden));
+}
+
+/** De thread-id's van de mailgesprekken die nu in de inbox staan. */
+export function gmailInInbox(email: string): string[] {
+  return database()
+    .prepare(
+      "SELECT bron_id FROM taken WHERE email = ? AND bron = 'gmail' AND lijst = 'inbox'",
+    )
+    .all(email)
+    .flatMap((row) => (typeof row.bron_id === "string" ? [row.bron_id] : []));
 }

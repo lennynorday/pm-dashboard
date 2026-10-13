@@ -75,37 +75,51 @@ export const decodeer = (tekst: string): string =>
 
 /**
  * Het Inbox-item van een thread (`threads.get` met metadata), of null als die
- * niet (meer) op jou wacht: de laatste mail is van jou (beantwoord), de
- * afzender is uitgesloten, of je staat niet in Aan of CC. Met een ster komt hij
- * er altijd in.
+ * niet (meer) op jou wacht: gearchiveerd (geen bericht in Postvak IN), de
+ * laatste mail is van jou (beantwoord), de afzender is uitgesloten, of je
+ * staat niet in Aan of CC. Met een ster komt hij er altijd in. Afzender, tekst
+ * en tijd komen van de laatste mail van een ander, zodat je eigen antwoord
+ * een genegeerd gesprek niet terughaalt.
  */
 export function beoordeelGesprek(
   thread: Json,
   ik: string,
   uitgesloten: (adres: string) => boolean,
 ): GmailGesprek | null {
+  const mij = ik.toLowerCase();
   const berichten = lijst(thread.messages).filter(
     (bericht) =>
       !labels(bericht).some((label) => OVERSLAAN.includes(String(label))),
   );
+  const vanMij = (bericht: Json) =>
+    labels(bericht).includes("SENT") ||
+    parseVan(header(bericht, "From")).adres === mij;
   const laatste = berichten.at(-1);
-  const tijd = Math.floor(Number(laatste?.internalDate) / 1000);
-  if (typeof thread.id !== "string" || !laatste || !Number.isFinite(tijd)) {
+  const bron = berichten.findLast((bericht) => !vanMij(bericht)) ?? laatste;
+  const tijd = Math.floor(Number(bron?.internalDate) / 1000);
+  if (
+    typeof thread.id !== "string" ||
+    !laatste ||
+    !bron ||
+    !Number.isFinite(tijd)
+  ) {
     return null;
   }
 
-  const { naam, adres } = parseVan(header(laatste, "From"));
-  const ster = berichten.some((bericht) => labels(bericht).includes("STARRED"));
-  const vanMij = labels(laatste).includes("SENT") || adres === ik.toLowerCase();
-  const aan = adressen(header(laatste, "To")).includes(ik.toLowerCase());
-  const cc = adressen(header(laatste, "Cc")).includes(ik.toLowerCase());
+  const heeft = (label: string) =>
+    berichten.some((bericht) => labels(bericht).includes(label));
+  const ster = heeft("STARRED");
+  const { naam, adres } = parseVan(header(bron, "From"));
+  const aan = adressen(header(bron, "To")).includes(mij);
+  const cc = adressen(header(bron, "Cc")).includes(mij);
   const soort = ster ? "Ster" : aan ? "Aan" : cc ? "CC" : null;
-  if (!soort || (!ster && (vanMij || uitgesloten(adres)))) return null;
+  const wacht = heeft("INBOX") && !vanMij(laatste) && !uitgesloten(adres);
+  if (!soort || (!ster && !wacht)) return null;
 
   return {
     id: thread.id,
-    onderwerp: header(laatste, "Subject") || "(geen onderwerp)",
-    tekst: decodeer(String(laatste.snippet ?? "")).slice(0, TEKST_LENGTE),
+    onderwerp: header(bron, "Subject") || "(geen onderwerp)",
+    tekst: decodeer(String(bron.snippet ?? "")).slice(0, TEKST_LENGTE),
     naam,
     adres,
     tijd,

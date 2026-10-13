@@ -8,12 +8,12 @@ export class GmailNietVerbondenError extends Error {
   }
 }
 
-/** Eén GET op de Gmail API met het token van de gebruiker; `pad` na `users/me/`. */
+/** Eén GET op de Gmail API met het token van de gebruiker; `pad` na `users/me/`. Null als het niet (meer) bestaat. */
 export async function gmailGet(
   email: string,
   pad: string,
   params: URLSearchParams,
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown> | null> {
   const token = await validToken(email, "gmail", parseStoredToken, (_, oud) =>
     vernieuwToken(oud),
   );
@@ -25,11 +25,11 @@ export async function gmailGet(
   );
   // Een 403 kan ook de aanvraaglimiet zijn; dat is geen kwestie van toegang.
   const limiet =
-    response.status === 403 &&
-    /rateLimitExceeded/i.test(await response.text());
+    response.status === 403 && /rateLimitExceeded/i.test(await response.text());
   if (response.status === 401 || (response.status === 403 && !limiet)) {
     throw new GmailNietVerbondenError();
   }
+  if (response.status === 404) return null;
   if (!response.ok) {
     throw new Error(`Gmail gaf status ${response.status} bij ${pad}`);
   }

@@ -92,16 +92,24 @@ test("CC, niet geadresseerd en uitgesloten", () => {
   );
 });
 
-test("met een ster komt het er altijd in, ook uitgesloten of beantwoord", () => {
+test("een gearchiveerd gesprek (zonder Postvak IN) wacht niet meer", () => {
+  assert.strictEqual(
+    beoordeelGesprek(thread(bericht("a@b.nl", IK, [])), IK, niemand),
+    null,
+  );
+});
+
+test("met een ster komt het er altijd in, met de laatste mail van een ander", () => {
   const item = beoordeelGesprek(
     thread(
-      bericht("a@b.nl", IK, ["INBOX", "STARRED"]),
+      bericht("Ander <a@b.nl>", IK, ["STARRED"]),
       bericht(IK, "a@b.nl", ["SENT"]),
     ),
     IK,
     () => true,
   );
   assert.strictEqual(item?.soort, "Ster");
+  assert.deepStrictEqual([item?.naam, item?.adres], ["Ander", "a@b.nl"]);
 });
 
 test("afzender en entities", () => {
