@@ -23,7 +23,11 @@ export async function gmailGet(
     `https://gmail.googleapis.com/gmail/v1/users/me/${pad}?${params}`,
     { headers: { Authorization: `Bearer ${token.accessToken}` } },
   );
-  if (response.status === 401 || response.status === 403) {
+  // Een 403 kan ook de aanvraaglimiet zijn; dat is geen kwestie van toegang.
+  const limiet =
+    response.status === 403 &&
+    /rateLimitExceeded/i.test(await response.text());
+  if (response.status === 401 || (response.status === 403 && !limiet)) {
     throw new GmailNietVerbondenError();
   }
   if (!response.ok) {
