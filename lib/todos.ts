@@ -107,16 +107,13 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
   }
 }
 
-/** Haalt DM-gesprekken waarin de gebruiker zelf als laatste reageerde uit de inbox. */
-export function verwijderBeantwoorde(
-  email: string,
-  gesprekken: string[],
-): void {
+/** Haalt beantwoorde inbox-items uit de inbox, op bron_id (dm:<kanaal> of permalink). */
+export function verwijderBeantwoorde(email: string, bronIds: string[]): void {
   const verwijder = database().prepare(
     `DELETE FROM taken
      WHERE email = ? AND bron = 'slack' AND lijst = 'inbox' AND bron_id = ?`,
   );
-  for (const gesprek of gesprekken) verwijder.run(email, `dm:${gesprek}`);
+  for (const bronId of bronIds) verwijder.run(email, bronId);
 }
 
 export function nieuweTaak(email: string, titel: string, status: Status): void {

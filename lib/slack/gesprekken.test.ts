@@ -1,6 +1,10 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { deelGesprekkenIn, isGesprek } from "./gesprekken.ts";
+import {
+  beantwoordInThread,
+  deelGesprekkenIn,
+  isGesprek,
+} from "./gesprekken.ts";
 
 const bericht = (id: string, user: string, ts: string) => ({
   channel: { id, is_im: true },
@@ -42,4 +46,22 @@ test("alleen DM's en groeps-DM's zijn een gesprek", () => {
   assert.ok(isGesprek({ channel: { is_mpim: true } }));
   assert.ok(!isGesprek({ channel: { name: "algemeen" } }));
   assert.ok(!isGesprek({}));
+});
+
+test("een vermelding is beantwoord als je daarna in dezelfde thread schreef", () => {
+  const link = (ts: string, thread?: string) =>
+    `https://x.slack.com/archives/C1/p${ts}${thread ? `?thread_ts=${thread}` : ""}`;
+  const inThread = (ts: string, thread?: string) => ({
+    channel: { id: "C1" },
+    ts,
+    permalink: link(ts, thread),
+  });
+  const beantwoord = beantwoordInThread([inThread("20", "10"), inThread("30")]);
+  assert.ok(beantwoord(inThread("15", "10")), "antwoord later in de thread");
+  assert.ok(
+    beantwoord(inThread("10")),
+    "vermelding is het begin van de thread",
+  );
+  assert.ok(!beantwoord(inThread("25", "10")), "jouw antwoord was eerder");
+  assert.ok(!beantwoord(inThread("5")), "los bericht in het kanaal telt niet");
 });
