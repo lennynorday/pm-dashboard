@@ -2,7 +2,12 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-const FILE = path.join(process.cwd(), "data", "dashboard.db");
+// npm run dev (poort 3000) is staging met een eigen kopie; npm run serve (3999) is productie.
+const FILE = path.join(
+  process.cwd(),
+  "data",
+  process.env.NODE_ENV === "production" ? "dashboard.db" : "staging.db",
+);
 
 function open(): DatabaseSync {
   mkdirSync(path.dirname(FILE), { recursive: true });
