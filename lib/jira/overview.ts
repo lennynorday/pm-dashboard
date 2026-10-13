@@ -51,20 +51,34 @@ export function clearJiraCache(): void {
   boards.clear();
 }
 
-/** De cache is per gebruiker: ieder ziet alleen wat de eigen Jira-rechten toestaan. */
+const ververst = new Set<string>();
+
+/**
+ * De cache is per gebruiker: ieder ziet alleen wat de eigen Jira-rechten toestaan.
+ * Is een resultaat oud, dan meteen het oude en op de achtergrond verversen.
+ */
 async function cachedSearch(
   email: string,
   jql: string,
 ): Promise<{ issues: JiraIssue[]; fetchedAt: Date }> {
   const key = JSON.stringify([email, jql]);
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.fetchedAt.getTime() < CACHE_MS) return hit;
-  const entry = {
-    issues: await searchIssues(email, jql),
-    fetchedAt: new Date(),
+  const haalOp = async () => {
+    const entry = {
+      issues: await searchIssues(email, jql),
+      fetchedAt: new Date(),
+    };
+    cache.set(key, entry);
+    return entry;
   };
-  cache.set(key, entry);
-  return entry;
+  const hit = cache.get(key);
+  if (!hit) return haalOp();
+  if (Date.now() - hit.fetchedAt.getTime() >= CACHE_MS && !ververst.has(key)) {
+    ververst.add(key);
+    void haalOp()
+      .catch(() => undefined)
+      .finally(() => ververst.delete(key));
+  }
+  return hit;
 }
 
 async function toResult<T>(load: () => Promise<T>): Promise<JiraResult<T>> {
