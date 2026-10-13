@@ -22,7 +22,7 @@ Geheimen staan in `.env.local` (niet in Git). Zie `.env.example` voor de namen.
 `npm run dev` (3000) is staging en gebruikt `data/staging.db`; `npm run serve` (3999) is productie en gebruikt `data/dashboard.db`. Staging opnieuw vullen met een kopie van productie:
 
 ```bash
-node -e 'new (require("node:sqlite").DatabaseSync)("data/dashboard.db").exec("VACUUM INTO \"data/staging.db\"")'
+sqlite3 data/dashboard.db "VACUUM INTO 'data/staging.db'"
 ```
 
 Verwijder eerst de oude `data/staging.db` en stop `npm run dev`. De kopie bevat dezelfde Jira- en Orbit-tokens; ververst de ene omgeving een token, dan kan de andere om opnieuw verbinden vragen.
