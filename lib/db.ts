@@ -107,6 +107,10 @@ function open(): DatabaseSync {
   if (!kolommen.some((kolom) => kolom.name === "afzender")) {
     db.exec("ALTER TABLE taken ADD COLUMN afzender TEXT");
   }
+  // Eigen volgorde op het kanbanbord (laag = boven); leeg = nog niet verplaatst, dus bovenaan.
+  if (!kolommen.some((kolom) => kolom.name === "positie")) {
+    db.exec("ALTER TABLE taken ADD COLUMN positie INTEGER");
+  }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db
     .prepare("PRAGMA table_info(slack_gebruikers)")
