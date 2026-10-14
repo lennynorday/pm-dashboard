@@ -22,8 +22,8 @@
 ## Acceptatiecriteria
 
 1. Na het inloggen met Google geeft de gebruiker ook leestoegang tot Gmail. Iedereen logt daarvoor één keer opnieuw in. Zonder Gmail-toegang toont de Inbox geen foutpagina, maar alleen de andere bronnen.
-2. Een gesprek komt in de Inbox als er een mail in Postvak IN staat, gelezen of niet, in de categorie Primair, met de gebruiker in Aan of CC, en de afzender niet op de uitsluitlijst staat.
-3. Nieuwsbrieven en notificaties (categorieën Promoties, Updates, Sociaal en Forums) komen er niet in.
+2. Een gesprek komt in de Inbox als er een mail in Postvak IN staat, gelezen of niet, met de gebruiker in Aan of CC, en de afzender niet op de uitsluitlijst staat.
+3. Gmail-categorieën (Primair, Promoties, Updates) spelen geen rol; nieuwsbrieven en notificaties filter je weg met de uitsluitlijst.
 4. Een gesprek met een ster komt altijd in de Inbox, ook als het van een uitgesloten afzender komt of van vóór de eerste synchronisatie is.
 5. Alleen mail vanaf de eerste synchronisatie telt mee (een `gmail_start` per gebruiker, net als `slack_start`).
 6. Eén item per gesprek: titel is het onderwerp, bericht is de eerste ±200 tekens van de laatste mail, met de naam van de afzender, de tijd en een link naar de thread in Gmail.
@@ -44,4 +44,4 @@
 ## Aanpak
 
 - De login vraagt `access_type=offline` en `prompt=consent` en bewaart de refresh token versleuteld (`lib/crypto.ts`). Nu bewaart de login alleen het profiel.
-- "Primair" houdt de meeste notificaties eruit. Na een week met echte mail zetten we de afzenders die er toch tussen komen (bijvoorbeeld Jira of Orbit) op de uitsluitlijst.
+- Geen Gmail-categorieën: die zijn onvoorspelbaar en `category:primary` werkt niet via de API. Notificaties en nieuwsbrieven zet je zelf op de uitsluitlijst.

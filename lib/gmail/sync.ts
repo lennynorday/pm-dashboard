@@ -12,9 +12,6 @@ export type GmailProbleem = { toestaan: true } | { fout: string } | null;
 const AANTAL = "50";
 // threads.get kost 10 quota-eenheden; in groepjes blijft het onder de limiet per seconde.
 const GROEPJE = 10;
-// Primair = geen van de andere tabbladen; `category:primary` vindt via de API niets.
-const PRIMAIR =
-  "-category:social -category:promotions -category:updates -category:forums";
 
 /** Het moment van de eerste synchronisatie, in Unix-seconden; zet het als het er nog niet is. */
 function leesStart(email: string): number | null {
@@ -54,7 +51,7 @@ const haalThread = (email: string, id: string) =>
   );
 
 /**
- * Haalt mailgesprekken op en werkt de Inbox bij: Primair in Postvak IN met jou
+ * Haalt mailgesprekken op en werkt de Inbox bij: Postvak IN met jou
  * in Aan of CC sinds de eerste synchronisatie, plus alles met een ster. De
  * eerste keer zet dit alleen het startmoment en haalt het alleen mail met een
  * ster. Wat niet meer op je wacht, gaat uit de inbox. `{ toestaan: true }` =
@@ -71,10 +68,7 @@ export async function synchroniseerGmail(
     const inbox =
       start === null
         ? []
-        : await zoekThreads(
-            email,
-            `in:inbox ${PRIMAIR} {to:me cc:me} after:${start}`,
-          );
+        : await zoekThreads(email, `in:inbox {to:me cc:me} after:${start}`);
     // Ook wat al in de Inbox staat, zodat een wachtend gesprek buiten de 50 blijft.
     const ids = [...new Set([...ster, ...inbox, ...gmailInInbox(email)])];
 

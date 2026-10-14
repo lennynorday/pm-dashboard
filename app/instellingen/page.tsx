@@ -57,8 +57,7 @@ const INBOX_BRONNEN_INFO: { bron: InboxBron; naam: string; detail: string }[] =
     {
       bron: "gmail",
       naam: "Gmail",
-      detail:
-        "Mail in Postvak IN (Primair) met jou in Aan of CC, en mail met een ster.",
+      detail: "Mail in Postvak IN met jou in Aan of CC, en mail met een ster.",
     },
   ];
 
