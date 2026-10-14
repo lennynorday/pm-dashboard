@@ -23,15 +23,19 @@ export async function gmailGet(
     `https://gmail.googleapis.com/gmail/v1/users/me/${pad}?${params}`,
     { headers: { Authorization: `Bearer ${token.accessToken}` } },
   );
-  // Een 403 kan ook de aanvraaglimiet zijn; dat is geen kwestie van toegang.
-  const limiet =
-    response.status === 403 && /rateLimitExceeded/i.test(await response.text());
-  if (response.status === 401 || (response.status === 403 && !limiet)) {
-    throw new GmailNietVerbondenError();
-  }
+  if (response.status === 401) throw new GmailNietVerbondenError();
   if (response.status === 404) return null;
   if (!response.ok) {
-    throw new Error(`Gmail gaf status ${response.status} bij ${pad}`);
+    const tekst = await response.text();
+    // Een 403 is alleen een kwestie van toegang als de scope ontbreekt; anders
+    // is het bijvoorbeeld de aanvraaglimiet of een uitgeschakelde Gmail API.
+    if (/insufficientPermissions|SCOPE_INSUFFICIENT/.test(tekst)) {
+      throw new GmailNietVerbondenError();
+    }
+    const melding = /"message":\s*"([^"]+)"/.exec(tekst)?.[1];
+    throw new Error(
+      `Gmail gaf status ${response.status} bij ${pad}${melding ? `: ${melding}` : ""}`,
+    );
   }
   const data: unknown = await response.json();
   return typeof data === "object" && data !== null

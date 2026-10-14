@@ -4,14 +4,15 @@ import { callOrbitTool } from "./client";
 
 /**
  * Het id bij een klantnaam uit de tabel die ListClients teruggeeft:
- * | [Centraal Museum Utrecht](jump:CLIENT:1385240) | BOTH | ...
+ * | Centraal Museum Utrecht | BOTH | ...
  * api_ids: CL4KKKRQSAXN7GK
  * Alleen een exacte naam telt; anders null.
  */
 export function parseKlantId(text: string, naam: string): string | null {
-  const namen = [...text.matchAll(/^\| \[(.+?)\]\(jump:CLIENT:\d+\)/gm)].map(
-    (match) => match[1].toLowerCase(),
-  );
+  // Oudere antwoorden hadden een link als naam: [Naam](jump:CLIENT:1385240).
+  const namen = [
+    ...text.matchAll(/^\| \[?(.+?)(?:\]\(jump:CLIENT:\d+\))? \| [A-Z]+ \|/gm),
+  ].map((match) => match[1].toLowerCase());
   const ids = /^api_ids: (.+)$/m.exec(text)?.[1].split(/,\s*/) ?? [];
   const index = namen.indexOf(naam.toLowerCase());
   return index >= 0 ? (ids[index] ?? null) : null;

@@ -24,24 +24,25 @@ function parseState(value: string): ProjectState | null {
 
 /**
  * Parst één tabelregel uit ListProjects, bijvoorbeeld:
- * | [1607](jump:PROJECT:862777) | Naam | Klant | Eigenaar | OPEN | OFFER | 191,970.00 | ... | 2026-12-31 |
+ * | 1607 | Naam | Klant | Eigenaar | OPEN | OFFER | 191,970.00 | ... | 2026-12-31 |
+ * Oudere antwoorden hadden een link als nummer: [1607](jump:PROJECT:862777).
  * Regels die niet kloppen worden overgeslagen.
  */
-function parseRow(line: string): OrbitProject | null {
+function parseRow(line: string, id: string): OrbitProject | null {
   const cells = line
     .replace(/^\|\s*/, "")
     .replace(/\s*\|\s*$/, "")
     .split(/\s*\|\s*/);
   if (cells.length < 10) return null;
 
-  const link = /^\[(\d+)\]\(jump:PROJECT:(\d+)\)$/.exec(cells[0]);
+  const number = /^\[?(\d+)\]?/.exec(cells[0])?.[1];
   const state = parseState(cells[4]);
-  if (!link || !state) return null;
+  if (!number || !state) return null;
 
   const endDate = /^\d{4}-\d{2}-\d{2}$/.test(cells[9]) ? cells[9] : null;
   return {
-    id: link[2],
-    number: link[1],
+    id,
+    number,
     name: cells[1],
     client: cells[2] || "Onbekende klant",
     owner: cells[3],
@@ -50,12 +51,16 @@ function parseRow(line: string): OrbitProject | null {
   };
 }
 
-/** Parst de Markdown-tabel die ListProjects teruggeeft. */
+/** Tabelregels met een projectnummer in de eerste kolom. */
+const PROJECT_REGEL = /^\| \[?\d+/;
+
+/** Parst de Markdown-tabel die ListProjects teruggeeft; de id's staan op de regel api_ids. */
 export function parseProjectList(text: string): OrbitProject[] {
+  const ids = /^api_ids: (.+)$/m.exec(text)?.[1].split(/,\s*/) ?? [];
   return text
     .split("\n")
-    .filter((line) => line.startsWith("| [") && line.includes("jump:PROJECT:"))
-    .map(parseRow)
+    .filter((line) => PROJECT_REGEL.test(line))
+    .map((line, index) => parseRow(line, ids[index] ?? ""))
     .filter((project): project is OrbitProject => project !== null);
 }
 
@@ -97,7 +102,7 @@ async function fetchAllPages(
     if (result.status !== "ok") return result;
 
     const pageProjects = parseProjectList(result.text);
-    if (pageProjects.length === 0 && result.text.includes("jump:PROJECT:")) {
+    if (pageProjects.length === 0 && result.text.includes("api_ids:")) {
       return {
         status: "fout",
         message: "De projectlijst van Orbit heeft een onbekend formaat.",
