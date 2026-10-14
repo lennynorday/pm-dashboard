@@ -2,6 +2,7 @@
 
 import NextLink from "next/link";
 import {
+  Fragment,
   useEffect,
   useOptimistic,
   useRef,
@@ -14,6 +15,7 @@ import {
   verplaatsTaakAction,
   zetPrioAction,
   zetStatusAction,
+  zetVolgordeAction,
 } from "@/app/actions";
 import {
   BRON_LABELS,
@@ -40,13 +42,26 @@ import styles from "./Todos.module.css";
 import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
 import { useToast } from "./Toast";
 import { TodosMenu, type MenuItem } from "./TodosMenu";
-import { TODOS_COOKIE, type Weergave } from "./TodosWeergave";
+import {
+  SORTERING_COOKIE,
+  SORTERING_LABELS,
+  TODOS_COOKIE,
+  type Sortering,
+  type Weergave,
+} from "./TodosWeergave";
 
 type Patch = Pick<Taak, "id"> &
-  Partial<Pick<Taak, "status" | "prio" | "lijst" | "titel">>;
+  Partial<Pick<Taak, "status" | "prio" | "lijst" | "titel" | "positie">>;
 
 /** Klaar is geen kolom maar een afrondzone. */
 const KOLOMMEN = STATUSSEN.filter((status) => status !== "klaar");
+
+/** Sorteer stabiel; de volgorde van de database is nieuwste eerst. Nieuwe kaarten (positie null) staan bovenaan. */
+const SORTEERDERS: Record<Sortering, (a: Taak, b: Taak) => number> = {
+  nieuwste: () => 0,
+  prio: (a, b) => a.prio - b.prio,
+  eigen: (a, b) => (a.positie ?? -1) - (b.positie ?? -1),
+};
 
 const statusKlasse = (status: Status) => styles[`st-${status}`];
 const prioKlasse = (prio: Prio) => styles[`pr-${prio}`];
@@ -87,22 +102,28 @@ function dialoogBron(taak: Taak): DialoogBron | undefined {
   };
 }
 
-type Props = { taken: Taak[]; weergave: Weergave };
+type Props = { taken: Taak[]; weergave: Weergave; sortering: Sortering };
 
-export function Todos({ taken, weergave: start }: Props) {
+export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
   const [weergave, setWeergave] = useState(start);
+  const [sortering, setSortering] = useState(kiesStart);
   const [zoek, setZoek] = useState("");
   const [nieuw, setNieuw] = useState<Status | null>(null);
   const [bewerk, setBewerk] = useState<Taak | null>(null);
   const { toon, element: melding } = useToast();
   const [sleepId, setSleepId] = useState<number | null>(null);
   const [over, setOver] = useState<Status | null>(null);
+  /** Waar de lijn staat in Eigen volgorde: voor kaart `voor`, of onderaan bij null. */
+  const [lijn, setLijn] = useState<{ status: Status; voor: number | null }>();
   const [, startTransition] = useTransition();
   const [optimistisch, pasToe] = useOptimistic(
     taken,
-    (huidig: Taak[], patch: Patch) =>
+    (huidig: Taak[], patches: Patch | Patch[]) =>
       huidig
-        .map((taak) => (taak.id === patch.id ? { ...taak, ...patch } : taak))
+        .map((taak) => ({
+          ...taak,
+          ...[patches].flat().find((patch) => patch.id === taak.id),
+        }))
         .filter((taak) => taak.lijst === "todo"),
   );
   const nieuwVeld = useRef<HTMLInputElement>(null);
@@ -115,7 +136,7 @@ export function Todos({ taken, weergave: start }: Props) {
     taak.titel.toLowerCase().includes(zoek.trim().toLowerCase()),
   );
 
-  function wijzig(patch: Patch, actie: () => Promise<void>) {
+  function wijzig(patch: Patch | Patch[], actie: () => Promise<void>) {
     startTransition(async () => {
       pasToe(patch);
       await actie();
@@ -136,6 +157,20 @@ export function Todos({ taken, weergave: start }: Props) {
     wijzig({ id: taak.id, status }, () => zetStatusAction(taak.id, status));
   }
 
+  /** Zet de kaart in de kolom: bovenaan, of in Eigen volgorde voor kaart `voor`. */
+  function zetInKolom(taak: Taak, status: Status, voor: number | null) {
+    const ids = optimistisch
+      .filter((t) => t.status === status && t.id !== taak.id)
+      .sort(SORTEERDERS.eigen)
+      .map((t) => t.id);
+    const plek = sortering === "eigen" ? ids.indexOf(voor ?? -1) : 0;
+    ids.splice(plek < 0 ? ids.length : plek, 0, taak.id);
+    wijzig(
+      ids.map((id, positie) => ({ id, status, positie })),
+      () => zetVolgordeAction(status, ids),
+    );
+  }
+
   function zetPrio(taak: Taak, prio: Prio) {
     wijzig({ id: taak.id, prio }, () => zetPrioAction(taak.id, prio));
   }
@@ -149,6 +184,11 @@ export function Todos({ taken, weergave: start }: Props) {
   function kiesWeergave(nieuweWeergave: Weergave) {
     setWeergave(nieuweWeergave);
     setPreferenceCookie(TODOS_COOKIE, nieuweWeergave);
+  }
+
+  function kiesSortering(nieuweSortering: Sortering) {
+    setSortering(nieuweSortering);
+    setPreferenceCookie(SORTERING_COOKIE, nieuweSortering);
   }
 
   function voegToe(e: React.FormEvent<HTMLFormElement>) {
@@ -264,6 +304,7 @@ export function Todos({ taken, weergave: start }: Props) {
       <li
         key={taak.id}
         className={`${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""}`}
+        data-kaart={taak.id}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
@@ -273,6 +314,7 @@ export function Todos({ taken, weergave: start }: Props) {
         onDragEnd={() => {
           setSleepId(null);
           setOver(null);
+          setLijn(undefined);
         }}
       >
         <span className={styles.titel}>{taak.titel}</span>
@@ -288,7 +330,11 @@ export function Todos({ taken, weergave: start }: Props) {
 
   function kolom(status: Status) {
     const klaar = status === "klaar";
-    const rijen = zichtbaar.filter((taak) => taak.status === status);
+    const rijen = zichtbaar
+      .filter((taak) => taak.status === status)
+      .sort(SORTEERDERS[sortering]);
+    const eigenKolom =
+      optimistisch.find((t) => t.id === sleepId)?.status === status;
     return (
       <section
         key={status}
@@ -297,18 +343,38 @@ export function Todos({ taken, weergave: start }: Props) {
         onDragOver={(e) => {
           if (sleepId === null) return;
           e.preventDefault();
-          setOver(status);
+          if (klaar || sortering !== "eigen")
+            return setOver(eigenKolom ? null : status);
+          // Eigen volgorde: een lijn tussen de kaarten in plaats van een omlijnde kolom.
+          const voor = [
+            ...e.currentTarget.querySelectorAll<HTMLElement>("[data-kaart]"),
+          ]
+            .filter((el) => Number(el.dataset.kaart) !== sleepId)
+            .find((el) => {
+              const vak = el.getBoundingClientRect();
+              return e.clientY < vak.top + vak.height / 2;
+            });
+          const voorId = voor ? Number(voor.dataset.kaart) : null;
+          setLijn((huidig) =>
+            huidig?.status === status && huidig.voor === voorId
+              ? huidig
+              : { status, voor: voorId },
+          );
         }}
         onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null))
-            setOver(null);
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setOver(null);
+          setLijn(undefined);
         }}
         onDrop={(e) => {
           e.preventDefault();
           const taak = optimistisch.find((t) => t.id === sleepId);
-          if (taak) zetStatus(taak, status);
+          if (taak && klaar) zetStatus(taak, status);
+          else if (taak && (!eigenKolom || sortering === "eigen"))
+            zetInKolom(taak, status, lijn?.voor ?? null);
           setSleepId(null);
           setOver(null);
+          setLijn(undefined);
         }}
       >
         <div className={`${styles.kolomKop} ${statusKlasse(status)}`}>
@@ -332,7 +398,17 @@ export function Todos({ taken, weergave: start }: Props) {
           </p>
         ) : (
           <ul className={styles.kaarten}>
-            {rijen.map(kaart)}
+            {rijen.map((taak) => (
+              <Fragment key={taak.id}>
+                {lijn?.status === status && lijn.voor === taak.id && (
+                  <li className={styles.lijn} aria-hidden="true" />
+                )}
+                {kaart(taak)}
+              </Fragment>
+            ))}
+            {lijn?.status === status && lijn.voor === null && (
+              <li className={styles.lijn} aria-hidden="true" />
+            )}
             {rijen.length === 0 && (
               <li className={styles.leeg}>Niets in deze kolom.</li>
             )}
@@ -435,6 +511,35 @@ export function Todos({ taken, weergave: start }: Props) {
             Kanban
           </button>
         </div>
+        {weergave === "kanban" && (
+          <div className={styles.sorteer}>
+            <span className={styles.sorteerLabel} id="todos-sorteren">
+              Sorteren
+            </span>
+            <div
+              className={styles.wissel}
+              role="group"
+              aria-labelledby="todos-sorteren"
+            >
+              {(Object.keys(SORTERING_LABELS) as Sortering[]).map((optie) => (
+                <button
+                  key={optie}
+                  type="button"
+                  className={styles.tab}
+                  aria-pressed={sortering === optie}
+                  onClick={() => kiesSortering(optie)}
+                >
+                  {SORTERING_LABELS[optie]}
+                </button>
+              ))}
+            </div>
+            {sortering !== "eigen" && (
+              <span className={styles.hint}>
+                Sleep binnen een kolom in Eigen volgorde
+              </span>
+            )}
+          </div>
+        )}
         <div className={styles.zoek}>
           <SearchIcon />
           <label className="visually-hidden" htmlFor="todos-zoek">

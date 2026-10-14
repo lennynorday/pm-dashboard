@@ -46,6 +46,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
     lijst,
     status,
     prio,
+    positie: typeof row.positie === "number" ? row.positie : null,
   };
 }
 
@@ -142,11 +143,23 @@ export function verplaats(email: string, id: number, lijst: Lijst): void {
 export function zetStatus(email: string, id: number, status: Status): void {
   database()
     .prepare(
-      `UPDATE taken SET status = ?,
+      `UPDATE taken SET status = ?, positie = NULL,
          afgerond = CASE WHEN ? = 'klaar' THEN COALESCE(afgerond, ?) END
        WHERE email = ? AND id = ?`,
     )
     .run(status, status, Date.now(), email, id);
+}
+
+/** Zet de taken in de volgorde van `ids` in deze kolom; verplaatste taken krijgen de status mee. */
+export function zetVolgorde(
+  email: string,
+  status: Status,
+  ids: number[],
+): void {
+  const zet = database().prepare(
+    "UPDATE taken SET status = ?, positie = ? WHERE email = ? AND id = ?",
+  );
+  ids.forEach((id, positie) => zet.run(status, positie, email, id));
 }
 
 export function zetPrio(email: string, id: number, prio: Prio): void {

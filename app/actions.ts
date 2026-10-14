@@ -50,6 +50,7 @@ import {
   voegFeedToe,
   zetPrio,
   zetStatus,
+  zetVolgorde,
 } from "@/lib/todos";
 
 /** Haalt alles opnieuw op: Orbit, Jira en de accountgegevens uit Superhuman. */
@@ -418,6 +419,15 @@ export async function zetStatusAction(
 ): Promise<void> {
   const nieuw = parseStatus(status);
   if (nieuw) await bijTaken((email) => zetStatus(email, id, nieuw));
+}
+
+export async function zetVolgordeAction(
+  status: string,
+  ids: number[],
+): Promise<void> {
+  const kolom = parseStatus(status);
+  if (kolom && ids.every(Number.isInteger))
+    await bijTaken((email) => zetVolgorde(email, kolom, ids));
 }
 
 export async function zetPrioAction(id: number, prio: number): Promise<void> {

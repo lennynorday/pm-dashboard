@@ -95,6 +95,8 @@ export type Taak = {
   lijst: Lijst;
   status: Status;
   prio: Prio;
+  /** Plek in de eigen volgorde van de kolom; null = nog niet verplaatst, dus bovenaan. */
+  positie: number | null;
 };
 
 /** Parsers voor waarden uit de browser; een server action krijgt niets gegarandeerd. */
