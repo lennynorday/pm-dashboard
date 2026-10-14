@@ -4,6 +4,7 @@ import { callOrbitTool } from "./client";
 
 /** Eén taak in Orbit waarop uren geschreven worden. Uren in minuten. */
 export type Schrijfregel = {
+  id: string;
   naam: string;
   afgesloten: boolean;
   /** Wat er nu in Orbit op de taak staat; aanpasbaar, dus niet per se wat er verkocht is. */
@@ -41,7 +42,7 @@ export function parseDuur(text: string): number {
 
 const MAP_REGEL = /^\*\*(.+?)\*\*\s+\[chapter api_id: (\w+)\]/;
 const TAAK_REGEL =
-  /^- (.+?)\s+\[api_id: \w+\](.*?)planned ([\dhm ]+), done ([\dhm ]+)/;
+  /^- (.+?)\s+\[api_id: (\w+)\](.*?)planned ([\dhm ]+), done ([\dhm ]+)/;
 
 /** Mappen en taken uit GetProject; een map die vaker voorkomt, wordt samengevoegd. */
 export function parseMappen(text: string): BudgetMap[] {
@@ -64,10 +65,11 @@ export function parseMappen(text: string): BudgetMap[] {
       mappen.push(huidig);
     }
     huidig.regels.push({
+      id: taak[2],
       naam: taak[1],
-      afgesloten: taak[2].includes("(closed)"),
-      beschikbaar: parseDuur(taak[3]),
-      geschreven: parseDuur(taak[4]),
+      afgesloten: taak[3].includes("(closed)"),
+      beschikbaar: parseDuur(taak[4]),
+      geschreven: parseDuur(taak[5]),
     });
   }
   return mappen;
@@ -157,7 +159,7 @@ export function fetchProjectBudget(
   email: string,
   number: string,
 ): ProjectBudgetResult {
-  const sleutel = `budget:v1:${email}:${number}`;
+  const sleutel = `budget:v2:${email}:${number}`;
   const hit = lees<ProjectBudget>(sleutel);
   if (hit && vers(hit.opgehaald, CACHE_MS)) {
     return { status: "ok", data: hit.waarde };

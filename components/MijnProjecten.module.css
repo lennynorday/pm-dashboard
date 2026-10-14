@@ -343,7 +343,8 @@ details[open] > summary .chevron {
     display: none;
   }
 
-  .projectRij {
+  .projectRij,
+  .favRij {
     padding-inline: var(--space-03);
   }
 
@@ -371,4 +372,130 @@ details[open] > summary .chevron {
   .getal {
     white-space: normal;
   }
+}
+
+/* Ster bij map en regel; zonder markering subtiel tot je over de rij gaat. */
+.ster {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px 0 -4px -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.ster:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.sterIcoon {
+  width: 15px;
+  height: 15px;
+}
+
+.ster[aria-pressed="true"] {
+  color: var(--norday-dark);
+}
+
+.ster[aria-pressed="true"] .sterIcoon {
+  fill: var(--norday-yellow);
+}
+
+@media (hover: hover) {
+  .ster[aria-pressed="false"] {
+    opacity: 0.35;
+  }
+
+  :is(.mapRij, .regelRij, .favRij):hover .ster,
+  .ster:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* Favorieten: een kaart zoals een platform, met de projectnaam boven de map of regel. */
+.favorieten {
+  container-type: inline-size;
+  margin-bottom: var(--space-04);
+  padding: 22px var(--space-06) var(--space-04);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+}
+
+.favorietenKop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font: 700 28px/0.95 var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+}
+
+.favorietenKop .sterIcoon {
+  width: 22px;
+  height: 22px;
+  fill: var(--norday-yellow);
+  stroke: var(--norday-dark);
+}
+
+.favLijst {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.favRij {
+  min-height: 56px;
+  padding: var(--space-02) 18px;
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+}
+
+.favNaam {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.favNaam a {
+  font: 400 15px/1.3 var(--font-text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.favNaam a:hover {
+  text-decoration: underline;
+}
+
+.favProject {
+  display: block;
+  font-weight: 600;
+}
+
+.context {
+  font: 400 12.5px/1.35 var(--font-text);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.soort {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: rgb(61 16 40 / 0.08);
+  font-weight: 500;
 }

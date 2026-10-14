@@ -37,6 +37,11 @@ function open(): DatabaseSync {
       nummer TEXT NOT NULL,
       PRIMARY KEY (email, nummer)
     );
+    CREATE TABLE IF NOT EXISTS favorieten (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      id TEXT NOT NULL,
+      PRIMARY KEY (email, id)
+    );
     CREATE TABLE IF NOT EXISTS orbit_cache (
       sleutel TEXT PRIMARY KEY,
       waarde TEXT NOT NULL,

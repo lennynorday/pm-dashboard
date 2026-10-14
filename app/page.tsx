@@ -7,6 +7,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
+import { readFavorieten } from "@/lib/favorieten";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
@@ -82,6 +83,7 @@ export default async function HomePage() {
         </p>
       ) : (
         <MijnProjecten
+          favorieten={readFavorieten(user.email)}
           rijen={bronnen.map(({ platform, jira, projecten }) => ({
             platform,
             support: jira.support,
