@@ -25,7 +25,7 @@ export function PlatformNav({ platforms, currentPlatform }: Props) {
                 // Een favicon van Google; next/image voegt hier niets toe.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${platform.productieHost}&sz=64`}
+                  src={`https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${platform.productieHost}&size=64`}
                   alt=""
                   width={20}
                   height={20}
