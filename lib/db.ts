@@ -56,6 +56,22 @@ function open(): DatabaseSync {
       naam TEXT NOT NULL,
       opgehaald INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS gmail_start (
+      email TEXT PRIMARY KEY REFERENCES gebruikers (email),
+      sinds INTEGER NOT NULL
+    );
+    -- Een rij = die bron staat uit in de Inbox van deze gebruiker.
+    CREATE TABLE IF NOT EXISTS inbox_uit (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      bron TEXT NOT NULL,
+      PRIMARY KEY (email, bron)
+    );
+    CREATE TABLE IF NOT EXISTS gmail_uitgesloten (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      waarde TEXT NOT NULL,
+      soort TEXT NOT NULL,
+      PRIMARY KEY (email, waarde)
+    );
     CREATE TABLE IF NOT EXISTS taken (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT NOT NULL REFERENCES gebruikers (email),
@@ -86,6 +102,10 @@ function open(): DatabaseSync {
   // Wanneer een taak op klaar ging (ms), voor de urenanalyse; leeg zolang hij niet klaar is.
   if (!kolommen.some((kolom) => kolom.name === "afgerond")) {
     db.exec("ALTER TABLE taken ADD COLUMN afgerond INTEGER");
+  }
+  // E-mailadres van de afzender van een Gmail-gesprek, voor de uitsluitlijst.
+  if (!kolommen.some((kolom) => kolom.name === "afzender")) {
+    db.exec("ALTER TABLE taken ADD COLUMN afzender TEXT");
   }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db

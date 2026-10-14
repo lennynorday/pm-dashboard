@@ -103,3 +103,137 @@
   margin: 0 0 var(--space-05);
   font: var(--type-body-2);
 }
+
+.kaart {
+  padding: var(--space-05) var(--space-06);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+}
+
+.bronRij {
+  display: flex;
+  align-items: center;
+  gap: var(--space-04);
+  padding: 14px 0;
+}
+
+.bronRij + .bronRij {
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.schakel {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.schakel::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--norday-dark);
+  transition:
+    transform 0.25s var(--ease),
+    background 0.2s;
+}
+
+.schakel[aria-checked="true"] {
+  background: var(--norday-dark);
+  box-shadow: none;
+}
+
+.schakel[aria-checked="true"]::after {
+  transform: translateX(22px);
+  background: var(--norday-lilac);
+}
+
+.waarschuwing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  margin: var(--space-01) 0 0;
+  font: var(--type-label);
+  font-weight: 600;
+}
+
+.waarschuwing svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--norday-pink);
+}
+
+.subtitel {
+  margin: 28px 0 10px;
+  font: var(--type-ui-heading-1);
+}
+
+.nooitUitleg {
+  margin-bottom: var(--space-03);
+}
+
+.uitsluit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  height: 40px;
+  padding: 0 4px 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  font: var(--type-label);
+}
+
+.soort {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.chipKnop {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chipKnop svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chipKnop:hover {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.schakel:focus-visible,
+.chipKnop:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

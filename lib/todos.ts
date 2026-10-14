@@ -1,4 +1,5 @@
 import { database } from "./db";
+import type { GmailGesprek } from "./gmail/gesprekken";
 import type { SlackTodo } from "./slack/api";
 import {
   type FeedTodo,
@@ -36,6 +37,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
     bron,
     titel: row.titel,
     auteur: tekst(row.auteur),
+    afzender: tekst(row.afzender),
     plek: tekst(row.plek),
     tijd: typeof row.tijd === "number" ? row.tijd : null,
     url: tekst(row.url),
@@ -47,11 +49,15 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
   };
 }
 
+// Inbox-items uit een bron die de gebruiker heeft uitgezet, tellen niet mee.
+const NIET_UIT = `NOT (lijst = 'inbox' AND bron IN
+  (SELECT bron FROM inbox_uit WHERE inbox_uit.email = taken.email))`;
+
 /** Inbox: nieuwste bericht eerst. To-do's: laatst toegevoegd eerst. */
 export function leesTaken(email: string, lijst: Lijst): Taak[] {
   return database()
     .prepare(
-      `SELECT * FROM taken WHERE email = ? AND lijst = ?
+      `SELECT * FROM taken WHERE email = ? AND lijst = ? AND ${NIET_UIT}
        ORDER BY COALESCE(tijd, toegevoegd / 1000) DESC, id DESC`,
     )
     .all(email, lijst)
@@ -66,7 +72,7 @@ export function tellingen(email: string): { inbox: number; open: number } {
       `SELECT
          COUNT(*) FILTER (WHERE lijst = 'inbox') AS inbox,
          COUNT(*) FILTER (WHERE lijst = 'todo' AND status != 'klaar') AS open
-       FROM taken WHERE email = ?`,
+       FROM taken WHERE email = ? AND ${NIET_UIT}`,
     )
     .get(email);
   return {
@@ -201,4 +207,58 @@ export function verwijderFeedTodo(email: string, bronId: string): void {
       "DELETE FROM taken WHERE email = ? AND bron = 'feed' AND bron_id = ?",
     )
     .run(email, bronId);
+}
+
+/**
+ * Zet mailgesprekken in de inbox, één item per thread (bron_id = thread-id).
+ * Net als een DM-gesprek: nieuwere mail werkt het bij en haalt het terug uit
+ * genegeerd, op To-do's blijft het ongemoeid.
+ */
+export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
+  const insert = database().prepare(
+    `INSERT INTO taken
+       (email, bron, bron_id, titel, bericht, auteur, afzender, tijd, url, soort, lijst, toegevoegd)
+     VALUES (?, 'gmail', ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)
+     ON CONFLICT (email, bron, bron_id) DO UPDATE SET
+       titel = excluded.titel, bericht = excluded.bericht,
+       auteur = excluded.auteur, afzender = excluded.afzender,
+       tijd = excluded.tijd, url = excluded.url, soort = excluded.soort,
+       lijst = 'inbox'
+     WHERE taken.lijst != 'todo' AND excluded.tijd > taken.tijd`,
+  );
+  for (const gesprek of gesprekken) {
+    insert.run(
+      email,
+      gesprek.id,
+      gesprek.onderwerp,
+      gesprek.tekst,
+      gesprek.naam,
+      gesprek.adres,
+      gesprek.tijd,
+      `https://mail.google.com/mail/u/${email}/#all/${gesprek.id}`,
+      gesprek.soort,
+      Date.now(),
+    );
+  }
+}
+
+/** Haalt mailgesprekken uit de inbox die niet meer op je wachten; To-do's en genegeerd blijven. */
+export function ruimGmailOp(email: string, houden: string[]): void {
+  database()
+    .prepare(
+      `DELETE FROM taken
+       WHERE email = ? AND bron = 'gmail' AND lijst = 'inbox'
+         AND bron_id NOT IN (SELECT value FROM json_each(?))`,
+    )
+    .run(email, JSON.stringify(houden));
+}
+
+/** De thread-id's van de mailgesprekken die nu in de inbox staan. */
+export function gmailInInbox(email: string): string[] {
+  return database()
+    .prepare(
+      "SELECT bron_id FROM taken WHERE email = ? AND bron = 'gmail' AND lijst = 'inbox'",
+    )
+    .all(email)
+    .flatMap((row) => (typeof row.bron_id === "string" ? [row.bron_id] : []));
 }

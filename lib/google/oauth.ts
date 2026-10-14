@@ -1,10 +1,13 @@
 import { appUrl } from "@/lib/app-url";
+import { type OAuthToken, parseTokenResponse } from "@/lib/koppelingen";
 import { pkce, Pkce } from "@/lib/pkce";
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
 export const GOOGLE_REDIRECT_URI = appUrl("/api/google/callback");
+
+const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 /** Alleen Google-accounts van dit domein mogen inloggen. */
 export const NORDAY_DOMEIN = "norday.nl";
@@ -36,12 +39,15 @@ export function startLogin(): Pkce & { authorizeUrl: string } {
     client_id: setting("GOOGLE_CLIENT_ID"),
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
-    scope: "openid email profile",
+    scope: `openid email profile ${GMAIL_SCOPE}`,
     code_challenge: login.challenge,
     code_challenge_method: "S256",
     state: login.state,
     hd: NORDAY_DOMEIN,
-    prompt: "select_account",
+    // Offline en consent: alleen dan geeft Google een refresh token voor Gmail.
+    access_type: "offline",
+    include_granted_scopes: "true",
+    prompt: "consent select_account",
   }).toString();
   return { ...login, authorizeUrl: url.toString() };
 }
@@ -89,33 +95,67 @@ export function parseIdToken(
   };
 }
 
-export async function exchangeCode(
-  code: string,
-  verifier: string,
-): Promise<GoogleProfiel> {
-  const clientId = setting("GOOGLE_CLIENT_ID");
+/** Eén aanvraag bij Google's token-endpoint. */
+async function tokenAanvraag(
+  params: Record<string, string>,
+): Promise<Record<string, unknown>> {
   const response = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      code_verifier: verifier,
-      client_id: clientId,
+      ...params,
+      client_id: setting("GOOGLE_CLIENT_ID"),
       client_secret: setting("GOOGLE_CLIENT_SECRET"),
-      redirect_uri: GOOGLE_REDIRECT_URI,
     }),
   });
   if (!response.ok) {
-    throw new Error(`Google gaf status ${response.status} bij het inloggen`);
+    throw new Error(
+      `Google gaf status ${response.status} bij het ophalen van een token`,
+    );
   }
   const data: unknown = await response.json();
-  const idToken =
-    typeof data === "object" && data !== null
-      ? (data as Record<string, unknown>).id_token
-      : undefined;
-  if (typeof idToken !== "string") {
+  return typeof data === "object" && data !== null
+    ? (data as Record<string, unknown>)
+    : {};
+}
+
+/**
+ * Het profiel, het token en of de gebruiker Gmail-leestoegang gaf; dat vinkje
+ * kan hij op het toestemmingsscherm uitzetten.
+ */
+export async function exchangeCode(
+  code: string,
+  verifier: string,
+): Promise<{ profiel: GoogleProfiel; token: OAuthToken; gmail: boolean }> {
+  const data = await tokenAanvraag({
+    grant_type: "authorization_code",
+    code,
+    code_verifier: verifier,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+  });
+  if (typeof data.id_token !== "string") {
     throw new Error("Google gaf geen ID-token terug");
   }
-  return parseIdToken(idToken, clientId, Date.now());
+  const scopes = typeof data.scope === "string" ? data.scope.split(" ") : [];
+  return {
+    profiel: parseIdToken(
+      data.id_token,
+      setting("GOOGLE_CLIENT_ID"),
+      Date.now(),
+    ),
+    token: parseTokenResponse(data, Date.now()),
+    gmail: scopes.includes(GMAIL_SCOPE),
+  };
+}
+
+/** Vernieuwt het token; Google geeft daarbij meestal geen nieuw refresh token, dan blijft het oude. */
+export async function vernieuwToken(refreshToken: string): Promise<OAuthToken> {
+  const token = parseTokenResponse(
+    await tokenAanvraag({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+    Date.now(),
+  );
+  return { ...token, refreshToken: token.refreshToken ?? refreshToken };
 }

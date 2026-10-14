@@ -29,11 +29,12 @@ export const PRIO_LABELS: Record<Prio, string> = {
 export const LIJSTEN = ["inbox", "todo", "genegeerd"] as const;
 export type Lijst = (typeof LIJSTEN)[number];
 
-export const BRONNEN_TAAK = ["slack", "feed", "eigen"] as const;
+export const BRONNEN_TAAK = ["slack", "gmail", "feed", "eigen"] as const;
 export type Bron = (typeof BRONNEN_TAAK)[number];
 
 export const BRON_LABELS: Record<Bron, string> = {
   slack: "Slack",
+  gmail: "Gmail",
   feed: "Feed",
   eigen: "Eigen",
 };
@@ -50,11 +51,38 @@ export type FeedTodo = {
   url: string;
 };
 
+/** De bronnen die in de Inbox stromen; per gebruiker aan of uit te zetten. */
+export const INBOX_BRONNEN = ["slack", "gmail"] as const;
+export type InboxBron = (typeof INBOX_BRONNEN)[number];
+
+export const parseInboxBron = (waarde: unknown): InboxBron | null =>
+  INBOX_BRONNEN.find((bron) => bron === waarde) ?? null;
+
+/** Een regel op de uitsluitlijst van Gmail: een heel adres of een domein. */
+export type Uitsluiting = { waarde: string; soort: "afzender" | "domein" };
+
+/** Het domein van een e-mailadres, in kleine letters. */
+export const domeinVan = (adres: string): string =>
+  adres.slice(adres.lastIndexOf("@") + 1).toLowerCase();
+
+/** Of mail van dit adres op de uitsluitlijst staat, als adres of als domein. */
+export function isUitgesloten(
+  adres: string,
+  uitsluitingen: Uitsluiting[],
+): boolean {
+  const klein = adres.toLowerCase();
+  return uitsluitingen.some(({ waarde, soort }) =>
+    soort === "afzender" ? waarde === klein : waarde === domeinVan(klein),
+  );
+}
+
 export type Taak = {
   id: number;
   bron: Bron;
   titel: string;
   auteur: string | null;
+  /** E-mailadres van de afzender; alleen bij Gmail. */
+  afzender: string | null;
   /** Kanaal of "Direct bericht"; leeg bij eigen taken. */
   plek: string | null;
   /** Unix-seconden. */
