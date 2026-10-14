@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { PageHeading } from "@/components/PageHeading";
 import { Todos } from "@/components/Todos";
-import { parseWeergave, TODOS_COOKIE } from "@/components/TodosWeergave";
+import {
+  parseSortering,
+  parseWeergave,
+  SORTERING_COOKIE,
+  TODOS_COOKIE,
+} from "@/components/TodosWeergave";
 import { currentUser } from "@/lib/session";
 import { leesTaken } from "@/lib/todos";
 
@@ -21,6 +26,7 @@ export default async function TodosPage() {
       <Todos
         taken={leesTaken(user.email, "todo")}
         weergave={parseWeergave(cookieStore.get(TODOS_COOKIE)?.value)}
+        sortering={parseSortering(cookieStore.get(SORTERING_COOKIE)?.value)}
       />
     </>
   );

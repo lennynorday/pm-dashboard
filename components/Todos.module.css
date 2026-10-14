@@ -524,3 +524,30 @@
 .kaart > .context {
   margin-top: -4px;
 }
+
+.sorteer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-02) var(--space-03);
+}
+
+.sorteerLabel {
+  color: var(--color-text-muted);
+  font: var(--type-label);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font: var(--type-label);
+  font-size: 13px;
+}
+
+/* Invoegplek bij Eigen volgorde */
+.lijn {
+  height: 3px;
+  margin: -2px var(--space-02);
+  border-radius: 2px;
+  background: var(--norday-pink);
+  pointer-events: none;
+}
