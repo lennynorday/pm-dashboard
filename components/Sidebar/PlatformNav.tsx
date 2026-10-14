@@ -21,7 +21,18 @@ export function PlatformNav({ platforms, currentPlatform }: Props) {
             }
           >
             <span className={styles.initials} aria-hidden="true">
-              {platform.initialen}
+              {platform.productieHost ? (
+                // Een favicon van Google; next/image voegt hier niets toe.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${platform.productieHost}&sz=64`}
+                  alt=""
+                  width={20}
+                  height={20}
+                />
+              ) : (
+                platform.initialen
+              )}
             </span>
             <span className={styles.label}>
               {platform.naam}
