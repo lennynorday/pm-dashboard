@@ -1,4 +1,5 @@
 import { Melding } from "./Melding";
+import { VerbindLink } from "./VerbindLink";
 
 type Props = {
   jiraKey: string;
@@ -11,7 +12,9 @@ export function JiraMessage({ jiraKey, result }: Props) {
     return (
       <Melding
         titel="Niet verbonden met Jira"
-        actie={<a href="/api/jira/login">Verbinden met Jira</a>}
+        actie={
+          <VerbindLink href="/api/jira/login">Verbinden met Jira</VerbindLink>
+        }
       >
         Zonder Jira kan het dashboard je tickets niet ophalen. Was je al
         verbonden, dan is de koppeling verlopen of ingetrokken.
