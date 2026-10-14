@@ -6,6 +6,8 @@ export type NavPlatform = {
   /** De klant, alleen als die anders heet dan het platform. */
   klant: string | null;
   initialen: string;
+  /** Host van de productie-omgeving, voor het favicon. */
+  productieHost: string | null;
   mijn: boolean;
 };
 
@@ -37,6 +39,9 @@ export function toNavPlatforms(platforms: Platform[]): NavPlatform[] {
       naam: platform.naam,
       klant: platform.klant.naam === platform.naam ? null : platform.klant.naam,
       initialen: initialen(platform.naam),
+      productieHost:
+        platform.links.find((link) => link.type === "omgeving-prod")?.label ??
+        null,
       mijn: platform.mijn,
     }));
 }
