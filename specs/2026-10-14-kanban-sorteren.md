@@ -20,9 +20,8 @@
 2. In Eigen volgorde verplaatst slepen binnen een kolom de kaart naar de plek van de lijn; de volgorde blijft na verversen staan.
 3. Slepen naar een andere kolom werkt in elke sortering en zet de status om. De kaart komt bovenaan die kolom in de eigen volgorde; in Eigen volgorde op de plek van de lijn.
 4. Wisselen van sortering verliest de eigen volgorde niet.
-5. Buiten Eigen volgorde staat de hint "Sleep binnen een kolom in Eigen volgorde".
-6. Een nieuwe kaart staat bovenaan zijn kolom in de eigen volgorde.
-7. De gekozen sortering staat na herladen weer goed.
+5. Een nieuwe kaart staat bovenaan zijn kolom in de eigen volgorde.
+6. De gekozen sortering staat na herladen weer goed.
 
 ## Aanpak
 

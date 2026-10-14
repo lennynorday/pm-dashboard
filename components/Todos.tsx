@@ -533,11 +533,6 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
                 </button>
               ))}
             </div>
-            {sortering !== "eigen" && (
-              <span className={styles.hint}>
-                Sleep binnen een kolom in Eigen volgorde
-              </span>
-            )}
           </div>
         )}
         <div className={styles.zoek}>
