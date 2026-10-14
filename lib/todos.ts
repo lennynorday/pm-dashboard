@@ -222,6 +222,10 @@ export function verwijderFeedTodo(email: string, bronId: string): void {
     .run(email, bronId);
 }
 
+/** Gmail opent een gesprek alleen met het id als decimaal getal (thread-f), niet met het hex-id uit de API. */
+const gmailUrl = (email: string, gesprekId: string) =>
+  `https://mail.google.com/mail/?authuser=${encodeURIComponent(email)}#all/thread-f:${BigInt(`0x${gesprekId}`)}`;
+
 /**
  * Zet mailgesprekken in de inbox, één item per thread (bron_id = thread-id).
  * Net als een DM-gesprek: nieuwere mail werkt het bij en haalt het terug uit
@@ -248,7 +252,7 @@ export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
       gesprek.naam,
       gesprek.adres,
       gesprek.tijd,
-      `https://mail.google.com/mail/u/${email}/#all/${gesprek.id}`,
+      gmailUrl(email, gesprek.id),
       gesprek.soort,
       Date.now(),
     );
