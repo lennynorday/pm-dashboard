@@ -537,12 +537,6 @@
   font: var(--type-label);
 }
 
-.hint {
-  color: var(--color-text-muted);
-  font: var(--type-label);
-  font-size: 13px;
-}
-
 /* Invoegplek bij Eigen volgorde */
 .lijn {
   height: 3px;
