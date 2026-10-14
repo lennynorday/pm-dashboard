@@ -262,6 +262,12 @@ function ProjectItem({
     );
   }
 
+  // SLA-projecten tonen de change-map altijd, ook ingeklapt.
+  const change = /\bSLA\b/i.test(project.naam)
+    ? data?.mappen.find((map) => /change/i.test(map.naam))
+    : undefined;
+  const overig = data?.mappen.filter((map) => map !== change) ?? [];
+
   return (
     <li id={`project-${project.number}`} className={styles.project}>
       <details>
@@ -277,15 +283,20 @@ function ProjectItem({
         </summary>
         <div className={styles.uitklap}>
           {feiten && <FeitenRij project={project} {...feiten} />}
-          {data && data.mappen.length > 0 && (
+          {overig.length > 0 && (
             <ul className={styles.mappen}>
-              {data.mappen.map((map) => (
+              {overig.map((map) => (
                 <MapRijen key={map.id || map.naam} map={map} />
               ))}
             </ul>
           )}
         </div>
       </details>
+      {change && (
+        <ul className={`${styles.mappen} ${styles.uitklap}`}>
+          <MapRijen map={change} />
+        </ul>
+      )}
     </li>
   );
 }
