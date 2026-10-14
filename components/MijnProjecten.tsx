@@ -13,6 +13,7 @@ import { AlertIcon, ChevronIcon, ExternalIcon } from "./icons";
 import { VisibilityButton } from "./VisibilityButton";
 import knop from "./VisibilityButton.module.css";
 import styles from "./MijnProjecten.module.css";
+import { VerbindLink } from "./VerbindLink";
 
 export type ProjectRij = { project: Project; budget: ProjectBudgetResult };
 
@@ -72,7 +73,7 @@ function SupportKnop({
         {support.status === "fout" ? (
           "Supporttickets konden niet worden opgehaald"
         ) : (
-          <a href="/api/jira/login">Verbinden met Jira</a>
+          <VerbindLink href="/api/jira/login">Verbinden met Jira</VerbindLink>
         )}
       </p>
     );

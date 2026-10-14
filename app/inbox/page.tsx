@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { Inbox } from "@/components/Inbox";
+import { InboxVerversen } from "@/components/InboxVerversen";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
 import { currentUser } from "@/lib/session";
@@ -9,6 +10,7 @@ import { synchroniseerSlack } from "@/lib/slack/sync";
 import { leesTaken } from "@/lib/todos";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
+import { VerbindLink } from "@/components/VerbindLink";
 
 const HOME = { label: "Overzicht", href: "/" };
 
@@ -30,14 +32,15 @@ export default async function InboxPage() {
         Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
         reageren, naar je to-do&apos;s, of negeren.
       </p>
+      <InboxVerversen />
 
       {probleem && "verbinden" in probleem && (
         <Melding
           titel="Slack is niet verbonden"
           actie={
-            <a href="/api/slack/login" className={styles.melding}>
+            <VerbindLink href="/api/slack/login" className={styles.melding}>
               Verbinden met Slack
-            </a>
+            </VerbindLink>
           }
         >
           Verbind Slack om je bewaarde berichten hier te zien.

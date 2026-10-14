@@ -19,6 +19,7 @@ import type { InboxBron } from "@/lib/taak";
 import { TABEL_BROWSER_URL } from "@/lib/superhuman";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
+import { VerbindLink } from "@/components/VerbindLink";
 
 const HOME = { label: "Overzicht", href: "/" };
 
@@ -144,12 +145,12 @@ export default async function InstellingenPage() {
                     </button>
                   </form>
                 ) : (
-                  <a
+                  <VerbindLink
                     href={`/api/${info.bron}/login`}
                     className={`${styles.knop} ${styles.primair} ${styles.actie}`}
                   >
                     Verbinden met {info.kort}
-                  </a>
+                  </VerbindLink>
                 )}
               </li>
             );

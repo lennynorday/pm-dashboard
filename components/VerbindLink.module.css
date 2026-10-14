@@ -1,0 +1,5 @@
+.link[aria-busy="true"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+}

@@ -5,6 +5,7 @@ import { formatTime } from "@/lib/format";
 import { Melding } from "./Melding";
 import styles from "./OrbitStatus.module.css";
 import { VerversKnop } from "./VerversKnop";
+import { VerbindLink } from "./VerbindLink";
 
 type Props = { dashboard: Dashboard };
 
@@ -15,7 +16,11 @@ export function OrbitStatus({ dashboard }: Props) {
       <div className={styles.melding}>
         <Melding
           titel="Niet verbonden met Teamleader Orbit"
-          actie={<a href="/api/orbit/login">Verbinden met Orbit</a>}
+          actie={
+            <VerbindLink href="/api/orbit/login">
+              Verbinden met Orbit
+            </VerbindLink>
+          }
         >
           Zonder Orbit kan het dashboard je projecten niet ophalen. Was je al
           verbonden, dan is de koppeling verlopen of ingetrokken.
