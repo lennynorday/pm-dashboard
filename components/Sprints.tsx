@@ -1,4 +1,4 @@
-import { regelStatus } from "@/lib/budgetsignaal";
+import { BUDGET_MELDING, regelStatus } from "@/lib/budgetsignaal";
 import { formatUren } from "@/lib/format";
 import type { Cachet, SprintLading, SprintRij } from "@/lib/orbit/sprint";
 import {
@@ -12,7 +12,6 @@ import {
 } from "@/lib/sprint";
 import { Budgetregel } from "./Budgetregel";
 import { CheckIcon, PencilIcon } from "./icons";
-import { BUDGET_MELDING } from "./MijnProjecten";
 import { OrbitLink } from "./OrbitLink";
 import styles from "./Sectie.module.css";
 import eigen from "./Sprints.module.css";

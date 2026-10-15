@@ -22,7 +22,6 @@ import {
   MAX_EIGEN_LINKS,
 } from "@/lib/links";
 import { herstel, herstelAlles, negeer } from "@/lib/genegeerde-meldingen";
-import { zetFavoriet } from "@/lib/favorieten";
 import { hideProject, showProject } from "@/lib/hidden-projects";
 import { clearJiraCache } from "@/lib/jira/overview";
 import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
@@ -77,14 +76,6 @@ export async function showProjectAction(formData: FormData): Promise<void> {
   const number = formData.get("projectnummer");
   if (!user || typeof number !== "string") return;
   showProject(user.email, number);
-  revalidatePath("/", "layout");
-}
-
-export async function favorietAction(formData: FormData): Promise<void> {
-  const user = await currentUser();
-  const id = formData.get("id");
-  if (!user || typeof id !== "string") return;
-  zetFavoriet(user.email, id, formData.get("aan") === "true");
   revalidatePath("/", "layout");
 }
 

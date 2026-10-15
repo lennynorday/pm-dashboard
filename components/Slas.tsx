@@ -1,11 +1,14 @@
-import { looptijdProcent, slaStatus } from "@/lib/budgetsignaal";
+import {
+  BUDGET_MELDING,
+  looptijdProcent,
+  slaStatus,
+} from "@/lib/budgetsignaal";
 import type { Platform, Project } from "@/lib/dashboard";
 import { formatUren } from "@/lib/format";
 import type { JiraResult, SupportOverzicht } from "@/lib/jira/overview";
 import type { ProjectBudgetResult, Schrijfregel } from "@/lib/orbit/budget";
 import { Budgetregel } from "./Budgetregel";
 import { AlertIcon, ExternalIcon } from "./icons";
-import { BUDGET_MELDING } from "./MijnProjecten";
 import { OrbitLink } from "./OrbitLink";
 import { SupportKnop } from "./SupportKnop";
 import styles from "./Sectie.module.css";
