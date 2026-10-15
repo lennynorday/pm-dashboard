@@ -303,15 +303,41 @@
   overflow-wrap: anywhere;
 }
 
-.voet {
+.kop {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-02);
 }
 
-.rechts {
-  margin-left: auto;
+.potlood {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -2px 0 -2px 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.potlood:hover {
+  color: var(--color-text);
+}
+
+.potlood:focus-visible,
+.regel:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.potlood svg {
+  width: 14px;
+  height: 14px;
 }
 
 .leeg {
@@ -598,4 +624,82 @@
 
 .gezien:hover {
   background: #5a1a3b;
+}
+
+/* Reactie en acties op de kanbankaart */
+.reactieBlok {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--norday-white);
+  box-shadow: inset 0 0 0 1px var(--color-pink-soft);
+}
+
+.blokLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 12.5px/1.35 var(--font-text);
+}
+
+.blokLabel::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--norday-pink);
+}
+
+.blokTekst {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.acties {
+  display: flex;
+  flex-direction: column;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.regel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  height: 30px;
+  padding: 0 var(--space-02);
+  margin: 0 calc(-1 * var(--space-02));
+  border: 0;
+  border-radius: var(--space-02);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.regel:hover {
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.hoofd {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.regel svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
 }
