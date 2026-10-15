@@ -5,6 +5,7 @@ import {
   bepaalMensen,
   bepaalSprint,
   dagLabel,
+  ingeplandVanaf,
   initialen,
   laatsteWerkdagVoor,
   parseBij,
@@ -131,8 +132,13 @@ test("achterlopers en compleet", () => {
       minuten: 60,
     },
   ];
+  const bereik = {
+    regels: sprint.map.regels,
+    start: sprint.start,
+    planning: sprint.planning,
+  };
   const achter = bepaalMensen(
-    sprint,
+    bereik,
     uren,
     [
       { wie: "anisha sivakumaran", bijTm: "2026-10-14" },
@@ -144,7 +150,7 @@ test("achterlopers en compleet", () => {
   assert.strictEqual(achter.compleetTm, null);
   assert.strictEqual(achter.perRegel["Project Management"][0].minuten, 60);
   const klaar = bepaalMensen(
-    sprint,
+    bereik,
     uren,
     [
       { wie: "Anisha Sivakumaran", bijTm: "2026-10-14" },
@@ -158,4 +164,37 @@ test("achterlopers en compleet", () => {
     "A, C en nog 2 lopen achter met uren",
   );
   assert.strictEqual(initialen("Lennart Ter Haar"), "LH");
+});
+
+test("overig: laatst geschreven, mensen over meer mappen en ingepland vanaf", () => {
+  const plan = parsePlanning(PLAN);
+  assert.strictEqual(ingeplandVanaf(plan, "2026-10-12"), "2026-10-13");
+  assert.strictEqual(ingeplandVanaf(plan, "2026-10-13"), null);
+  const mensen = bepaalMensen(
+    {
+      regels: mappen.flatMap((map) => map.regels),
+      start: "2026-09-18",
+      planning: plan,
+    },
+    [
+      { datum: "2026-10-01", wie: "Jos Bezemer", taak: "Oud", minuten: 30 },
+      {
+        datum: "2026-10-09",
+        wie: "Brenda Leensvaart",
+        taak: "Test",
+        minuten: 5,
+      },
+    ],
+    [{ wie: "Jos Bezemer", bijTm: "2026-10-14" }],
+    "2026-10-15",
+  );
+  assert.strictEqual(mensen.laatst, "2026-10-09");
+  assert.deepStrictEqual(
+    mensen.perRegel["Oud"].map((p) => p.naam),
+    ["Jos Bezemer"],
+  );
+  assert.deepStrictEqual(mensen.achter, [
+    "Anisha Sivakumaran",
+    "Brenda Leensvaart",
+  ]);
 });

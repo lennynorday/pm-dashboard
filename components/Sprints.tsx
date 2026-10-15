@@ -1,5 +1,6 @@
 import { BUDGET_MELDING, regelStatus } from "@/lib/budgetsignaal";
 import { formatUren } from "@/lib/format";
+import type { Schrijfregel } from "@/lib/orbit/budget-tekst";
 import type { Cachet, SprintLading, SprintRij } from "@/lib/orbit/sprint";
 import {
   achterTekst,
@@ -17,9 +18,15 @@ import styles from "./Sectie.module.css";
 import eigen from "./Sprints.module.css";
 import { Uitklapper } from "./Uitklapper";
 
-function Personen({ personen }: { personen: Persoon[] }) {
+function Personen({
+  personen,
+  periode,
+}: {
+  personen: Persoon[];
+  periode: string;
+}) {
   if (personen.length === 0) {
-    return <p className={eigen.niemand}>Nog niemand heeft hierop geschreven</p>;
+    return <p className={eigen.niemand}>Niemand schreef hierop {periode}</p>;
   }
   return (
     <ul className={eigen.mensen}>
@@ -41,7 +48,7 @@ function Personen({ personen }: { personen: Persoon[] }) {
                 <PencilIcon />
                 {persoon.laatste
                   ? `laatst ${dagLabel(persoon.laatste)}`
-                  : "niets deze sprint"}
+                  : `niets ${periode}`}
               </>
             )}
           </span>
@@ -52,7 +59,7 @@ function Personen({ personen }: { personen: Persoon[] }) {
 }
 
 /** Onder de projectnaam: uren compleet, of wie er achterloopt. */
-function UrenStand({ mensen }: { mensen: Cachet<Mensen> }) {
+export function UrenStand({ mensen }: { mensen: Cachet<Mensen> }) {
   if (mensen.status !== "ok") {
     return (
       <span className={eigen.bij} data-ok="muted">
@@ -77,6 +84,37 @@ function UrenStand({ mensen }: { mensen: Cachet<Mensen> }) {
       <CheckIcon className={eigen.bijIcoon} />
       Uren compleet t/m {dagLabel(compleetTm)}
     </span>
+  );
+}
+
+/** Een taak met de mensen die erop schrijven of gepland staan. */
+export function Regel({
+  regel,
+  mensen,
+  periode,
+}: {
+  regel: Schrijfregel;
+  mensen: Cachet<Mensen>;
+  periode: string;
+}) {
+  return (
+    <li className={styles.sub}>
+      <div className={styles.regelNaam}>
+        {regel.naam}
+        {mensen.status === "ok" && (
+          <Personen
+            personen={mensen.data.perRegel[regel.naam] ?? []}
+            periode={periode}
+          />
+        )}
+      </div>
+      <Budgetregel
+        budget={regel.beschikbaar}
+        geschreven={regel.geschreven}
+        gepland={regel.gepland}
+        noot={regelStatus(regel.beschikbaar, regel.geschreven, regel.gepland)}
+      />
+    </li>
   );
 }
 
@@ -136,24 +174,12 @@ function Sprint({ rij }: { rij: SprintRij }) {
       <div className={styles.uitklap}>
         <ul className={styles.regels}>
           {map.regels.map((regel) => (
-            <li key={regel.id} className={styles.sub}>
-              <div className={styles.regelNaam}>
-                {regel.naam}
-                {mensen.status === "ok" && (
-                  <Personen personen={mensen.data.perRegel[regel.naam] ?? []} />
-                )}
-              </div>
-              <Budgetregel
-                budget={regel.beschikbaar}
-                geschreven={regel.geschreven}
-                gepland={regel.gepland}
-                noot={regelStatus(
-                  regel.beschikbaar,
-                  regel.geschreven,
-                  regel.gepland,
-                )}
-              />
-            </li>
+            <Regel
+              key={regel.id}
+              regel={regel}
+              mensen={mensen}
+              periode="deze sprint"
+            />
           ))}
         </ul>
         {hierna.length > 0 && (

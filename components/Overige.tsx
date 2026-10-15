@@ -1,45 +1,24 @@
-import type { Signaal } from "@/lib/budgetsignaal";
-import { BUDGET_MELDING } from "@/lib/budgetsignaal";
-import type { Platform, Project } from "@/lib/dashboard";
-import { formatUren } from "@/lib/format";
-import { plafond, type ProjectBudgetResult } from "@/lib/orbit/budget";
-import { somRegels } from "@/lib/sprint";
+import { Fragment } from "react";
+import { BUDGET_MELDING, regelStatus } from "@/lib/budgetsignaal";
+import type { OverigRij } from "@/lib/orbit/sprint";
+import { dagLabel, somRegels } from "@/lib/sprint";
 import { Budgetregel } from "./Budgetregel";
 import { OrbitLink } from "./OrbitLink";
 import styles from "./Sectie.module.css";
+import eigen from "./Sprints.module.css";
+import { Regel, UrenStand } from "./Sprints";
 import { Uitklapper } from "./Uitklapper";
 
-export type OverigRij = {
-  platform: Platform;
-  project: Project;
-  budget: ProjectBudgetResult;
-};
-
-/** Geen sprint om in te plannen, dus alleen wat er nog over is. */
-function noot(budget: number, geschreven: number, gepland: number): Signaal {
-  const over = budget - geschreven - gepland;
-  if (over < 0) {
-    return {
-      soort: "rustig",
-      icoon: "alert",
-      tekst: `${formatUren(-over)}u over budget`,
-    };
-  }
-  return {
-    soort: "rustig",
-    icoon: "clock",
-    tekst: `${formatUren(over)}u over`,
-  };
-}
-
-function Overig({ rij: { platform, project, budget } }: { rij: OverigRij }) {
-  const onder = <span className={styles.meta}>{platform.klant.naam}</span>;
-
+function Overig({
+  rij: { platform, project, budget, vanaf, mensen },
+}: {
+  rij: OverigRij;
+}) {
   if (budget.status !== "ok") {
     return (
       <Uitklapper
         titel={project.naam}
-        onder={onder}
+        onder={<span className={styles.meta}>{platform.klant.naam}</span>}
         rechts={
           <span className={styles.melding}>
             {BUDGET_MELDING[budget.status]}
@@ -48,50 +27,63 @@ function Overig({ rij: { platform, project, budget } }: { rij: OverigRij }) {
       />
     );
   }
-
-  const { data } = budget;
-  const gepland = somRegels(
-    data.mappen.flatMap((map) => map.regels),
-    "gepland",
-  );
-  const maxMinuten = plafond(data).minuten;
-  const mappen = data.mappen
+  const alle = budget.data.mappen.flatMap((map) => map.regels);
+  const budgetSom = somRegels(alle, "beschikbaar");
+  const geschreven = somRegels(alle, "geschreven");
+  const gepland = somRegels(alle, "gepland");
+  const mappen = budget.data.mappen
     .map((map) => ({
       map,
-      beschikbaar: somRegels(map.regels, "beschikbaar"),
-      geschreven: somRegels(map.regels, "geschreven"),
-      gepland: somRegels(map.regels, "gepland"),
+      regels: map.regels.filter(
+        (regel) => regel.beschikbaar > 0 || regel.geschreven > 0,
+      ),
     }))
-    .filter(({ beschikbaar, geschreven }) => beschikbaar > 0 || geschreven > 0);
+    .filter(({ regels }) => regels.length > 0);
+  const laatst = mensen.status === "ok" ? mensen.data.laatst : null;
+  const ingepland =
+    vanaf.status !== "ok"
+      ? undefined
+      : vanaf.data
+        ? `Ingepland vanaf ${dagLabel(vanaf.data)}`
+        : "Niets ingepland";
   return (
     <Uitklapper
       titel={project.naam}
-      onder={onder}
+      onder={
+        <>
+          <span className={styles.meta}>
+            {platform.klant.naam}
+            {laatst && ` · laatst geschreven ${dagLabel(laatst)}`}
+          </span>
+          <UrenStand mensen={mensen} />
+        </>
+      }
       rechts={
         <Budgetregel
-          budget={maxMinuten}
-          geschreven={data.geschreven}
+          budget={budgetSom}
+          geschreven={geschreven}
           gepland={gepland}
-          noot={noot(maxMinuten, data.geschreven, gepland)}
+          links={ingepland}
+          noot={regelStatus(budgetSom, geschreven, gepland)}
         />
       }
     >
       <div className={styles.uitklap}>
-        <ul className={styles.regels}>
-          {mappen.map(
-            ({ map, beschikbaar, geschreven, gepland: mapGepland }) => (
-              <li key={map.id || map.naam} className={styles.sub}>
-                <span className={styles.regelNaam}>{map.naam}</span>
-                <Budgetregel
-                  budget={beschikbaar}
-                  geschreven={geschreven}
-                  gepland={mapGepland}
-                  noot={noot(beschikbaar, geschreven, mapGepland)}
+        {mappen.map(({ map, regels }) => (
+          <Fragment key={map.id || map.naam}>
+            {mappen.length > 1 && <h3 className={eigen.blokKop}>{map.naam}</h3>}
+            <ul className={styles.regels}>
+              {regels.map((regel) => (
+                <Regel
+                  key={regel.id}
+                  regel={regel}
+                  mensen={mensen}
+                  periode="in 4 weken"
                 />
-              </li>
-            ),
-          )}
-        </ul>
+              ))}
+            </ul>
+          </Fragment>
+        ))}
         <div className={styles.voet}>
           <OrbitLink project={project} />
         </div>
