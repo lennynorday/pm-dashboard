@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { RefreshIcon } from "./icons";
 import orbit from "./OrbitStatus.module.css";
+import styles from "./InboxVerversen.module.css";
 
 /** Rendert de Inbox opnieuw; de pagina synchroniseert dan Slack en Gmail en toont zelf wat er misging. */
 export function InboxVerversen() {
@@ -12,7 +13,7 @@ export function InboxVerversen() {
 
   return (
     <button
-      className={orbit.knop}
+      className={styles.knop}
       type="button"
       disabled={bezig}
       aria-busy={bezig}

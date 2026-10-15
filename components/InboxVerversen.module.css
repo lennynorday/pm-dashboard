@@ -1,0 +1,26 @@
+/* Rustige tekstactie, zelfde vorm als de acties per bericht. */
+.knop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  margin: 0 calc(var(--space-02) * -1) 0 auto;
+  padding: 0 var(--space-02);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.knop:hover:not(:disabled) {
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.knop:disabled {
+  cursor: progress;
+}
