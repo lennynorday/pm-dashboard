@@ -1,0 +1,149 @@
+.meter {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+
+.cijfers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+}
+
+.cijfers b {
+  font: 700 var(--regel-cijfer, 26px) / 1 var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.cijfers span {
+  font: 400 15px/1 var(--font-text);
+  color: var(--color-text-muted);
+}
+
+.gepland {
+  margin-left: 8px;
+  font: 400 13px/1 var(--font-text);
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.gepland::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 3px;
+  background: var(--hatch);
+  vertical-align: -1px;
+}
+
+.balk {
+  position: relative;
+  display: flex;
+  height: var(--regel-balk, 6px);
+  border-radius: var(--radius-pill);
+  background: rgb(61 16 40 / 0.09);
+}
+
+.vol {
+  background: var(--norday-dark);
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+}
+
+.gestreept {
+  background: var(--hatch);
+}
+
+.over {
+  background: var(--norday-pink);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+}
+
+.vol:last-of-type,
+.gestreept:last-of-type {
+  border-radius: inherit;
+}
+
+.grens {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--norday-dark);
+}
+
+/* SLA: uren tegen tijd, twee balken op dezelfde schaal. */
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  align-items: center;
+  gap: 7px 12px;
+  font: 400 12px/1 var(--font-text);
+  color: var(--color-text-muted);
+}
+
+.duo b {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tijd {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: rgb(61 16 40 / 0.09);
+}
+
+.tijd > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b48be6;
+}
+
+.nootRij {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 18px;
+}
+
+.links {
+  font: 400 12.5px/1.3 var(--font-text);
+  color: var(--color-text-muted);
+}
+
+/* Altijd icoon en tekst; de kleur is extra. */
+.noot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 0 auto;
+  font: 500 12.5px/1.3 var(--font-text);
+}
+
+.nootIcoon {
+  width: 13px;
+  height: 13px;
+}
+
+.noot[data-soort="rood"] {
+  color: var(--color-warn);
+}
+
+.noot[data-soort="open"] {
+  color: var(--color-open);
+}
+
+.noot[data-soort="ok"] {
+  color: var(--color-ok);
+}
+
+.noot[data-soort="rustig"] {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}

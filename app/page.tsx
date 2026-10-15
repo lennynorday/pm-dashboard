@@ -4,6 +4,8 @@ import { HiddenProjects } from "@/components/HiddenProjects";
 import { MijnProjecten } from "@/components/MijnProjecten";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
+import { Slas } from "@/components/Slas";
+import { isSla } from "@/lib/budgetsignaal";
 import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
@@ -55,6 +57,17 @@ export default async function HomePage() {
         };
       }),
   );
+  const slas = bronnen.flatMap(({ platform, jira, projecten }) =>
+    projecten
+      .filter(({ project }) => isSla(project.naam))
+      .map((rij) => ({ ...rij, platform, support: jira.support })),
+  );
+  const overig = bronnen
+    .map(({ platform, projecten }) => ({
+      platform,
+      projecten: projecten.filter(({ project }) => !isSla(project.naam)),
+    }))
+    .filter(({ projecten }) => projecten.length > 0);
   const genegeerd = readGenegeerd(user.email);
   const feed = bouwFeed(bronnen, dashboard.platforms, new Date());
   const verborgen = dashboard.platforms
@@ -82,14 +95,13 @@ export default async function HomePage() {
           Je bent eigenaar van geen open projecten.
         </p>
       ) : (
-        <MijnProjecten
-          favorieten={readFavorieten(user.email)}
-          rijen={bronnen.map(({ platform, jira, projecten }) => ({
-            platform,
-            support: jira.support,
-            projecten,
-          }))}
-        />
+        <>
+          <Slas rijen={slas} vandaag={new Date()} />
+          <MijnProjecten
+            favorieten={readFavorieten(user.email)}
+            rijen={overig}
+          />
+        </>
       )}
       <HiddenProjects projecten={verborgen} />
     </>

@@ -66,5 +66,6 @@ export function parseProjectUren(project: string) {
     beschikbaar: Number(workload?.[2] ?? 0),
     geschreven: Number(workload?.[1] ?? 0),
     mappen: parseMappen(project),
+    start: /\*\*Period:\*\* (\d{4}-\d{2}-\d{2})/.exec(project)?.[1] ?? null,
   };
 }

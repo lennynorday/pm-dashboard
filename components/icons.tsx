@@ -181,6 +181,22 @@ export function FigmaIcon(props: IconProps) {
   );
 }
 
+export function TrendUpIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m3 17 6-6 4 4 8-8M15 7h6v6" />
+    </Icon>
+  );
+}
+
+export function TrendDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m3 7 6 6 4-4 8 8M15 17h6v-6" />
+    </Icon>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <Icon {...props}>
