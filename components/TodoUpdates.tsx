@@ -89,20 +89,20 @@ export function TodoUpdates({ taken }: { taken: Taak[] }) {
                     )}
                   </div>
                   <div className={styles.acties}>
-                    {taak.url && (
-                      <ExternalLink href={taak.url} className={styles.open}>
-                        Openen in {BRON_LABELS[taak.bron]}
-                      </ExternalLink>
-                    )}
                     <button
                       type="button"
-                      className={styles.todo}
+                      className={`${styles.actie} ${styles.hoofd}`}
                       onClick={() => markeerGezien(taak)}
                     >
                       <CheckIcon className={styles.icoon} aria-hidden="true" />
                       Gezien
                       <span className="visually-hidden">: {taak.titel}</span>
                     </button>
+                    {taak.url && (
+                      <ExternalLink href={taak.url} className={styles.actie}>
+                        Openen in {BRON_LABELS[taak.bron]}
+                      </ExternalLink>
+                    )}
                   </div>
                 </div>
               </div>
