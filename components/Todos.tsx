@@ -36,7 +36,9 @@ import {
   ChevronIcon,
   ExternalIcon,
   MenuIcon,
+  InboxIcon,
   MoreIcon,
+  PencilIcon,
   PlusIcon,
 } from "./icons";
 import styles from "./Todos.module.css";
@@ -282,20 +284,10 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     </TodosMenu>
   );
 
-  const bron = (taak: Taak) => {
-    if (taak.bron === "eigen") return null;
-    const naam = BRON_LABELS[taak.bron];
-    if (!taak.url)
-      return <span className={`${styles.chip} ${styles.slack}`}>{naam}</span>;
+  const bronLink = (taak: Taak, klasse: string, inhoud: React.ReactNode) => {
+    if (!taak.url) return null;
     const extern = /^https?:/.test(taak.url);
-    const label = `Openen in ${naam}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
-    const inhoud = (
-      <>
-        {naam}
-        <ExternalIcon aria-hidden="true" />
-      </>
-    );
-    const klasse = `${styles.chip} ${styles.slack} ${styles.chipLink}`;
+    const label = `Openen in ${BRON_LABELS[taak.bron]}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
     return extern ? (
       <a
         href={taak.url}
@@ -310,6 +302,21 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       <NextLink href={taak.url} className={klasse} aria-label={label}>
         {inhoud}
       </NextLink>
+    );
+  };
+
+  const bron = (taak: Taak) => {
+    if (taak.bron === "eigen") return null;
+    const naam = BRON_LABELS[taak.bron];
+    return (
+      bronLink(
+        taak,
+        `${styles.chip} ${styles.slack} ${styles.chipLink}`,
+        <>
+          {naam}
+          <ExternalIcon aria-hidden="true" />
+        </>,
+      ) ?? <span className={`${styles.chip} ${styles.slack}`}>{naam}</span>
     );
   };
 
@@ -333,6 +340,65 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     </TodosMenu>
   );
 
+  const kaartReactie = (taak: Taak) =>
+    taak.reactie !== null &&
+    taak.status !== "klaar" && (
+      <div className={styles.reactieBlok}>
+        <span className={styles.blokLabel}>
+          Nieuwe reactie{taak.auteur && ` van ${taak.auteur}`}
+        </span>
+        {taak.bericht && (
+          <span className={styles.blokTekst}>{taak.bericht}</span>
+        )}
+      </div>
+    );
+
+  function kaartActies(taak: Taak) {
+    const gezien = taak.reactie !== null && taak.status !== "klaar";
+    const link =
+      taak.bron !== "eigen" &&
+      bronLink(
+        taak,
+        styles.regel,
+        <>
+          <ExternalIcon aria-hidden="true" />
+          Openen in {BRON_LABELS[taak.bron]}
+        </>,
+      );
+    const terug = parseInboxBron(taak.bron) !== null;
+    if (!gezien && !link && !terug) return null;
+    return (
+      <div className={styles.acties}>
+        {gezien && (
+          <button
+            type="button"
+            className={`${styles.regel} ${styles.hoofd}`}
+            onClick={() => zetGezien(taak)}
+          >
+            <CheckIcon aria-hidden="true" />
+            Gezien<span className="visually-hidden">: {taak.titel}</span>
+          </button>
+        )}
+        {link}
+        {terug && (
+          <button
+            type="button"
+            className={styles.regel}
+            onClick={() =>
+              wijzig({ id: taak.id, lijst: "inbox" }, () =>
+                verplaatsTaakAction(taak.id, "inbox"),
+              )
+            }
+          >
+            <InboxIcon aria-hidden="true" />
+            Terug naar de inbox
+            <span className="visually-hidden">: {taak.titel}</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   function kaart(taak: Taak) {
     return (
       <li
@@ -351,14 +417,23 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           setLijn(undefined);
         }}
       >
-        <span className={styles.titel}>{taak.titel}</span>
-        {context(taak)}
-        {reactie(taak)}
-        <div className={styles.voet}>
+        <div className={styles.kop}>
+          <span className={styles.titel}>
+            {taak.titel}
+            <button
+              type="button"
+              className={styles.potlood}
+              aria-label={`Titel bewerken: ${taak.titel}`}
+              onClick={() => setBewerk(taak)}
+            >
+              <PencilIcon aria-hidden="true" />
+            </button>
+          </span>
           {prioKnop(taak)}
-          {bron(taak)}
-          <span className={styles.rechts}>{meer(taak)}</span>
         </div>
+        {context(taak)}
+        {kaartReactie(taak)}
+        {kaartActies(taak)}
       </li>
     );
   }
