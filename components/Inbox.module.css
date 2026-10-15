@@ -105,13 +105,6 @@
   -webkit-box-orient: vertical;
 }
 
-/* Een Slack-bericht leest als de body van een mail, met behoud van regelafbrekingen. */
-.bericht {
-  margin: 0;
-  white-space: pre-line;
-  -webkit-line-clamp: 3;
-}
-
 .titel {
   display: -webkit-box;
   margin: 0;
