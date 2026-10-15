@@ -154,7 +154,15 @@ export function Inbox({ taken }: { taken: Taak[] }) {
                         {taak.tijd !== null && <span>{tijdTekst(taak)}</span>}
                         {!gmail && taak.soort && <span>{taak.soort}</span>}
                       </p>
-                      <p className={styles.titel}>{berichtTekst(taak)}</p>
+                      <p
+                        className={
+                          gmail
+                            ? styles.titel
+                            : `${styles.snippet} ${styles.bericht}`
+                        }
+                      >
+                        {berichtTekst(taak)}
+                      </p>
                       {gmail && taak.bericht && (
                         <p className={styles.snippet}>{taak.bericht}</p>
                       )}
