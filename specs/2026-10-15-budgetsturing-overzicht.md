@@ -32,8 +32,8 @@ Elke regel
 
 Sprints
 
-6. Een project zonder "SLA" in de naam staat onder Sprints als er vorige, deze of volgende week iemand op ingepland staat in de Orbit-planning.
-7. De huidige sprint is de map met planning deze week; de rij toont de naam van de sprint en "dag X van Y".
+6. Een project zonder "SLA" in de naam staat onder Sprints als er vorige, deze of volgende week iemand op ingepland of voor gereserveerd staat in Orbit (planning of reservering).
+7. De huidige sprint is de map met planning of reservering deze week; de rij toont de naam van de sprint en "dag X van Y".
 8. Onder de projectnaam staat "Uren compleet t/m <dag>" of, in rood met icoon, wie achterloopt met uren schrijven.
 9. De uitklap toont per regel van de huidige sprint de mensen die erop schrijven: initialen, naam, uren in deze sprint en "bij t/m <dag>" of, in rood, "laatst <dag>" of "niets deze sprint".
 10. Onder "Hierna" staan de komende sprints met gepland tegenover budget.
@@ -51,7 +51,7 @@ SLA's
 
 Overige projecten
 
-19. Een project zonder "SLA" in de naam en zonder planning vorige, deze of volgende week staat onder Overige projecten.
+19. Een project zonder "SLA" in de naam en zonder planning of reservering vorige, deze of volgende week staat onder Overige projecten.
 20. Het hele project is één rij met de som van de regels als budget, geschreven en gepland, de noot van elke regel, "laatst geschreven <dag>" bij de klant, dezelfde urenregel als bij Sprints en links onder de balk "Ingepland vanaf <dag>" of "Niets ingepland".
 21. De uitklap toont per map (kopje alleen bij meer dan één) de regels met budget of uren, met dezelfde mensen als bij Sprints: wie in de laatste vier weken schreef of erop gepland staat.
 
@@ -64,11 +64,12 @@ Opruimen
 
 - SLA of niet hangt alleen af van "SLA" in de projectnaam; de rest is Sprints of Overige projecten (2026-10-15, Lenny). Project 1590 is daarvoor hernoemd.
 - Overige projecten krijgen dezelfde signalen en mensen als Sprints, over het hele project (2026-10-15, Lennart).
+- Gepland is planning plus het nog open deel van reserveringen; een reservering vorige, deze of volgende week maakt een project actief (2026-10-15, Lennart).
 
 ## Domeinmodel
 
-- **Sprint:** een map in een Orbit-project; de huidige is die met planning deze week.
-- **Regel:** een Orbit-taak met budget ("planned"), geschreven ("done") en gepland ("scheduled in the planner").
+- **Sprint:** een map in een Orbit-project; de huidige is die met planning of reservering deze week.
+- **Regel:** een Orbit-taak met budget ("planned"), geschreven ("done") en gepland: de planner ("scheduled in the planner") plus het nog open deel ("left") van reserveringen op die taak.
 - **Pot:** de change-mappen van een SLA samen, afgezet tegen de looptijd.
 - **Bij met uren:** de laatste dag waarop iemands timesheet in Orbit definitief is (GetTimesheetStatus, één aanroep voor iedereen).
 

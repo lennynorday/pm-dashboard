@@ -2,7 +2,13 @@ import type { BudgetMap } from "./orbit/budget-tekst.ts";
 import { formatUren } from "./format.ts";
 
 /** Een ingeplande dag van iemand op een taak. */
-export type Planregel = { datum: string; wie: string; taak: string };
+export type Planregel = {
+  datum: string;
+  wie: string;
+  taak: string;
+  /** De regel waar een reservering aan toegewezen is; bepaalt de map bij dubbele taaknamen. */
+  regelId?: string;
+};
 /** Geschreven tijd van iemand op een taak; minuten. */
 export type Tijdregel = {
   datum: string;
@@ -84,7 +90,7 @@ const ENTRY = /^- (\d{4}-\d{2}-\d{2}) \d{2}:\d{2} \| /;
  */
 function taakNaam(velden: string[]): string | null {
   const project = velden.findIndex(
-    (veld, index) => index >= 3 && /^\d+ /.test(veld),
+    (veld, index) => index >= 2 && /^\d+ /.test(veld),
   );
   if (project < 0) return null;
   const rest = velden.slice(project + 1).join(" | ");
@@ -93,7 +99,7 @@ function taakNaam(velden: string[]): string | null {
   return (
     rest
       .slice(begin + 3)
-      .split(/ — |\s+\(api_id/)[0]
+      .split(/ — |\s+\(api_id| \| reserved/)[0]
       .trim() || null
   );
 }
@@ -116,6 +122,117 @@ export function parsePlanning(tekst: string): Planregel[] {
   return parseEntries(tekst)
     .filter(({ velden }) => ["planned", "fixed-time"].includes(velden[3]))
     .map(({ datum, velden, taak }) => ({ datum, wie: velden[1].trim(), taak }));
+}
+
+/** Een reservering in Orbit: uren die voor iemand op een taak gereserveerd zijn. */
+export type Reservering = {
+  van: string;
+  tot: string;
+  wie: string;
+  taak: string;
+  /** Het nog open deel ("left"), in minuten. */
+  minutenOver: number;
+};
+
+const RESERVERING = /^- (\d{4}-\d{2}-\d{2}) → (\d{4}-\d{2}-\d{2}) \| /;
+
+/**
+ * ListReservations.
+ * ponytail: gaat ervan uit dat Orbit alleen open reserveringen geeft; de naam van de persoon en van de taak moeten gelijk zijn aan die in de planning en het budget.
+ */
+export function parseReserveringen(tekst: string): Reservering[] {
+  return tekst.split("\n").flatMap((regel) => {
+    const datums = RESERVERING.exec(regel);
+    if (!datums) return [];
+    const velden = regel.slice(2).split(" | ");
+    const taak = taakNaam(velden);
+    if (!taak) return [];
+    return [
+      {
+        van: datums[1],
+        tot: datums[2],
+        wie: velden[1].trim(),
+        taak,
+        minutenOver: parseKortDuur(/left (\S+)/.exec(regel)?.[1] ?? ""),
+      },
+    ];
+  });
+}
+
+/** Een reservering met de budgetregel waar ze bij hoort; zonder regelId past de taaknaam nergens. */
+export type Toewijzing = Reservering & { regelId?: string };
+
+/**
+ * Wijst elke reservering (op `van`) toe aan de eerste regel met haar taaknaam waar nog ruimte is
+ * (budget min geschreven, gepland en al toegewezen), anders aan de laatste.
+ * ponytail: Orbit geeft bij een reservering alleen de taaknaam; aanname: sprints staan in Orbit in tijdsvolgorde. Een reservering wordt niet over regels verdeeld.
+ */
+export function wijsToe(
+  mappen: BudgetMap[],
+  reserveringen: Reservering[],
+): Toewijzing[] {
+  const regels = mappen.flatMap((map) => map.regels);
+  const toegewezen = new Map<string, number>();
+  return [...reserveringen]
+    .sort((a, b) => a.van.localeCompare(b.van))
+    .map((reservering) => {
+      const kandidaten = regels.filter(({ naam }) => naam === reservering.taak);
+      const ruimte = (regel: (typeof regels)[number]) =>
+        regel.beschikbaar -
+        regel.geschreven -
+        regel.gepland -
+        (toegewezen.get(regel.id) ?? 0);
+      // Eerst waar hij helemaal past, dan waar nog iets ruimte is, anders de laatste.
+      const doel =
+        kandidaten.find((regel) => ruimte(regel) >= reservering.minutenOver) ??
+        kandidaten.find((regel) => ruimte(regel) > 0) ??
+        kandidaten.at(-1);
+      if (!doel) return reservering;
+      toegewezen.set(
+        doel.id,
+        (toegewezen.get(doel.id) ?? 0) + reservering.minutenOver,
+      );
+      return { ...reservering, regelId: doel.id };
+    });
+}
+
+/** Per werkdag waarop een reservering het venster overlapt een planregel, zodat ze meetellen als planning. */
+export function reserveringPlanning(
+  toewijzingen: Toewijzing[],
+  vandaag: string,
+): Planregel[] {
+  const { van, tot } = venster(vandaag);
+  return toewijzingen.flatMap(
+    ({ van: begin, tot: eind, wie, taak, regelId }) => {
+      const dagen: Planregel[] = [];
+      const laatste = eind < tot ? eind : tot;
+      let dag = begin > van ? begin : van;
+      for (; dag <= laatste; dag = dagPlus(dag, 1)) {
+        if (weekdag(dag) % 6 !== 0)
+          dagen.push({ datum: dag, wie, taak, regelId });
+      }
+      return dagen;
+    },
+  );
+}
+
+/** Het open deel van reserveringen telt als gepland op de toegewezen regel. */
+export function metReserveringen(
+  mappen: BudgetMap[],
+  toewijzingen: Toewijzing[],
+): BudgetMap[] {
+  return mappen.map((map) => ({
+    ...map,
+    regels: map.regels.map((regel) => ({
+      ...regel,
+      gepland: toewijzingen
+        .filter(({ regelId }) => regelId === regel.id)
+        .reduce(
+          (totaal, { minutenOver }) => totaal + minutenOver,
+          regel.gepland,
+        ),
+    })),
+  }));
 }
 
 /** ListTimeEntries met kind logged. */
@@ -173,7 +290,11 @@ export function bepaalSprint(
   planning: Planregel[],
   vandaag: string,
 ): Sprint | null {
-  const mapVan = (taak: string): BudgetMap | undefined => {
+  const mapVan = ({ taak, regelId }: Planregel): BudgetMap | undefined => {
+    const toegewezen = mappen.find((map) =>
+      map.regels.some((regel) => regel.id === regelId),
+    );
+    if (toegewezen) return toegewezen;
     const heeft = mappen.filter((map) =>
       map.regels.some((regel) => regel.naam === taak),
     );
@@ -189,10 +310,10 @@ export function bepaalSprint(
     const eind = dagPlus(begin, 6);
     const maps = planning
       .filter(({ datum }) => datum >= begin && datum <= eind)
-      .map(({ taak }) => mapVan(taak));
+      .map(mapVan);
     const map = mappen.find((kandidaat) => maps.includes(kandidaat));
     if (!map) continue;
-    const eigen = planning.filter(({ taak }) => mapVan(taak) === map);
+    const eigen = planning.filter((regel) => mapVan(regel) === map);
     const dagen = eigen.map(({ datum }) => datum).sort();
     const eerste = dagen[0];
     const laatste = dagen[dagen.length - 1];

@@ -7,13 +7,19 @@ import {
   ingeplandVanaf,
   isoDatum,
   maandagVan,
+  metReserveringen,
   parseBij,
   parsePlanning,
+  parseReserveringen,
   parseTijd,
+  reserveringPlanning,
   venster,
+  wijsToe,
   type Bereik,
   type Mensen,
   type Planregel,
+  type Reservering,
+  type Toewijzing,
   type Sprint,
   type Tijdregel,
 } from "@/lib/sprint";
@@ -79,6 +85,53 @@ const planning = (email: string, number: string, vandaag: string) => {
     parsePlanning,
   );
 };
+
+// ponytail: ook maximaal 100 regels per aanroep; een project met meer reserveringen mist de latere.
+const reserveringen = (email: string, number: string, vandaag: string) =>
+  viaCache(
+    email,
+    `reserveringen:v1:${email}:${number}:${venster(vandaag).van}`,
+    "ListReservations",
+    {
+      projectId: number,
+      user: "*",
+      dateFrom: venster(vandaag).van,
+      dateTo: dagPlus(vandaag, 365),
+    },
+    parseReserveringen,
+  );
+
+/** Het budget met het open deel van de reserveringen bij gepland. */
+const metOpenReserveringen = (
+  budget: ProjectBudgetResult,
+  toewijzingen: Toewijzing[],
+): ProjectBudgetResult =>
+  budget.status === "ok"
+    ? {
+        ...budget,
+        data: {
+          ...budget.data,
+          mappen: metReserveringen(budget.data.mappen, toewijzingen),
+        },
+      }
+    : budget;
+
+/** De reserveringen toegewezen aan de regels van het budget; zonder budget nergens. */
+const toegewezen = (budget: ProjectBudgetResult, gegevens: Reservering[]) =>
+  wijsToe(budget.status === "ok" ? budget.data.mappen : [], gegevens);
+
+/** Voor SLA's: het budget met reserveringen als gepland; zolang die laden ongewijzigd. */
+export function verrijkBudget(
+  email: string,
+  number: string,
+  budget: ProjectBudgetResult,
+  vandaag: Date,
+): ProjectBudgetResult {
+  const res = reserveringen(email, number, isoDatum(vandaag));
+  return res.status === "ok"
+    ? metOpenReserveringen(budget, toegewezen(budget, res.data))
+    : budget;
+}
 
 const uren = (email: string, number: string, van: string, tot: string) =>
   viaCache(
@@ -162,23 +215,33 @@ export function laadSprints(
   const lading: SprintLading = { rijen: [], laden: 0, fout: 0 };
   for (const bron of bronnen) {
     const plan = planning(email, bron.project.number, vandaag);
-    if (plan.status === "laden") lading.laden++;
-    if (plan.status === "fout") lading.fout++;
-    if (plan.status !== "ok") continue;
+    const res = reserveringen(email, bron.project.number, vandaag);
+    const open = plan.status !== "ok" ? plan : res;
+    if (open.status === "laden") lading.laden++;
+    if (open.status === "fout") lading.fout++;
+    if (plan.status !== "ok" || res.status !== "ok") continue;
     // Verder vooruit kijken is voor Overige projecten; een sprint zoekt alleen binnen het venster.
-    const binnenVenster = plan.data.filter(({ datum }) => datum <= tot);
+    const toe = toegewezen(bron.budget, res.data);
+    const binnenVenster = [
+      ...plan.data.filter(({ datum }) => datum <= tot),
+      ...reserveringPlanning(toe, vandaag),
+    ];
     if (binnenVenster.length === 0) continue;
+    const verrijkt = {
+      ...bron,
+      budget: metOpenReserveringen(bron.budget, toe),
+    };
     const sprint =
-      bron.budget.status === "ok"
-        ? bepaalSprint(bron.budget.data.mappen, binnenVenster, vandaag)
+      verrijkt.budget.status === "ok"
+        ? bepaalSprint(verrijkt.budget.data.mappen, binnenVenster, vandaag)
         : null;
     lading.rijen.push({
-      ...bron,
+      ...verrijkt,
       sprint,
       mensen: sprint
         ? mensenVan(
             email,
-            bron,
+            verrijkt,
             {
               regels: sprint.map.regels,
               start: sprint.start,
@@ -220,16 +283,28 @@ export function laadOverige(
       return { ...bron, vanaf: laden, mensen: laden };
     }
     const plan = planning(email, bron.project.number, vandaag);
+    const res = reserveringen(email, bron.project.number, vandaag);
     if (plan.status !== "ok") return { ...bron, vanaf: plan, mensen: plan };
-    const komend: Planregel[] = plan.data.filter(
-      ({ datum }) => datum >= vandaag,
-    );
-    return {
+    if (res.status !== "ok") return { ...bron, vanaf: res, mensen: res };
+    const toe = toegewezen(bron.budget, res.data);
+    // Reserveringen na het venster tellen met hun startdatum mee voor "Ingepland vanaf".
+    const komend: Planregel[] = [
+      ...plan.data,
+      ...reserveringPlanning(toe, vandaag),
+      ...toe
+        .filter(({ minutenOver }) => minutenOver > 0)
+        .map(({ van, wie, taak }) => ({ datum: van, wie, taak })),
+    ].filter(({ datum }) => datum >= vandaag);
+    const verrijkt = {
       ...bron,
+      budget: metOpenReserveringen(bron.budget, toe),
+    };
+    return {
+      ...verrijkt,
       vanaf: { status: "ok", data: ingeplandVanaf(komend, vandaag) },
       mensen: mensenVan(
         email,
-        bron,
+        verrijkt,
         {
           regels: bron.budget.data.mappen.flatMap((map) => map.regels),
           start: dagPlus(vandaag, -OVERIG_DAGEN),
