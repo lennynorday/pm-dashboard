@@ -1,3 +1,17 @@
+/* Uitleg links, verversen rechtsboven de lijst. */
+.intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-02) var(--space-04);
+  margin-bottom: var(--space-03);
+}
+
+.intro > p {
+  margin: 0;
+}
+
 .melding {
   display: inline-flex;
   align-items: center;

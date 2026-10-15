@@ -30,11 +30,13 @@ export default async function InboxPage() {
   return (
     <>
       <PageHeading title="Inbox" crumbs={[HOME]} />
-      <p className={grid.muted}>
-        Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
-        reageren, naar je to-do&apos;s, of negeren.
-      </p>
-      <InboxVerversen />
+      <div className={styles.intro}>
+        <p className={grid.muted}>
+          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
+          reageren, naar je to-do&apos;s, of negeren.
+        </p>
+        <InboxVerversen />
+      </div>
 
       {probleem && "verbinden" in probleem && (
         <Melding
