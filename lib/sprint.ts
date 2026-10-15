@@ -51,10 +51,9 @@ export function werkdagen(van: string, tot: string): number {
   return aantal;
 }
 
-export function laatsteWerkdagVoor(datum: string): string {
-  let dag = dagPlus(datum, -1);
-  while (weekdag(dag) % 6 === 0) dag = dagPlus(dag, -1);
-  return dag;
+/** Vrijdag van de vorige week: wie zijn timesheet tot daar heeft vastgezet, is bij (iedereen zet per week vast). */
+export function vrijdagVorigeWeek(datum: string): string {
+  return dagPlus(maandagVan(datum), -3);
 }
 
 const dagFormat = new Intl.DateTimeFormat("nl-NL", {
@@ -285,7 +284,7 @@ export function bepaalMensen(
   const tijd = uren.filter(
     ({ taak, datum }) => taken.includes(taak) && datum >= bereik.start,
   );
-  const grens = laatsteWerkdagVoor(vandaag);
+  const grens = vrijdagVorigeWeek(vandaag);
   const bijTm = (naam: string) =>
     bij.find((regel) => regel.wie.toLowerCase() === naam.toLowerCase())
       ?.bijTm ?? null;

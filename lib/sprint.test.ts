@@ -7,7 +7,7 @@ import {
   dagLabel,
   ingeplandVanaf,
   initialen,
-  laatsteWerkdagVoor,
+  vrijdagVorigeWeek,
   parseBij,
   parsePlanning,
   parseTijd,
@@ -92,13 +92,13 @@ test("bij t/m komt uit Days locked vanaf de maandag", () => {
   ]);
 });
 
-test("datums: venster, laatste werkdag en label", () => {
+test("datums: venster, vrijdag vorige week en label", () => {
   assert.deepStrictEqual(venster("2026-10-15"), {
     van: "2026-10-05",
     tot: "2026-10-25",
   });
-  assert.strictEqual(laatsteWerkdagVoor("2026-10-15"), "2026-10-14");
-  assert.strictEqual(laatsteWerkdagVoor("2026-10-12"), "2026-10-09");
+  assert.strictEqual(vrijdagVorigeWeek("2026-10-15"), "2026-10-09");
+  assert.strictEqual(vrijdagVorigeWeek("2026-10-12"), "2026-10-09");
   assert.strictEqual(dagLabel("2026-10-14"), "wo 14 okt");
 });
 
@@ -141,7 +141,8 @@ test("achterlopers en compleet", () => {
     bereik,
     uren,
     [
-      { wie: "anisha sivakumaran", bijTm: "2026-10-14" },
+      // Vorige week vastgezet (t/m zondag) is bij, ook al loopt deze week nog.
+      { wie: "anisha sivakumaran", bijTm: "2026-10-11" },
       { wie: "Brenda Leensvaart", bijTm: null },
     ],
     "2026-10-15",
