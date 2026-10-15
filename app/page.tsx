@@ -5,6 +5,7 @@ import { MijnProjecten } from "@/components/MijnProjecten";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { Slas } from "@/components/Slas";
+import { Sprints } from "@/components/Sprints";
 import { isSla } from "@/lib/budgetsignaal";
 import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed } from "@/lib/feed";
@@ -13,6 +14,7 @@ import { readFavorieten } from "@/lib/favorieten";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
+import { laadSprints } from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
 import styles from "./grid.module.css";
 
@@ -62,10 +64,23 @@ export default async function HomePage() {
       .filter(({ project }) => isSla(project.naam))
       .map((rij) => ({ ...rij, platform, support: jira.support })),
   );
+  const sprints = laadSprints(
+    user.email,
+    bronnen.flatMap(({ platform, projecten }) =>
+      projecten
+        .filter(({ project }) => !isSla(project.naam))
+        .map((rij) => ({ ...rij, platform })),
+    ),
+    new Date(),
+  );
+  const sprintNummers = sprints.rijen.map(({ project }) => project.number);
   const overig = bronnen
     .map(({ platform, projecten }) => ({
       platform,
-      projecten: projecten.filter(({ project }) => !isSla(project.naam)),
+      projecten: projecten.filter(
+        ({ project }) =>
+          !isSla(project.naam) && !sprintNummers.includes(project.number),
+      ),
     }))
     .filter(({ projecten }) => projecten.length > 0);
   const genegeerd = readGenegeerd(user.email);
@@ -96,6 +111,7 @@ export default async function HomePage() {
         </p>
       ) : (
         <>
+          <Sprints lading={sprints} />
           <Slas rijen={slas} vandaag={new Date()} />
           <MijnProjecten
             favorieten={readFavorieten(user.email)}
