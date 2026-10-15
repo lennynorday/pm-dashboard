@@ -1,11 +1,11 @@
-/* Uitleg links, verversen rechtsboven de lijst. */
+/* Uitleg links, verversen rechtsboven de lijst: dicht op de lijst, ruim onder de uitleg. */
 .intro {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-02) var(--space-04);
-  margin-bottom: var(--space-03);
+  gap: var(--space-04);
+  margin-bottom: var(--space-01);
 }
 
 .intro > p {
