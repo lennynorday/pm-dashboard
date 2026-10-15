@@ -1,14 +1,14 @@
 import { looptijdProcent, slaStatus } from "@/lib/budgetsignaal";
 import type { Platform, Project } from "@/lib/dashboard";
-import { orbitProjectUrl } from "@/lib/dashboard";
 import { formatUren } from "@/lib/format";
 import type { JiraResult, SupportOverzicht } from "@/lib/jira/overview";
 import type { ProjectBudgetResult, Schrijfregel } from "@/lib/orbit/budget";
 import { Budgetregel } from "./Budgetregel";
 import { AlertIcon, ExternalIcon } from "./icons";
 import { BUDGET_MELDING } from "./MijnProjecten";
+import { OrbitLink } from "./OrbitLink";
 import { SupportKnop } from "./SupportKnop";
-import styles from "./Slas.module.css";
+import styles from "./Sectie.module.css";
 import { Uitklapper } from "./Uitklapper";
 
 export type SlaRij = {
@@ -32,20 +32,6 @@ function looptijd(start: string | null, vandaag: Date): string {
   return startJaar === jaar
     ? `${begin} – 31 dec`
     : `${begin} ${startJaar} – 31 dec ${startJaar}`;
-}
-
-function OrbitLink({ project }: { project: Project }) {
-  return (
-    <a
-      href={orbitProjectUrl(project.number)}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <ExternalIcon className={styles.voetIcoon} />
-      Meer in Teamleader Orbit
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
-    </a>
-  );
 }
 
 function Regel({ regel }: { regel: Schrijfregel }) {
