@@ -15,6 +15,8 @@ export type ProjectBudget = {
   geschreven: number;
   offerte: Offerte;
   mappen: BudgetMap[];
+  /** Startdatum van het project als "2026-01-01"; null als Orbit er geen heeft. */
+  start: string | null;
 };
 
 export type ProjectBudgetResult =
@@ -93,7 +95,7 @@ export function fetchProjectBudget(
   email: string,
   number: string,
 ): ProjectBudgetResult {
-  const sleutel = `budget:v3:${email}:${number}`;
+  const sleutel = `budget:v4:${email}:${number}`;
   const hit = lees<ProjectBudget>(sleutel);
   if (hit && vers(hit.opgehaald, CACHE_MS)) {
     return { status: "ok", data: hit.waarde };

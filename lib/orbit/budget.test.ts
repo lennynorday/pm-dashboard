@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { parseMappen } from "./budget-tekst.ts";
+import { parseMappen, parseProjectUren } from "./budget-tekst.ts";
 
 test("regels met haakjes achter de uren en met planner-uren worden gelezen", () => {
   const tekst = [
@@ -20,4 +20,12 @@ test("regels met haakjes achter de uren en met planner-uren worden gelezen", () 
     [false, 1032, 835, 180],
     [true, 240, 0, 0],
   ]);
+});
+
+test("de startdatum komt uit de periode van het project", () => {
+  assert.strictEqual(
+    parseProjectUren("- **Period:** 2026-01-01 → 2026-12-31").start,
+    "2026-01-01",
+  );
+  assert.strictEqual(parseProjectUren("geen periode").start, null);
 });

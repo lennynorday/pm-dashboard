@@ -3,7 +3,6 @@ import { favorietAction } from "@/app/actions";
 import type { Platform, Project } from "@/lib/dashboard";
 import { orbitProjectUrl } from "@/lib/dashboard";
 import { formatDate, formatUren, PROJECT_STATE_LABELS } from "@/lib/format";
-import type { JiraResult, SupportOverzicht } from "@/lib/jira/overview";
 import {
   type BudgetMap,
   plafond,
@@ -14,13 +13,18 @@ import { AlertIcon, ChevronIcon, ExternalIcon, StarIcon } from "./icons";
 import { VisibilityButton } from "./VisibilityButton";
 import knop from "./VisibilityButton.module.css";
 import styles from "./MijnProjecten.module.css";
-import { VerbindLink } from "./VerbindLink";
+
+export const BUDGET_MELDING: Record<ProjectBudgetResult["status"], string> = {
+  ok: "Geen uren gepland in Orbit",
+  laden: "Wordt opgehaald",
+  fout: "Budget kon niet worden opgehaald uit Orbit",
+  "niet-verbonden": "Niet verbonden met Orbit",
+};
 
 export type ProjectRij = { project: Project; budget: ProjectBudgetResult };
 
 export type PlatformRij = {
   platform: Platform;
-  support: JiraResult<SupportOverzicht> | null;
   projecten: ProjectRij[];
 };
 
@@ -61,48 +65,6 @@ function Cel({
       <span className={`visually-hidden ${styles.celLabel}`}>{label}: </span>
       {children}
     </span>
-  );
-}
-
-/** Lila knop naar de open supporttickets, of waarom die er niet is. */
-function SupportKnop({
-  platform,
-  support,
-}: Pick<PlatformRij, "platform" | "support">) {
-  if (support === null) {
-    return (
-      <p className={styles.muted}>
-        Geen Beheer &amp; Support gekoppeld ·{" "}
-        <NextLink href={`/platforms/${platform.slug}/bewerken`}>
-          Organization koppelen
-        </NextLink>
-      </p>
-    );
-  }
-  if (support.status !== "ok") {
-    return (
-      <p className={styles.muted}>
-        {support.status === "fout" ? (
-          "Supporttickets konden niet worden opgehaald"
-        ) : (
-          <VerbindLink href="/api/jira/login">Verbinden met Jira</VerbindLink>
-        )}
-      </p>
-    );
-  }
-  const { open } = support.data;
-  return (
-    <a
-      href={open.url}
-      className={styles.support}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span className={styles.supportAantal}>{open.aantal}</span>
-      {open.aantal === 1 ? "open supportticket" : "open supporttickets"}
-      <ExternalIcon className={styles.supportIcoon} />
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
-    </a>
   );
 }
 
@@ -303,12 +265,7 @@ function ProjectItem({
     budget.status === "ok" && plafond(budget.data).minuten > 0
       ? budget.data
       : null;
-  const melding = {
-    ok: "Geen uren gepland in Orbit",
-    laden: "Wordt opgehaald",
-    fout: "Budget kon niet worden opgehaald uit Orbit",
-    "niet-verbonden": "Niet verbonden met Orbit",
-  }[budget.status];
+  const melding = BUDGET_MELDING[budget.status];
 
   if (!data && !feiten) {
     return (
@@ -320,12 +277,6 @@ function ProjectItem({
       </li>
     );
   }
-
-  // SLA-projecten tonen de change-map altijd, ook ingeklapt.
-  const change = /\bSLA\b/i.test(project.naam)
-    ? data?.mappen.find((map) => /change/i.test(map.naam))
-    : undefined;
-  const overig = data?.mappen.filter((map) => map !== change) ?? [];
 
   return (
     <li id={`project-${project.number}`} className={styles.project}>
@@ -342,9 +293,9 @@ function ProjectItem({
         </summary>
         <div className={styles.uitklap}>
           {feiten && <FeitenRij project={project} {...feiten} />}
-          {overig.length > 0 && (
+          {data && data.mappen.length > 0 && (
             <ul className={styles.mappen}>
-              {overig.map((map) => (
+              {data.mappen.map((map) => (
                 <MapRijen
                   key={map.id || map.naam}
                   map={map}
@@ -355,11 +306,6 @@ function ProjectItem({
           )}
         </div>
       </details>
-      {change && (
-        <ul className={`${styles.mappen} ${styles.uitklap}`}>
-          <MapRijen map={change} favorieten={favorieten} />
-        </ul>
-      )}
     </li>
   );
 }
@@ -517,7 +463,7 @@ function Favorieten({
   );
 }
 
-/** Mijn platforms, elk als kaart met de supportknop en de projecten. */
+/** Mijn platforms, elk als kaart met de projecten. */
 export function MijnProjecten({
   rijen,
   favorieten,
@@ -532,7 +478,7 @@ export function MijnProjecten({
         favorieten={favorieten}
       />
       <div className={styles.platforms}>
-        {rijen.map(({ platform, support, projecten }) => (
+        {rijen.map(({ platform, projecten }) => (
           <section
             key={platform.slug}
             className={styles.kaart}
@@ -550,7 +496,6 @@ export function MijnProjecten({
                   <span className={styles.klant}> · {platform.klant.naam}</span>
                 )}
               </h2>
-              <SupportKnop platform={platform} support={support} />
             </header>
             <ProjectLijst rijen={projecten} favorieten={favorieten} />
           </section>

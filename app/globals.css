@@ -9,6 +9,15 @@
   --color-line-soft: rgb(61 16 40 / 0.12);
   --color-pink-soft: #ffcad7;
   --color-lilac-soft: #eadcff;
+  --color-green-soft: #dff3e4;
+  --color-warn: #b5002f;
+  --color-ok: #1d6b34;
+  --color-open: #6a3fb0;
+  --hatch: repeating-linear-gradient(
+    -45deg,
+    rgb(61 16 40 / 0.55) 0 2px,
+    rgb(61 16 40 / 0.16) 2px 5px
+  );
   --color-dark-hover: #5a1a3c;
   --color-on-dark-muted: rgb(255 255 255 / 0.72);
 

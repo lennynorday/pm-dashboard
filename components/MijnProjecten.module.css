@@ -43,48 +43,6 @@
   color: var(--color-text-muted);
 }
 
-.muted {
-  margin: 0;
-  font: 400 13.5px/1.35 var(--font-text);
-  color: var(--color-text-muted);
-}
-
-/* Beheer & Support: één lila knop met het aantal open tickets. */
-.support {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-02);
-  padding: var(--space-01) var(--space-03) var(--space-01) var(--space-01);
-  border-radius: var(--radius-pill);
-  background: var(--norday-lilac);
-  color: var(--norday-dark);
-  font: 600 14px/1.35 var(--font-text);
-  text-decoration: none;
-  transition: background 0.2s var(--ease);
-}
-
-.support:hover {
-  background: #c99dff;
-}
-
-.supportAantal {
-  display: grid;
-  place-items: center;
-  min-width: 32px;
-  height: 32px;
-  padding: 0 var(--space-02);
-  border-radius: var(--radius-pill);
-  background: var(--norday-dark);
-  color: var(--norday-white);
-  font: 700 18px/1 var(--font-heading);
-  font-variant-numeric: tabular-nums;
-}
-
-.supportIcoon {
-  width: 14px;
-  height: 14px;
-}
-
 /* Projecten: één grid voor kolomkop, projectregels, mappen en schrijfregels. */
 .lijst {
   container-type: inline-size;
