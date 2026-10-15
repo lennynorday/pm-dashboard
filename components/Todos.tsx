@@ -284,10 +284,18 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     </TodosMenu>
   );
 
+  // Een feedmelding linkt naar Orbit, Jira of een pagina in het dashboard; noem waar de link heen gaat.
+  const openTekst = (taak: Taak) => {
+    if (taak.bron !== "feed") return `Openen in ${BRON_LABELS[taak.bron]}`;
+    if (/teamleader\.eu/.test(taak.url ?? "")) return "Openen in Orbit";
+    if (/atlassian\.net/.test(taak.url ?? "")) return "Openen in Jira";
+    return "Openen";
+  };
+
   const bronLink = (taak: Taak, klasse: string, inhoud: React.ReactNode) => {
     if (!taak.url) return null;
     const extern = /^https?:/.test(taak.url);
-    const label = `Openen in ${BRON_LABELS[taak.bron]}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
+    const label = `${openTekst(taak)}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
     return extern ? (
       <a
         href={taak.url}
@@ -362,7 +370,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         styles.regel,
         <>
           <ExternalIcon aria-hidden="true" />
-          Openen in {BRON_LABELS[taak.bron]}
+          {openTekst(taak)}
         </>,
       );
     const terug = parseInboxBron(taak.bron) !== null;
@@ -696,7 +704,15 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       {zoek && zichtbaar.length === 0 ? (
         <p className={styles.leeg}>Niets gevonden.</p>
       ) : weergave === "kanban" ? (
-        <div className={styles.kanban}>
+        <div
+          className={styles.kanban}
+          onDragOver={(e) => {
+            // Slepen scrolt het bord niet vanzelf; bij de rand schuiven we mee.
+            const bord = e.currentTarget.getBoundingClientRect();
+            if (e.clientX > bord.right - 80) e.currentTarget.scrollLeft += 24;
+            if (e.clientX < bord.left + 80) e.currentTarget.scrollLeft -= 24;
+          }}
+        >
           {[...KOLOMMEN, "klaar" as const].map(kolom)}
         </div>
       ) : (
