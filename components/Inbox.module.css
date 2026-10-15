@@ -254,3 +254,23 @@
     height: 0;
   }
 }
+
+/* Updates op to-do's, onder de Inbox */
+.updates {
+  margin-top: var(--space-10);
+}
+
+.update {
+  box-shadow: inset 4px 0 0 var(--norday-pink);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--norday-yellow);
+  color: var(--color-text);
+  font-weight: 600;
+}

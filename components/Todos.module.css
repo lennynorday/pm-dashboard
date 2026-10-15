@@ -545,3 +545,57 @@
   background: var(--norday-pink);
   pointer-events: none;
 }
+
+/* Nieuwe reactie in het gesprek van een to-do */
+.heeftReactie {
+  box-shadow: inset 0 0 0 2px var(--norday-pink);
+}
+
+.reactie {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.reactieLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--norday-pink);
+  font: 600 12.5px/1.35 var(--font-text);
+}
+
+.reactieLabel::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--norday-pink);
+}
+
+.reactieTekst {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.gezien {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: 500 13px/1 var(--font-text);
+  cursor: pointer;
+}
+
+.gezien:hover {
+  background: #5a1a3b;
+}
