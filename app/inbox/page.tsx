@@ -1,5 +1,7 @@
 import { connection } from "next/server";
+import { Suspense } from "react";
 import { Inbox } from "@/components/Inbox";
+import { InboxLaden } from "@/components/InboxLaden";
 import { InboxVerversen } from "@/components/InboxVerversen";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
@@ -15,8 +17,28 @@ import { VerbindLink } from "@/components/VerbindLink";
 
 const HOME = { label: "Overzicht", href: "/" };
 
+/** De kop staat er meteen; Slack en Gmail synchroniseren daarna, met een loader op de plek van de lijst. */
 export default async function InboxPage() {
   await connection();
+  return (
+    <>
+      <PageHeading title="Inbox" crumbs={[HOME]} />
+      <div className={styles.intro}>
+        <p className={grid.muted}>
+          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
+          reageren, naar je to-do&apos;s, of negeren.
+        </p>
+        <InboxVerversen />
+      </div>
+
+      <Suspense fallback={<InboxLaden />}>
+        <InboxInhoud />
+      </Suspense>
+    </>
+  );
+}
+
+async function InboxInhoud() {
   // De layout toont het inlogscherm zonder sessie; hier is er dus altijd een.
   const user = await currentUser();
   if (!user) return null;
@@ -29,15 +51,6 @@ export default async function InboxPage() {
 
   return (
     <>
-      <PageHeading title="Inbox" crumbs={[HOME]} />
-      <div className={styles.intro}>
-        <p className={grid.muted}>
-          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
-          reageren, naar je to-do&apos;s, of negeren.
-        </p>
-        <InboxVerversen />
-      </div>
-
       {probleem && "verbinden" in probleem && (
         <Melding
           titel="Slack is niet verbonden"
