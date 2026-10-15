@@ -1,0 +1,60 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  margin: var(--space-02) var(--space-02) var(--space-03);
+  color: var(--color-text-muted);
+  font: 400 14px/1.35 var(--font-text);
+}
+
+.icoon {
+  width: 16px;
+  height: 16px;
+  animation: draai 0.9s linear infinite;
+}
+
+/* Een leeg bericht: drie balkjes zo hoog als meta, titel en tekst. */
+.leeg {
+  display: grid;
+  gap: 10px;
+  padding-block: var(--space-04);
+}
+
+.regel {
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  animation: puls 1.4s var(--ease) infinite alternate;
+}
+
+.regel:nth-child(1) {
+  width: 30%;
+}
+
+.regel:nth-child(2) {
+  width: 60%;
+  height: 14px;
+}
+
+.regel:nth-child(3) {
+  width: 85%;
+}
+
+@keyframes draai {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes puls {
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icoon,
+  .regel {
+    animation: none;
+  }
+}
