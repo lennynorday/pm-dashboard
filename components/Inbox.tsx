@@ -9,7 +9,7 @@ import {
 } from "@/app/actions";
 import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
-import { CloseIcon, MoreIcon, PlusIcon, StarIcon } from "./icons";
+import { BlockIcon, CloseIcon, PlusIcon, StarIcon } from "./icons";
 import styles from "./Inbox.module.css";
 import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
 import { useToast } from "./Toast";
@@ -160,18 +160,29 @@ export function Inbox({ taken }: { taken: Taak[] }) {
                       )}
                     </div>
                     <div className={styles.acties}>
+                      <button
+                        type="button"
+                        className={`${styles.actie} ${styles.hoofd}`}
+                        onClick={() => setKiezen(taak)}
+                      >
+                        <PlusIcon className={styles.icoon} />
+                        Naar to-do
+                      </button>
                       {taak.url && (
-                        <ExternalLink href={taak.url} className={styles.open}>
+                        <ExternalLink href={taak.url} className={styles.actie}>
                           Openen in {BRON_LABELS[taak.bron]}
                         </ExternalLink>
                       )}
                       <button
                         type="button"
-                        className={styles.todo}
-                        onClick={() => setKiezen(taak)}
+                        className={styles.actie}
+                        onClick={() => negeer(taak)}
                       >
-                        <PlusIcon className={styles.icoon} />
-                        Naar to-do
+                        <CloseIcon className={styles.icoon} />
+                        Negeren
+                        <span className="visually-hidden">
+                          : {berichtTekst(taak)}
+                        </span>
                       </button>
                       {gmail && taak.afzender && (
                         <>
@@ -179,7 +190,7 @@ export function Inbox({ taken }: { taken: Taak[] }) {
                             type="button"
                             id={`meer-${taak.id}`}
                             data-menu={taak.id}
-                            className={styles.negeer}
+                            className={styles.actie}
                             aria-haspopup="menu"
                             aria-expanded={menu === taak.id}
                             aria-controls={`menu-${taak.id}`}
@@ -187,9 +198,10 @@ export function Inbox({ taken }: { taken: Taak[] }) {
                               setMenu(menu === taak.id ? null : taak.id)
                             }
                           >
-                            <MoreIcon className={styles.icoon} />
+                            <BlockIcon className={styles.icoon} />
+                            Afzender negeren…
                             <span className="visually-hidden">
-                              Meer acties: {berichtTekst(taak)}
+                              : {berichtTekst(taak)}
                             </span>
                           </button>
                           <div
@@ -218,19 +230,6 @@ export function Inbox({ taken }: { taken: Taak[] }) {
                           </div>
                         </>
                       )}
-                      <button
-                        type="button"
-                        className={styles.negeer}
-                        onClick={() => negeer(taak)}
-                      >
-                        <CloseIcon
-                          className={styles.icoon}
-                          aria-hidden="true"
-                        />
-                        <span className="visually-hidden">
-                          Negeren: {berichtTekst(taak)}
-                        </span>
-                      </button>
                     </div>
                   </div>
                 </div>

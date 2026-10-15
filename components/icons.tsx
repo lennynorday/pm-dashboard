@@ -243,6 +243,15 @@ export function InboxIcon(props: IconProps) {
   );
 }
 
+export function BlockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M6.5 6.5l11 11" />
+    </Icon>
+  );
+}
+
 export function MoreIcon(props: IconProps) {
   return (
     <Icon {...props}>

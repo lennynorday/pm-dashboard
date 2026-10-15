@@ -35,25 +35,23 @@
   min-height: 0;
 }
 
-/* Het ⋯-menu steekt buiten de rij uit; alleen bij het wegklappen moet de rij knippen. */
+/* Het afzendermenu steekt buiten de rij uit; alleen bij het wegklappen moet de rij knippen. */
 .rij[data-weg] .klap {
   overflow: hidden;
 }
 
 .item {
   margin-bottom: var(--space-02);
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 188px;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-03) var(--space-04);
-  padding: 14px 14px 14px var(--space-04);
+  gap: var(--space-05);
+  padding: 14px var(--space-02) 14px var(--space-05);
   border-radius: var(--radius-md);
   background: var(--color-raised);
 }
 
 .body {
-  flex: 1 1 320px;
   min-width: 0;
 }
 
@@ -120,64 +118,48 @@
 
 .acties {
   position: relative;
+  align-self: stretch;
   display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-02);
+  flex-direction: column;
+  justify-content: center;
+  padding-left: var(--space-04);
+  border-left: 1px solid var(--color-line-soft);
 }
 
-.open,
-.todo {
-  display: inline-flex;
+.actie {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 var(--space-04);
+  gap: var(--space-02);
+  height: 30px;
+  padding: 0 var(--space-02);
+  margin-left: calc(-1 * var(--space-02));
   border: 0;
-  border-radius: var(--radius-pill);
-  font: 500 14px/1 var(--font-text);
+  border-radius: var(--space-02);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  text-align: left;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s var(--ease);
 }
 
-.open {
-  background: var(--norday-white);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
+.actie:hover {
+  background: var(--color-card);
   color: var(--color-text);
 }
 
-.open:hover {
-  background: var(--color-bg);
-}
-
-.todo {
-  background: var(--norday-dark);
-  color: var(--norday-white);
-}
-
-.todo:hover {
-  background: #5a1a3b;
-}
-
-.negeer {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
+.hoofd {
   color: var(--color-text);
-  cursor: pointer;
-  transition: background 0.2s var(--ease);
+  font-weight: 600;
 }
 
-.negeer:hover {
-  background: var(--norday-dark);
-  color: var(--norday-white);
+/* ExternalLink zet het icoon achter de tekst; hier staat het ervoor, zoals bij de andere acties. */
+.actie svg:last-of-type {
+  order: -1;
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 
 .menu {
@@ -228,18 +210,25 @@
   height: 16px;
 }
 
-.open:focus-visible,
-.todo:focus-visible,
-.negeer:focus-visible,
+.actie:focus-visible,
 .menu button:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
+  .item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .acties {
-    width: 100%;
-    justify-content: flex-end;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0 var(--space-04);
+    padding: var(--space-02) 0 0 var(--space-02);
+    border-top: 1px solid var(--color-line-soft);
+    border-left: 0;
   }
 }
 
