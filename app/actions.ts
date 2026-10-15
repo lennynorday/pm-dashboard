@@ -49,6 +49,7 @@ import {
   verplaats,
   verwijderFeedTodo,
   voegFeedToe,
+  zetGezien,
   zetPrio,
   zetStatus,
   zetVolgorde,
@@ -420,6 +421,13 @@ export async function verplaatsTaakAction(
 ): Promise<void> {
   const naar = parseLijst(lijst);
   if (naar) await bijTaken((email) => verplaats(email, id, naar));
+}
+
+export async function zetGezienAction(
+  id: number,
+  gezien: boolean,
+): Promise<void> {
+  await bijTaken((email) => zetGezien(email, id, gezien));
 }
 
 export async function zetStatusAction(

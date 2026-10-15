@@ -116,6 +116,10 @@ function open(): DatabaseSync {
   if (!kolommen.some((kolom) => kolom.name === "positie")) {
     db.exec("ALTER TABLE taken ADD COLUMN positie INTEGER");
   }
+  // Tijd van een nieuwe reactie op een to-do die je nog niet hebt gezien; leeg = niets nieuws.
+  if (!kolommen.some((kolom) => kolom.name === "reactie")) {
+    db.exec("ALTER TABLE taken ADD COLUMN reactie INTEGER");
+  }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db
     .prepare("PRAGMA table_info(slack_gebruikers)")

@@ -47,6 +47,7 @@ function parseTaak(row: Record<string, unknown>): Taak | null {
     status,
     prio,
     positie: typeof row.positie === "number" ? row.positie : null,
+    reactie: typeof row.reactie === "number" ? row.reactie : null,
   };
 }
 
@@ -66,12 +67,75 @@ export function leesTaken(email: string, lijst: Lijst): Taak[] {
     .filter((taak): taak is Taak => taak !== null);
 }
 
-/** Voor de tellers in het menu: nieuwe inbox-items en open taken. */
+/** Open to-do's met een nieuwe reactie die je nog niet hebt gezien, nieuwste eerst. */
+export function leesUpdates(email: string): Taak[] {
+  return database()
+    .prepare(
+      `SELECT * FROM taken
+       WHERE email = ? AND lijst = 'todo' AND status != 'klaar' AND reactie IS NOT NULL
+       ORDER BY reactie DESC, id DESC`,
+    )
+    .all(email)
+    .map(parseTaak)
+    .filter((taak): taak is Taak => taak !== null);
+}
+
+/** Gezien haalt de update weg; ongedaan maken zet hem terug op de tijd van de reactie. */
+export function zetGezien(email: string, id: number, gezien: boolean): void {
+  database()
+    .prepare(
+      "UPDATE taken SET reactie = CASE WHEN ? THEN NULL ELSE tijd END WHERE email = ? AND id = ?",
+    )
+    .run(gezien ? 1 : 0, email, id);
+}
+
+type Reactie = {
+  bronId: string;
+  bericht: string;
+  auteur: string;
+  afzender: string | null;
+  tijd: number;
+  url: string;
+};
+
+/**
+ * Een nieuwere reactie in een gesprek dat op To-do's staat: werk tekst, afzender,
+ * tijd en link bij en markeer hem als update. Titel, status en prio blijven.
+ */
+function meldReacties(
+  email: string,
+  bron: "slack" | "gmail",
+  reacties: Reactie[],
+): void {
+  const update = database().prepare(
+    `UPDATE taken SET bericht = ?, auteur = ?, afzender = COALESCE(?, afzender),
+       tijd = ?, url = ?, reactie = ?
+     WHERE email = ? AND bron = ? AND bron_id = ?
+       AND lijst = 'todo' AND status != 'klaar' AND tijd < ?`,
+  );
+  for (const r of reacties) {
+    update.run(
+      r.bericht,
+      r.auteur,
+      r.afzender,
+      r.tijd,
+      r.url,
+      r.tijd,
+      email,
+      bron,
+      r.bronId,
+      r.tijd,
+    );
+  }
+}
+
+/** Voor de tellers in het menu: nieuwe inbox-items plus updates, en open taken. */
 export function tellingen(email: string): { inbox: number; open: number } {
   const row = database()
     .prepare(
       `SELECT
-         COUNT(*) FILTER (WHERE lijst = 'inbox') AS inbox,
+         COUNT(*) FILTER (WHERE lijst = 'inbox'
+           OR (lijst = 'todo' AND status != 'klaar' AND reactie IS NOT NULL)) AS inbox,
          COUNT(*) FILTER (WHERE lijst = 'todo' AND status != 'klaar') AS open
        FROM taken WHERE email = ? AND ${NIET_UIT}`,
     )
@@ -85,7 +149,7 @@ export function tellingen(email: string): { inbox: number; open: number } {
 /**
  * Zet nieuwe Slack-berichten in de inbox; wat al bekend is, blijft zoals het is.
  * Een DM-gesprek is één item (bron_id dm:<kanaal>): een nieuwer bericht werkt het
- * bij en haalt het terug uit genegeerd, op To-do's blijft het ongemoeid. Een
+ * bij en haalt het terug uit genegeerd, op To-do's wordt het een update. Een
  * item zonder tekst (app-berichten van voor de blocks-ondersteuning) wordt ook bijgewerkt.
  */
 export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
@@ -114,6 +178,20 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
       Date.now(),
     );
   }
+  meldReacties(
+    email,
+    "slack",
+    berichten
+      .filter((bericht) => bericht.gesprek)
+      .map((bericht) => ({
+        bronId: `dm:${bericht.gesprek}`,
+        bericht: bericht.text,
+        auteur: bericht.auteur,
+        afzender: null,
+        tijd: bericht.tijd,
+        url: bericht.permalink,
+      })),
+  );
 }
 
 /** Haalt beantwoorde inbox-items uit de inbox, op bron_id (dm:<kanaal> of permalink). */
@@ -229,7 +307,7 @@ const gmailUrl = (email: string, gesprekId: string) =>
 /**
  * Zet mailgesprekken in de inbox, één item per thread (bron_id = thread-id).
  * Net als een DM-gesprek: nieuwere mail werkt het bij en haalt het terug uit
- * genegeerd, op To-do's blijft het ongemoeid.
+ * genegeerd, op To-do's wordt het een update.
  */
 export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
   const insert = database().prepare(
@@ -257,6 +335,18 @@ export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
       Date.now(),
     );
   }
+  meldReacties(
+    email,
+    "gmail",
+    gesprekken.map((gesprek) => ({
+      bronId: gesprek.id,
+      bericht: gesprek.tekst,
+      auteur: gesprek.naam,
+      afzender: gesprek.adres,
+      tijd: gesprek.tijd,
+      url: gmailUrl(email, gesprek.id),
+    })),
+  );
 }
 
 /** Haalt mailgesprekken uit de inbox die niet meer op je wachten; To-do's en genegeerd blijven. */

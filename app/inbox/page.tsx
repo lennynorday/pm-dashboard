@@ -3,11 +3,12 @@ import { Inbox } from "@/components/Inbox";
 import { InboxVerversen } from "@/components/InboxVerversen";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
+import { TodoUpdates } from "@/components/TodoUpdates";
 import { currentUser } from "@/lib/session";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
 import { bronAan } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
-import { leesTaken } from "@/lib/todos";
+import { leesTaken, leesUpdates } from "@/lib/todos";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
 import { VerbindLink } from "@/components/VerbindLink";
@@ -24,6 +25,7 @@ export default async function InboxPage() {
     bronAan(user.email, "gmail") ? synchroniseerGmail(user.email) : null,
   ]);
   const taken = leesTaken(user.email, "inbox");
+  const updates = leesUpdates(user.email);
 
   return (
     <>
@@ -59,6 +61,7 @@ export default async function InboxPage() {
       )}
 
       <Inbox taken={taken} />
+      <TodoUpdates taken={updates} />
     </>
   );
 }

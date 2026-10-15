@@ -13,6 +13,7 @@ import {
   hernoemTaakAction,
   nieuweTaakAction,
   verplaatsTaakAction,
+  zetGezienAction,
   zetPrioAction,
   zetStatusAction,
   zetVolgordeAction,
@@ -51,7 +52,9 @@ import {
 } from "./TodosWeergave";
 
 type Patch = Pick<Taak, "id"> &
-  Partial<Pick<Taak, "status" | "prio" | "lijst" | "titel" | "positie">>;
+  Partial<
+    Pick<Taak, "status" | "prio" | "lijst" | "titel" | "positie" | "reactie">
+  >;
 
 /** Klaar is geen kolom maar een afrondzone. */
 const KOLOMMEN = STATUSSEN.filter((status) => status !== "klaar");
@@ -174,6 +177,37 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
   function zetPrio(taak: Taak, prio: Prio) {
     wijzig({ id: taak.id, prio }, () => zetPrioAction(taak.id, prio));
   }
+
+  function zetGezien(taak: Taak) {
+    const reactie = taak.reactie;
+    wijzig({ id: taak.id, reactie: null }, () =>
+      zetGezienAction(taak.id, true),
+    );
+    toon("Gezien", {
+      ongedaan: () =>
+        wijzig({ id: taak.id, reactie }, () => zetGezienAction(taak.id, false)),
+    });
+  }
+
+  const reactie = (taak: Taak) =>
+    taak.reactie !== null &&
+    taak.status !== "klaar" && (
+      <div className={styles.reactie}>
+        <span className={styles.reactieLabel}>
+          Nieuwe reactie{taak.auteur && ` van ${taak.auteur}`}
+        </span>
+        {taak.bericht && (
+          <span className={styles.reactieTekst}>{taak.bericht}</span>
+        )}
+        <button
+          type="button"
+          className={styles.gezien}
+          onClick={() => zetGezien(taak)}
+        >
+          Gezien<span className="visually-hidden">: {taak.titel}</span>
+        </button>
+      </div>
+    );
 
   function hernoem(taak: Taak, titel: string) {
     setBewerk(null);
@@ -303,7 +337,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return (
       <li
         key={taak.id}
-        className={`${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""}`}
+        className={`${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""} ${taak.reactie !== null && taak.status !== "klaar" ? styles.heeftReactie : ""}`}
         data-kaart={taak.id}
         draggable
         onDragStart={(e) => {
@@ -319,6 +353,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       >
         <span className={styles.titel}>{taak.titel}</span>
         {context(taak)}
+        {reactie(taak)}
         <div className={styles.voet}>
           {prioKnop(taak)}
           {bron(taak)}
@@ -437,6 +472,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         <span className={styles.titelBlok}>
           <span className={styles.titel}>{taak.titel}</span>
           {context(taak)}
+          {reactie(taak)}
         </span>
         <TodosMenu
           knopClass={`${styles.chip} ${styles.chipKnop} ${statusKlasse(taak.status)}`}

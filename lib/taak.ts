@@ -97,6 +97,8 @@ export type Taak = {
   prio: Prio;
   /** Plek in de eigen volgorde van de kolom; null = nog niet verplaatst, dus bovenaan. */
   positie: number | null;
+  /** Unix-seconden van een nieuwe reactie op deze to-do die je nog niet hebt gezien. */
+  reactie: number | null;
 };
 
 /** Parsers voor waarden uit de browser; een server action krijgt niets gegarandeerd. */
