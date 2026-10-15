@@ -80,7 +80,9 @@ function Sla({
   const onder = (
     <>
       <span className={styles.meta}>
-        {platform.klant.naam} · {looptijd(start, vandaag)}
+        {platform.klant.naam} ·{" "}
+        {/* Vaste spaties: "1 jan – 31 dec" breekt niet af. */}
+        {looptijd(start, vandaag).replaceAll(" ", "\u00a0")}
       </span>
       <SupportKnop platform={platform} support={support} />
     </>
