@@ -4,13 +4,16 @@ import {
   bepaalMensen,
   bepaalSprint,
   dagPlus,
+  ingeplandVanaf,
   isoDatum,
   maandagVan,
   parseBij,
   parsePlanning,
   parseTijd,
   venster,
+  type Bereik,
   type Mensen,
+  type Planregel,
   type Sprint,
   type Tijdregel,
 } from "@/lib/sprint";
@@ -57,15 +60,25 @@ function viaCache<T>(
   return hit ? { status: "ok", data: hit.waarde } : { status: "laden" };
 }
 
-// ponytail: Orbit geeft maximaal 100 regels per aanroep; een project met meer planning in drie weken wordt afgekapt.
-const planning = (email: string, number: string, van: string, tot: string) =>
-  viaCache(
+/** Eén aanroep voor Sprints (vorige t/m volgende week) én Overige projecten (vooruitkijken). */
+const PLANNING_DAGEN = 90;
+
+// ponytail: Orbit geeft maximaal 100 regels per aanroep; een project met meer planning in dit venster wordt afgekapt (de latere dagen vallen af).
+const planning = (email: string, number: string, vandaag: string) => {
+  const van = venster(vandaag).van;
+  return viaCache(
     email,
-    `planning:v1:${email}:${number}:${van}`,
+    `planning:v2:${email}:${number}:${van}`,
     "ListPlannedEntries",
-    { projectId: number, user: "*", dateFrom: van, dateTo: tot },
+    {
+      projectId: number,
+      user: "*",
+      dateFrom: van,
+      dateTo: dagPlus(vandaag, PLANNING_DAGEN),
+    },
     parsePlanning,
   );
+};
 
 const uren = (email: string, number: string, van: string, tot: string) =>
   viaCache(
@@ -113,13 +126,13 @@ export type SprintLading = {
 function mensenVan(
   email: string,
   bron: SprintBron,
-  sprint: Sprint,
+  bereik: Bereik,
   vandaag: string,
 ): Cachet<Mensen> {
   const tijd: Cachet<Tijdregel[]> =
-    sprint.start > vandaag
+    bereik.start > vandaag
       ? { status: "ok", data: [] }
-      : uren(email, bron.project.number, sprint.start, vandaag);
+      : uren(email, bron.project.number, bereik.start, vandaag);
   // De timesheetstatus loopt vanaf maandag vorige week, net als het planningsvenster.
   const bij = timesheet(email, dagPlus(maandagVan(vandaag), -7));
   if (tijd.status === "fout" || bij.status === "fout") {
@@ -130,7 +143,7 @@ function mensenVan(
   }
   return {
     status: "ok",
-    data: bepaalMensen(sprint, tijd.data, bij.data, vandaag),
+    data: bepaalMensen(bereik, tijd.data, bij.data, vandaag),
   };
 }
 
@@ -145,24 +158,85 @@ export function laadSprints(
   vandaagDatum: Date,
 ): SprintLading {
   const vandaag = isoDatum(vandaagDatum);
-  const { van, tot } = venster(vandaag);
+  const { tot } = venster(vandaag);
   const lading: SprintLading = { rijen: [], laden: 0, fout: 0 };
   for (const bron of bronnen) {
-    const plan = planning(email, bron.project.number, van, tot);
+    const plan = planning(email, bron.project.number, vandaag);
     if (plan.status === "laden") lading.laden++;
     if (plan.status === "fout") lading.fout++;
-    if (plan.status !== "ok" || plan.data.length === 0) continue;
+    if (plan.status !== "ok") continue;
+    // Verder vooruit kijken is voor Overige projecten; een sprint zoekt alleen binnen het venster.
+    const binnenVenster = plan.data.filter(({ datum }) => datum <= tot);
+    if (binnenVenster.length === 0) continue;
     const sprint =
       bron.budget.status === "ok"
-        ? bepaalSprint(bron.budget.data.mappen, plan.data, vandaag)
+        ? bepaalSprint(bron.budget.data.mappen, binnenVenster, vandaag)
         : null;
     lading.rijen.push({
       ...bron,
       sprint,
       mensen: sprint
-        ? mensenVan(email, bron, sprint, vandaag)
+        ? mensenVan(
+            email,
+            bron,
+            {
+              regels: sprint.map.regels,
+              start: sprint.start,
+              planning: sprint.planning,
+            },
+            vandaag,
+          )
         : { status: "laden" },
     });
   }
   return lading;
+}
+
+export type OverigRij = SprintBron & {
+  /** Eerste geplande dag na vandaag; null als er niets ingepland staat. */
+  vanaf: Cachet<string | null>;
+  mensen: Cachet<Mensen>;
+};
+
+/** Uren van de laatste vier weken: vandaag en de 27 dagen ervoor. */
+const OVERIG_DAGEN = 27;
+
+/**
+ * Per overig project dezelfde signalen als een sprint, maar over alle taken.
+ * Mensen op een taak: wie erop schreef in de laatste vier weken of erop gepland staat;
+ * ponytail: matcht op taaknaam, dus dezelfde naam in meer mappen toont dezelfde mensen.
+ * Kosten per 15 minuten: de planning van laadSprints, 1 urenlijst per project en de gedeelde timesheet-aanroep.
+ * ponytail: Orbit geeft maximaal 100 regels per aanroep; een drukker project telt te weinig uren.
+ */
+export function laadOverige(
+  email: string,
+  bronnen: SprintBron[],
+  vandaagDatum: Date,
+): OverigRij[] {
+  const vandaag = isoDatum(vandaagDatum);
+  const laden = { status: "laden" } as const;
+  return bronnen.map((bron): OverigRij => {
+    if (bron.budget.status !== "ok") {
+      return { ...bron, vanaf: laden, mensen: laden };
+    }
+    const plan = planning(email, bron.project.number, vandaag);
+    if (plan.status !== "ok") return { ...bron, vanaf: plan, mensen: plan };
+    const komend: Planregel[] = plan.data.filter(
+      ({ datum }) => datum >= vandaag,
+    );
+    return {
+      ...bron,
+      vanaf: { status: "ok", data: ingeplandVanaf(komend, vandaag) },
+      mensen: mensenVan(
+        email,
+        bron,
+        {
+          regels: bron.budget.data.mappen.flatMap((map) => map.regels),
+          start: dagPlus(vandaag, -OVERIG_DAGEN),
+          planning: komend,
+        },
+        vandaag,
+      ),
+    };
+  });
 }

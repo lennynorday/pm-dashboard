@@ -1,6 +1,6 @@
 # Budgetsturing op het overzicht
 
-`2026-10-15` · Lennart ter Haar · Mockup: `public/mockups/budgetsturing-v7.html`
+`2026-10-15` · Lennart ter Haar · Mockup: `public/mockups/budgetsturing-v8.html`
 
 ## Waarom
 
@@ -52,8 +52,8 @@ SLA's
 Overige projecten
 
 19. Een project zonder "SLA" in de naam en zonder planning vorige, deze of volgende week staat onder Overige projecten.
-20. Het hele project is één rij met geschreven / budget en de balk; de noot is neutraal ("Xu over"), want er loopt geen sprint om in te plannen.
-21. De uitklap toont de mappen van het project als regels, met dezelfde opbouw.
+20. Het hele project is één rij met de som van de regels als budget, geschreven en gepland, de noot van elke regel, "laatst geschreven <dag>" bij de klant, dezelfde urenregel als bij Sprints en links onder de balk "Ingepland vanaf <dag>" of "Niets ingepland".
+21. De uitklap toont per map (kopje alleen bij meer dan één) de regels met budget of uren, met dezelfde mensen als bij Sprints: wie in de laatste vier weken schreef of erop gepland staat.
 
 Opruimen
 
@@ -63,6 +63,7 @@ Opruimen
 ## Besluiten
 
 - SLA of niet hangt alleen af van "SLA" in de projectnaam; de rest is Sprints of Overige projecten (2026-10-15, Lenny). Project 1590 is daarvoor hernoemd.
+- Overige projecten krijgen dezelfde signalen en mensen als Sprints, over het hele project (2026-10-15, Lennart).
 
 ## Domeinmodel
 

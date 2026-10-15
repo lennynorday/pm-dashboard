@@ -242,26 +242,48 @@ export type Persoon = {
   ok: boolean;
 };
 
+/** Waarover mensen en uren gaan: de regels, de eerste dag en wie erop gepland staat. */
+export type Bereik = {
+  regels: BudgetMap["regels"];
+  start: string;
+  planning: Planregel[];
+};
+
 export type Mensen = {
   /** Per regelnaam, de meeste uren eerst. */
   perRegel: Record<string, Persoon[]>;
   achter: string[];
+  /** Laatste dag met geschreven tijd van wie dan ook, op welke taak dan ook. */
+  laatst: string | null;
   /** De vroegste "bij t/m"; alleen als niemand achterloopt. */
   compleetTm: string | null;
 };
 
 const uniek = (namen: string[]) => [...new Set(namen)];
 
-/** Mensen met tijd of planning in de sprint, en wie achterloopt met uren schrijven. */
+/** Eerste geplande dag na vandaag; null als er niets ingepland staat. */
+export function ingeplandVanaf(
+  planning: Planregel[],
+  vandaag: string,
+): string | null {
+  return (
+    planning
+      .map(({ datum }) => datum)
+      .filter((datum) => datum > vandaag)
+      .sort()[0] ?? null
+  );
+}
+
+/** Mensen met tijd of planning in het bereik, en wie achterloopt met uren schrijven. */
 export function bepaalMensen(
-  sprint: Sprint,
+  bereik: Bereik,
   uren: Tijdregel[],
   bij: Bijregel[],
   vandaag: string,
 ): Mensen {
-  const taken = sprint.map.regels.map((regel) => regel.naam);
+  const taken = bereik.regels.map((regel) => regel.naam);
   const tijd = uren.filter(
-    ({ taak, datum }) => taken.includes(taak) && datum >= sprint.start,
+    ({ taak, datum }) => taken.includes(taak) && datum >= bereik.start,
   );
   const grens = laatsteWerkdagVoor(vandaag);
   const bijTm = (naam: string) =>
@@ -288,7 +310,7 @@ export function bepaalMensen(
     taken.map((taak) => [
       taak,
       uniek(
-        [...tijd, ...sprint.planning]
+        [...tijd, ...bereik.planning]
           .filter((regel) => regel.taak === taak)
           .map((regel) => regel.wie),
       )
@@ -297,7 +319,7 @@ export function bepaalMensen(
     ]),
   );
   const iedereen = uniek(
-    [...tijd, ...sprint.planning].map((regel) => regel.wie),
+    [...tijd, ...bereik.planning].map((regel) => regel.wie),
   )
     .map((naam) => persoon(naam, ""))
     .sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
@@ -305,6 +327,11 @@ export function bepaalMensen(
   return {
     perRegel,
     achter,
+    laatst:
+      uren
+        .map(({ datum }) => datum)
+        .sort()
+        .at(-1) ?? null,
     compleetTm:
       achter.length === 0
         ? (iedereen

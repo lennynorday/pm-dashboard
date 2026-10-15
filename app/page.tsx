@@ -13,7 +13,7 @@ import { readGenegeerd } from "@/lib/genegeerde-meldingen";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
-import { laadSprints } from "@/lib/orbit/sprint";
+import { laadOverige, laadSprints } from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
 import styles from "./grid.module.css";
 
@@ -73,13 +73,17 @@ export default async function HomePage() {
     new Date(),
   );
   const sprintNummers = sprints.rijen.map(({ project }) => project.number);
-  const overig = bronnen.flatMap(({ platform, projecten }) =>
-    projecten
-      .filter(
-        ({ project }) =>
-          !isSla(project.naam) && !sprintNummers.includes(project.number),
-      )
-      .map((rij) => ({ ...rij, platform })),
+  const overig = laadOverige(
+    user.email,
+    bronnen.flatMap(({ platform, projecten }) =>
+      projecten
+        .filter(
+          ({ project }) =>
+            !isSla(project.naam) && !sprintNummers.includes(project.number),
+        )
+        .map((rij) => ({ ...rij, platform })),
+    ),
+    new Date(),
   );
   const genegeerd = readGenegeerd(user.email);
   const feed = bouwFeed(bronnen, dashboard.platforms, new Date());
