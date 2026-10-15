@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { Feed } from "@/components/Feed";
 import { HiddenProjects } from "@/components/HiddenProjects";
-import { MijnProjecten } from "@/components/MijnProjecten";
+import { Overige } from "@/components/Overige";
 import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { Slas } from "@/components/Slas";
@@ -10,7 +10,6 @@ import { isSla } from "@/lib/budgetsignaal";
 import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
-import { readFavorieten } from "@/lib/favorieten";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
@@ -74,15 +73,14 @@ export default async function HomePage() {
     new Date(),
   );
   const sprintNummers = sprints.rijen.map(({ project }) => project.number);
-  const overig = bronnen
-    .map(({ platform, projecten }) => ({
-      platform,
-      projecten: projecten.filter(
+  const overig = bronnen.flatMap(({ platform, projecten }) =>
+    projecten
+      .filter(
         ({ project }) =>
           !isSla(project.naam) && !sprintNummers.includes(project.number),
-      ),
-    }))
-    .filter(({ projecten }) => projecten.length > 0);
+      )
+      .map((rij) => ({ ...rij, platform })),
+  );
   const genegeerd = readGenegeerd(user.email);
   const feed = bouwFeed(bronnen, dashboard.platforms, new Date());
   const verborgen = dashboard.platforms
@@ -113,10 +111,7 @@ export default async function HomePage() {
         <>
           <Sprints lading={sprints} />
           <Slas rijen={slas} vandaag={new Date()} />
-          <MijnProjecten
-            favorieten={readFavorieten(user.email)}
-            rijen={overig}
-          />
+          <Overige rijen={overig} />
         </>
       )}
       <HiddenProjects projecten={verborgen} />

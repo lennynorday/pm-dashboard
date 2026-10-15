@@ -1,6 +1,5 @@
-import NextLink from "next/link";
-import { favorietAction } from "@/app/actions";
-import type { Platform, Project } from "@/lib/dashboard";
+import { BUDGET_MELDING } from "@/lib/budgetsignaal";
+import type { Project } from "@/lib/dashboard";
 import { orbitProjectUrl } from "@/lib/dashboard";
 import { formatDate, formatUren, PROJECT_STATE_LABELS } from "@/lib/format";
 import {
@@ -9,24 +8,12 @@ import {
   type ProjectBudget,
   type ProjectBudgetResult,
 } from "@/lib/orbit/budget";
-import { AlertIcon, ChevronIcon, ExternalIcon, StarIcon } from "./icons";
+import { AlertIcon, ChevronIcon, ExternalIcon } from "./icons";
 import { VisibilityButton } from "./VisibilityButton";
 import knop from "./VisibilityButton.module.css";
 import styles from "./MijnProjecten.module.css";
 
-export const BUDGET_MELDING: Record<ProjectBudgetResult["status"], string> = {
-  ok: "Geen uren gepland in Orbit",
-  laden: "Wordt opgehaald",
-  fout: "Budget kon niet worden opgehaald uit Orbit",
-  "niet-verbonden": "Niet verbonden met Orbit",
-};
-
 export type ProjectRij = { project: Project; budget: ProjectBudgetResult };
-
-export type PlatformRij = {
-  platform: Platform;
-  projecten: ProjectRij[];
-};
 
 function procent(geschreven: number, totaal: number): number {
   return totaal === 0 ? 0 : Math.round((geschreven / totaal) * 100);
@@ -68,53 +55,14 @@ function Cel({
   );
 }
 
-/** Ster om een map of regel als favoriet te markeren; zonder Orbit-id geen knop. */
-function FavorietKnop({
-  id,
-  naam,
-  favorieten,
-}: {
-  id: string;
-  naam: string;
-  favorieten: string[];
-}) {
-  if (!id) return null;
-  const aan = favorieten.includes(id);
-  return (
-    <form action={favorietAction}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="aan" value={String(!aan)} />
-      <button
-        type="submit"
-        className={styles.ster}
-        aria-pressed={aan}
-        aria-label={`${aan ? "Favoriet" : "Markeer als favoriet"}: ${naam}`}
-      >
-        <StarIcon className={styles.sterIcoon} />
-      </button>
-    </form>
-  );
-}
-
-function MapRijen({
-  map,
-  favorieten,
-}: {
-  map: BudgetMap;
-  favorieten?: string[];
-}) {
+function MapRijen({ map }: { map: BudgetMap }) {
   const beschikbaar = map.regels.reduce((som, r) => som + r.beschikbaar, 0);
   const geschreven = map.regels.reduce((som, r) => som + r.geschreven, 0);
   const percentage = procent(geschreven, beschikbaar);
   return (
     <li>
       <div className={`${styles.rij} ${styles.mapRij}`}>
-        <span className={styles.naamCel}>
-          {favorieten && (
-            <FavorietKnop id={map.id} naam={map.naam} favorieten={favorieten} />
-          )}
-          {map.naam}
-        </span>
+        <span className={styles.naamCel}>{map.naam}</span>
         <Balk percentage={percentage} klein />
         <Cel label="Verbruikt">
           {beschikbaar === 0 ? "–" : `${percentage}%`}
@@ -131,13 +79,6 @@ function MapRijen({
             className={`${styles.rij} ${styles.regelRij}`}
           >
             <span className={styles.naamCel}>
-              {favorieten && (
-                <FavorietKnop
-                  id={regel.id}
-                  naam={regel.naam}
-                  favorieten={favorieten}
-                />
-              )}
               {regel.naam}
               {regel.afgesloten && (
                 <span className={styles.afgesloten}> (afgesloten)</span>
@@ -259,8 +200,7 @@ function ProjectItem({
   project,
   budget,
   feiten,
-  favorieten,
-}: ProjectRij & { feiten?: Feiten; favorieten?: string[] }) {
+}: ProjectRij & { feiten?: Feiten }) {
   const data =
     budget.status === "ok" && plafond(budget.data).minuten > 0
       ? budget.data
@@ -296,11 +236,7 @@ function ProjectItem({
           {data && data.mappen.length > 0 && (
             <ul className={styles.mappen}>
               {data.mappen.map((map) => (
-                <MapRijen
-                  key={map.id || map.naam}
-                  map={map}
-                  favorieten={favorieten}
-                />
+                <MapRijen key={map.id || map.naam} map={map} />
               ))}
             </ul>
           )}
@@ -317,11 +253,9 @@ function ProjectItem({
 export function ProjectLijst({
   rijen,
   feiten,
-  favorieten,
 }: {
   rijen: ProjectRij[];
   feiten?: Feiten;
-  favorieten?: string[];
 }) {
   return (
     <div className={styles.lijst}>
@@ -338,169 +272,9 @@ export function ProjectLijst({
         {[...rijen]
           .sort((a, b) => sorteerwaarde(b) - sorteerwaarde(a))
           .map((rij) => (
-            <ProjectItem
-              key={rij.project.number}
-              {...rij}
-              feiten={feiten}
-              favorieten={favorieten}
-            />
+            <ProjectItem key={rij.project.number} {...rij} feiten={feiten} />
           ))}
       </ul>
     </div>
-  );
-}
-
-type Favoriet = {
-  id: string;
-  project: Project;
-  soort: "Map" | "Regel";
-  naam: string;
-  map?: string;
-  beschikbaar: number;
-  geschreven: number;
-};
-
-/** Favoriete mappen (met het totaal van de map) en regels uit de geladen budgetten. */
-function zoekFavorieten(rijen: ProjectRij[], ids: string[]): Favoriet[] {
-  return rijen.flatMap(({ project, budget }) =>
-    budget.status !== "ok"
-      ? []
-      : budget.data.mappen.flatMap((map): Favoriet[] => [
-          ...(ids.includes(map.id)
-            ? [
-                {
-                  id: map.id,
-                  project,
-                  soort: "Map" as const,
-                  naam: map.naam,
-                  beschikbaar: map.regels.reduce(
-                    (s, r) => s + r.beschikbaar,
-                    0,
-                  ),
-                  geschreven: map.regels.reduce((s, r) => s + r.geschreven, 0),
-                },
-              ]
-            : []),
-          ...map.regels
-            .filter((regel) => ids.includes(regel.id))
-            .map((regel) => ({
-              ...regel,
-              project,
-              soort: "Regel" as const,
-              map: map.naam,
-            })),
-        ]),
-  );
-}
-
-/** Favoriete mappen en regels bovenaan het overzicht; zonder favorieten niets. */
-function Favorieten({
-  rijen,
-  favorieten,
-}: {
-  rijen: ProjectRij[];
-  favorieten: string[];
-}) {
-  const items = zoekFavorieten(rijen, favorieten);
-  if (items.length === 0) return null;
-  return (
-    <section className={styles.favorieten} aria-labelledby="favorieten">
-      <h2 id="favorieten" className={styles.favorietenKop}>
-        <StarIcon className={styles.sterIcoon} />
-        Favorieten
-      </h2>
-      <div className={styles.lijst}>
-        <div className={`${styles.rij} ${styles.kolomKop}`} aria-hidden="true">
-          <span>Map of regel</span>
-          <span>Verbruik</span>
-          <span className={styles.getal}>%</span>
-          <span className={styles.getal}>Geschreven</span>
-          <span className={styles.getal}>Beschikbaar</span>
-          <span className={styles.getal}>Resterend</span>
-          <span />
-        </div>
-        <ul className={styles.favLijst}>
-          {items.map((item) => {
-            const percentage = procent(item.geschreven, item.beschikbaar);
-            const rest = item.beschikbaar - item.geschreven;
-            return (
-              <li key={item.id} className={`${styles.rij} ${styles.favRij}`}>
-                <span className={styles.naamCel}>
-                  <FavorietKnop
-                    id={item.id}
-                    naam={item.naam}
-                    favorieten={favorieten}
-                  />
-                  <span className={styles.favNaam}>
-                    <a href={`#project-${item.project.number}`}>
-                      <span className={styles.favProject}>
-                        {item.project.naam}
-                      </span>
-                      {item.naam}
-                    </a>
-                    <span className={styles.context}>
-                      <span className={styles.soort}>{item.soort}</span>
-                      {item.map && `in ${item.map}`}
-                    </span>
-                  </span>
-                </span>
-                <Balk percentage={percentage} klein />
-                <Cel label="Verbruikt" over={percentage > 100}>
-                  {item.beschikbaar === 0 ? "–" : `${percentage}%`}
-                </Cel>
-                <Cel label="Geschreven">{formatUren(item.geschreven)}</Cel>
-                <Cel label="Beschikbaar">{formatUren(item.beschikbaar)}</Cel>
-                <Cel label="Resterend" over={rest < 0}>
-                  {formatUren(rest)}
-                </Cel>
-                <span />
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-/** Mijn platforms, elk als kaart met de projecten. */
-export function MijnProjecten({
-  rijen,
-  favorieten,
-}: {
-  rijen: PlatformRij[];
-  favorieten: string[];
-}) {
-  return (
-    <>
-      <Favorieten
-        rijen={rijen.flatMap(({ projecten }) => projecten)}
-        favorieten={favorieten}
-      />
-      <div className={styles.platforms}>
-        {rijen.map(({ platform, projecten }) => (
-          <section
-            key={platform.slug}
-            className={styles.kaart}
-            aria-labelledby={`platform-${platform.slug}`}
-          >
-            <header className={styles.kop}>
-              <h2
-                id={`platform-${platform.slug}`}
-                className={styles.platformNaam}
-              >
-                <NextLink href={`/platforms/${platform.slug}`}>
-                  {platform.naam}
-                </NextLink>
-                {platform.klant.meerPlatforms && (
-                  <span className={styles.klant}> · {platform.klant.naam}</span>
-                )}
-              </h2>
-            </header>
-            <ProjectLijst rijen={projecten} favorieten={favorieten} />
-          </section>
-        ))}
-      </div>
-    </>
   );
 }

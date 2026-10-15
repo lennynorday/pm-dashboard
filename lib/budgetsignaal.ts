@@ -1,4 +1,5 @@
 import { formatUren } from "./format.ts";
+import type { ProjectBudgetResult } from "./orbit/budget.ts";
 
 export type Signaal = {
   soort: "ok" | "open" | "rood" | "rustig";
@@ -80,3 +81,10 @@ export function looptijdProcent(start: string | null, vandaag: Date): number {
 export function isSla(projectNaam: string): boolean {
   return /\bSLA\b/i.test(projectNaam);
 }
+
+export const BUDGET_MELDING: Record<ProjectBudgetResult["status"], string> = {
+  ok: "Geen uren gepland in Orbit",
+  laden: "Wordt opgehaald",
+  fout: "Budget kon niet worden opgehaald uit Orbit",
+  "niet-verbonden": "Niet verbonden met Orbit",
+};

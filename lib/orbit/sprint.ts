@@ -105,7 +105,7 @@ export type SprintRij = SprintBron & {
 
 export type SprintLading = {
   rijen: SprintRij[];
-  /** Projecten waarvan de planning nog binnenkomt of mislukte: die blijven voorlopig bij de platformkaarten. */
+  /** Projecten waarvan de planning nog binnenkomt of mislukte: die staan onder Overige projecten. */
   laden: number;
   fout: number;
 };
