@@ -8,11 +8,15 @@ import {
   ingeplandVanaf,
   initialen,
   vrijdagVorigeWeek,
+  metReserveringen,
   parseBij,
   parsePlanning,
+  parseReserveringen,
   parseTijd,
+  reserveringPlanning,
   venster,
   vorigeTekst,
+  wijsToe,
 } from "./sprint.ts";
 import type { BudgetMap } from "./orbit/budget-tekst.ts";
 
@@ -198,4 +202,112 @@ test("overig: laatst geschreven, mensen over meer mappen en ingepland vanaf", ()
     "Anisha Sivakumaran",
     "Brenda Leensvaart",
   ]);
+});
+
+const RES = [
+  "- 2026-10-19 → 2026-10-24 | Mark Molendijk | 2851 IHC | Onsland | Doorontwikkeling 2026 / Sprint (nog te verdelen) | reserved 2h, used 0h, left 2h  (api_id: RVFUWTHVAVE15SE)",
+  "- 2026-11-02 → 2026-11-14 | Lennart Ter Haar | 1590 WO2NET | OvdR | Sprint 2026 - Toegankelijkheid / Coordinatie (PM & PL) | reserved 4h45, used 0h, left 4h45  (api_id: RVHY25XJPFRGZT5)",
+].join("\n");
+
+test("reserveringen lezen taak, persoon en het open deel", () => {
+  assert.deepStrictEqual(parseReserveringen(RES), [
+    {
+      van: "2026-10-19",
+      tot: "2026-10-24",
+      wie: "Mark Molendijk",
+      taak: "Sprint (nog te verdelen)",
+      minutenOver: 120,
+    },
+    {
+      van: "2026-11-02",
+      tot: "2026-11-14",
+      wie: "Lennart Ter Haar",
+      taak: "Coordinatie (PM & PL)",
+      minutenOver: 285,
+    },
+  ]);
+  assert.deepStrictEqual(
+    parseReserveringen("No reservations match these filters."),
+    [],
+  );
+});
+
+test("het open deel van reserveringen telt op bij gepland", () => {
+  const toe = wijsToe(
+    [
+      {
+        id: "1",
+        naam: "Sprint",
+        regels: [regel("Sprint (nog te verdelen)", 600, 0, 60)],
+      },
+    ],
+    parseReserveringen(RES),
+  );
+  const metRes = metReserveringen(
+    [
+      {
+        id: "1",
+        naam: "Sprint",
+        regels: [regel("Sprint (nog te verdelen)", 600, 0, 60)],
+      },
+    ],
+    toe,
+  );
+  assert.strictEqual(metRes[0].regels[0].gepland, 180);
+  assert.strictEqual(mappen[1].regels[0].gepland, 120);
+});
+
+test("reserveringen verdelen zich over dezelfde taaknaam in meerdere mappen", () => {
+  const taak = "Sprint (nog te verdelen)";
+  const ihc: BudgetMap[] = [
+    {
+      id: "a",
+      naam: "Toegankelijkheid",
+      regels: [{ ...regel(taak, 5400, 5160), id: "a1" }],
+    },
+    {
+      id: "b",
+      naam: "Doorontwikkeling",
+      regels: [{ ...regel(taak, 6000, 0), id: "b1" }],
+    },
+  ];
+  const res = [
+    {
+      van: "2026-11-02",
+      tot: "2026-11-27",
+      wie: "Mark",
+      taak,
+      minutenOver: 4200,
+    },
+    {
+      van: "2026-10-12",
+      tot: "2026-10-16",
+      wie: "Mark",
+      taak,
+      minutenOver: 240,
+    },
+  ];
+  const toe = wijsToe(ihc, res);
+  const metRes = metReserveringen(ihc, toe);
+  assert.deepStrictEqual(
+    metRes.map((map) => map.regels[0].gepland),
+    [240, 4200],
+  );
+  const plan = reserveringPlanning(toe, "2026-10-15");
+  assert.strictEqual(
+    bepaalSprint(metRes, plan, "2026-10-15")?.map.naam,
+    "Toegankelijkheid",
+  );
+});
+
+test("een reservering volgende week maakt een sprintproject", () => {
+  const res = parseReserveringen(
+    "- 2026-10-19 → 2026-10-24 | Brenda Leensvaart | 2044 Erfgoed | x | Fase 2 / Test | reserved 2h, used 0h, left 2h  (api_id: R)",
+  );
+  const plan = reserveringPlanning(res, "2026-10-15");
+  assert.strictEqual(plan.length, 5);
+  assert.strictEqual(
+    bepaalSprint(mappen, plan, "2026-10-15")?.map.naam,
+    "Fase 2",
+  );
 });

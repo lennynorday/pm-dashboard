@@ -13,7 +13,7 @@ import { readGenegeerd } from "@/lib/genegeerde-meldingen";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
-import { laadOverige, laadSprints } from "@/lib/orbit/sprint";
+import { laadOverige, laadSprints, verrijkBudget } from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
 import styles from "./grid.module.css";
 
@@ -61,7 +61,12 @@ export default async function HomePage() {
   const slas = bronnen.flatMap(({ platform, jira, projecten }) =>
     projecten
       .filter(({ project }) => isSla(project.naam))
-      .map((rij) => ({ ...rij, platform, support: jira.support })),
+      .map(({ project, budget }) => ({
+        project,
+        budget: verrijkBudget(user.email, project.number, budget, new Date()),
+        platform,
+        support: jira.support,
+      })),
   );
   const sprints = laadSprints(
     user.email,
