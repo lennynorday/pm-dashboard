@@ -5,6 +5,7 @@ import {
   JiraNietVerbondenError,
   searchIssues,
 } from "./client";
+import { DEMO, demoJira } from "@/lib/demo";
 import { currentUser } from "@/lib/session";
 
 export const SPRINT_BAKKEN = ["actief", "gepland", "backlog"] as const;
@@ -261,6 +262,7 @@ export async function fetchAccountJira(account: {
   jiraKeys: string[];
   supportOrganizations: string[];
 }): Promise<AccountJira> {
+  if (DEMO) return demoJira(account);
   const email = (await currentUser())?.email ?? "";
   const [jira, support] = await Promise.all([
     Promise.all(

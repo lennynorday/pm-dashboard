@@ -1,12 +1,18 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { DEMO, vulDemo } from "./demo";
 
-// npm run dev (poort 3000) is staging met een eigen kopie; npm run serve (3999) is productie.
+// npm run dev (poort 3000) is staging met een eigen kopie; npm run serve (3999) is productie;
+// npm run demo heeft alleen nepdata.
 const FILE = path.join(
   process.cwd(),
   "data",
-  process.env.NODE_ENV === "production" ? "dashboard.db" : "staging.db",
+  DEMO
+    ? "demo.db"
+    : process.env.NODE_ENV === "production"
+      ? "dashboard.db"
+      : "staging.db",
 );
 
 function open(): DatabaseSync {
@@ -137,6 +143,7 @@ function open(): DatabaseSync {
     const kanaal = String(rij.bron_id).split("/archives/")[1]?.split("/")[0];
     if (kanaal) omzetten.run(`dm:${kanaal}`, Number(rij.id));
   }
+  if (DEMO) vulDemo(db);
   return db;
 }
 

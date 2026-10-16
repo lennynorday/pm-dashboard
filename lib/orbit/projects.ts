@@ -1,4 +1,5 @@
 import { bewaar, lees, vers } from "@/lib/db";
+import { DEMO, demoProjecten } from "@/lib/demo";
 import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 
@@ -123,6 +124,13 @@ export async function fetchProjects(
   email: string,
   filter: ProjectFilter,
 ): Promise<ProjectListResult> {
+  if (DEMO) {
+    return {
+      status: "ok",
+      projects: demoProjecten(filter),
+      fetchedAt: new Date(),
+    };
+  }
   const sleutel = sleutelVan(email, filter);
   const hit = lees<OrbitProject[]>(sleutel);
   const bewaard = hit && {

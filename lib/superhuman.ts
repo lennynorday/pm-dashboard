@@ -4,6 +4,7 @@ import type {
   KlantVelden,
   PlatformGegevens,
 } from "./accountgegevens";
+import { DEMO } from "./demo";
 import {
   formatEigenLinks,
   LINK_TYPES,
@@ -17,8 +18,9 @@ const TABEL_URL =
   "https://docs.superhuman.com/apis/v1/docs/G775GfEi_2/tables/grid-aiardDerdh";
 
 /** Wat collega's in Superhuman openen. */
-export const TABEL_BROWSER_URL =
-  "https://docs.superhuman.com/d/_dG775GfEi_2#_tugrid-aiardDerdh";
+export const TABEL_BROWSER_URL = DEMO
+  ? "https://docs.example"
+  : "https://docs.superhuman.com/d/_dG775GfEi_2#_tugrid-aiardDerdh";
 
 /** Kolom-id's in plaats van namen, zodat hernoemen in Superhuman niets breekt. */
 const KOLOM = {
@@ -50,6 +52,7 @@ const LINK_KOLOM: Record<LinkType, string> = {
 };
 
 async function request(pad: string, init?: RequestInit): Promise<unknown> {
+  if (DEMO) throw new Error("Superhuman is uit in de demo.");
   const token = process.env.SUPERHUMAN_API_TOKEN;
   if (!token) throw new Error("SUPERHUMAN_API_TOKEN ontbreekt in .env.local.");
   const response = await fetch(`${TABEL_URL}${pad}`, {

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { database } from "./db";
+import { DEMO, DEMO_GEBRUIKER } from "./demo";
 import type { GoogleProfiel } from "./google/oauth";
 
 export const SESSIE_COOKIE = "pm-sessie";
@@ -63,6 +64,7 @@ export function stopSessie(id: string): void {
 
 /** De ingelogde gebruiker van dit verzoek, of null. */
 export const currentUser = cache(async (): Promise<Gebruiker | null> => {
+  if (DEMO) return DEMO_GEBRUIKER;
   const id = (await cookies()).get(SESSIE_COOKIE)?.value;
   if (!id) return null;
   const row = database()

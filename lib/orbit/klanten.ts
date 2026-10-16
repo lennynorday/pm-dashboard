@@ -1,4 +1,5 @@
 import { bewaar, lees, vers } from "@/lib/db";
+import { DEMO, demoKlantIds } from "@/lib/demo";
 import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 
@@ -43,6 +44,7 @@ export function fetchKlantIds(
   email: string,
   namen: string[],
 ): Map<string, string> {
+  if (DEMO) return demoKlantIds();
   const ids = new Map<string, string>();
   for (const naam of new Set(namen)) {
     const hit = lees<string | null>(sleutelVan(naam));
