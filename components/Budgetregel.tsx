@@ -5,7 +5,6 @@ import {
   AlertIcon,
   CheckIcon,
   ClockIcon,
-  PlusIcon,
   TrendDownIcon,
   TrendUpIcon,
 } from "./icons";
@@ -13,12 +12,12 @@ import styles from "./Budgetregel.module.css";
 
 const ICONEN = {
   check: CheckIcon,
-  plus: PlusIcon,
+  geen: null,
   alert: AlertIcon,
   up: TrendUpIcon,
   down: TrendDownIcon,
   clock: ClockIcon,
-} satisfies Record<Signaal["icoon"], typeof CheckIcon>;
+} satisfies Record<Signaal["icoon"], typeof CheckIcon | null>;
 
 /** Geschreven vol, gepland gestreept, wat boven het budget uitkomt roze met een streep op de grens. */
 function Balk({
@@ -111,7 +110,7 @@ export function Budgetregel({
       <div className={styles.nootRij}>
         {links && <span className={styles.links}>{links}</span>}
         <p className={styles.noot} data-soort={noot.soort}>
-          <NootIcoon className={styles.nootIcoon} />
+          {NootIcoon && <NootIcoon className={styles.nootIcoon} />}
           {noot.tekst}
         </p>
       </div>

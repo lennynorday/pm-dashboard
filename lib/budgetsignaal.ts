@@ -3,13 +3,13 @@ import type { ProjectBudgetResult } from "./orbit/budget.ts";
 
 export type Signaal = {
   soort: "ok" | "open" | "rood" | "rustig";
-  icoon: "check" | "plus" | "alert" | "up" | "down" | "clock";
+  icoon: "check" | "geen" | "alert" | "up" | "down" | "clock";
   tekst: string;
 };
 
 const uren = (minuten: number) => `${formatUren(minuten)}u`;
 
-/** Eén signaal per regel (minuten): te veel gepland, anders niet ingepland (>10% open), anders vrij. */
+/** Eén signaal per regel (minuten): te veel gepland, anders ongepland (>10% open), anders vrij. */
 export function regelStatus(
   budget: number,
   geschreven: number,
@@ -26,8 +26,8 @@ export function regelStatus(
   if (rest > budget * 0.1) {
     return {
       soort: "open",
-      icoon: "plus",
-      tekst: `${uren(rest)} niet ingepland`,
+      icoon: "geen",
+      tekst: `${uren(rest)} ongepland`,
     };
   }
   return {

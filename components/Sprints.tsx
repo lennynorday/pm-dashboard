@@ -1,4 +1,5 @@
 import { BUDGET_MELDING, regelStatus } from "@/lib/budgetsignaal";
+import type { Platform, Project } from "@/lib/dashboard";
 import { formatUren } from "@/lib/format";
 import type { Schrijfregel } from "@/lib/orbit/budget-tekst";
 import type { Cachet, SprintLading, SprintRij } from "@/lib/orbit/sprint";
@@ -37,18 +38,12 @@ function Personen({
           </span>
           <span className={eigen.wie}>{persoon.naam}</span>
           <span className={eigen.uren}>{formatUren(persoon.minuten)}u</span>
+          {/* Altijd een cel, zodat de mensen in vaste kolommen blijven. */}
           <span className={eigen.tm}>
-            {persoon.ok && persoon.bijTm ? (
+            {persoon.ok && persoon.bijTm && (
               <>
                 <CheckIcon />
                 bij t/m {dagLabel(persoon.bijTm)}
-              </>
-            ) : (
-              <>
-                <PencilIcon />
-                {persoon.laatste
-                  ? `laatst ${dagLabel(persoon.laatste)}`
-                  : `niets ${periode}`}
               </>
             )}
           </span>
@@ -56,6 +51,27 @@ function Personen({
       ))}
     </ul>
   );
+}
+
+/** Wie achterloopt op een regel; staat in de meldingenkolom, rechts tegen het budget. */
+function Meldingen({
+  personen,
+  periode,
+}: {
+  personen: Persoon[];
+  periode: string;
+}) {
+  return personen
+    .filter((persoon) => !(persoon.ok && persoon.bijTm))
+    .map((persoon) => (
+      <span key={persoon.naam} className={eigen.bij} data-ok="false">
+        <PencilIcon className={eigen.bijIcoon} />
+        {persoon.naam.split(" ")[0]}:{" "}
+        {persoon.laatste
+          ? `laatst ${dagLabel(persoon.laatste)}`
+          : `niets ${periode}`}
+      </span>
+    ));
 }
 
 /** Onder de projectnaam: uren compleet, of wie er achterloopt. */
@@ -97,16 +113,16 @@ export function Regel({
   mensen: Cachet<Mensen>;
   periode: string;
 }) {
+  const personen =
+    mensen.status === "ok" ? (mensen.data.perRegel[regel.naam] ?? []) : null;
   return (
     <li className={styles.sub}>
       <div className={styles.regelNaam}>
         {regel.naam}
-        {mensen.status === "ok" && (
-          <Personen
-            personen={mensen.data.perRegel[regel.naam] ?? []}
-            periode={periode}
-          />
-        )}
+        {personen && <Personen personen={personen} periode={periode} />}
+      </div>
+      <div className={styles.meldingen}>
+        {personen && <Meldingen personen={personen} periode={periode} />}
       </div>
       <Budgetregel
         budget={regel.beschikbaar}
@@ -121,10 +137,12 @@ export function Regel({
 function Sprint({ rij }: { rij: SprintRij }) {
   const { project, platform, budget, sprint, mensen } = rij;
   const titel = project.naam;
+  const href = projectHref(platform, project);
   if (budget.status !== "ok") {
     return (
       <Uitklapper
         titel={titel}
+        href={href}
         rechts={
           <span className={styles.melding}>
             {BUDGET_MELDING[budget.status]}
@@ -137,6 +155,7 @@ function Sprint({ rij }: { rij: SprintRij }) {
     return (
       <Uitklapper
         titel={titel}
+        href={href}
         onder={<span className={styles.meta}>{platform.klant.naam}</span>}
         rechts={
           <span className={styles.melding}>
@@ -153,14 +172,13 @@ function Sprint({ rij }: { rij: SprintRij }) {
   return (
     <Uitklapper
       titel={titel}
+      href={href}
       onder={
-        <>
-          <span className={styles.meta}>
-            {map.naam} · {wanneer}
-          </span>
-          <UrenStand mensen={mensen} />
-        </>
+        <span className={styles.meta}>
+          {map.naam} · {wanneer}
+        </span>
       }
+      status={<UrenStand mensen={mensen} />}
       rechts={
         <Budgetregel
           budget={budgetSom}
@@ -171,45 +189,49 @@ function Sprint({ rij }: { rij: SprintRij }) {
         />
       }
     >
-      <div className={styles.uitklap}>
-        <ul className={styles.regels}>
-          {map.regels.map((regel) => (
-            <Regel
-              key={regel.id}
-              regel={regel}
-              mensen={mensen}
-              periode="deze sprint"
-            />
-          ))}
+      <ul className={styles.regels}>
+        {map.regels.map((regel) => (
+          <Regel
+            key={regel.id}
+            regel={regel}
+            mensen={mensen}
+            periode="deze sprint"
+          />
+        ))}
+      </ul>
+      {hierna.length > 0 && (
+        <ul className={`${styles.regels} ${styles.hierna}`}>
+          {hierna.map((komend, index) => {
+            const budgetKomend = somRegels(komend.regels, "beschikbaar");
+            const geplandKomend = somRegels(komend.regels, "gepland");
+            return (
+              <li key={komend.id || komend.naam} className={styles.sub}>
+                <div className={styles.regelNaam}>
+                  {index === 0 && <h3 className={styles.label}>Hierna</h3>}
+                  {komend.naam}
+                </div>
+                <div className={styles.meldingen} />
+                <Budgetregel
+                  budget={budgetKomend}
+                  geschreven={0}
+                  gepland={geplandKomend}
+                  noot={regelStatus(budgetKomend, 0, geplandKomend)}
+                />
+              </li>
+            );
+          })}
         </ul>
-        {hierna.length > 0 && (
-          <>
-            <h3 className={eigen.blokKop}>Hierna</h3>
-            <ul className={styles.regels}>
-              {hierna.map((komend) => {
-                const budgetKomend = somRegels(komend.regels, "beschikbaar");
-                const geplandKomend = somRegels(komend.regels, "gepland");
-                return (
-                  <li key={komend.id || komend.naam} className={styles.sub}>
-                    <div className={styles.regelNaam}>{komend.naam}</div>
-                    <Budgetregel
-                      budget={budgetKomend}
-                      geschreven={0}
-                      gepland={geplandKomend}
-                      noot={regelStatus(budgetKomend, 0, geplandKomend)}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-        <div className={styles.voet}>
-          <OrbitLink project={project} />
-        </div>
+      )}
+      <div className={styles.voet}>
+        <OrbitLink project={project} />
       </div>
     </Uitklapper>
   );
+}
+
+/** De naam van een project linkt naar zijn plek op de platformpagina. */
+export function projectHref(platform: Platform, project: Project): string {
+  return `/platforms/${platform.slug}#project-${project.number}`;
 }
 
 /** Mijn sprints: de huidige sprint per project met planning vorige, deze of volgende week. */
