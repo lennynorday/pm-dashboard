@@ -1,0 +1,1098 @@
+/*
+ * Norday toolkit: tokens, basis en bouwstenen voor interne tools.
+ * Afgeleid van het PM-dashboard (overzicht, to-do's, navigatie), oktober 2026.
+ * Eén bestand, zonder framework. Klassen volgen BEM met het voorvoegsel nd-.
+ * Voorbeelden en regels: /toolkit/index.html
+ */
+
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Suisse Intl";
+  src: url("/fonts/SuisseIntl-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Apercu Condensed Pro";
+  src: url("/fonts/ApercuCondensed-Bold-Pro.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+
+:root {
+  /* Merkkleuren */
+  --norday-dark: #3d1028;
+  --norday-pink: #ff0d4a;
+  --norday-yellow: #fff355;
+  --norday-lilac: #d5b3ff;
+  --norday-white: #ffffff;
+
+  /*
+   * Alles hieronder is gemengd uit de vijf merkkleuren, met wit of doorzichtig.
+   * Enige uitzondering: de statuskleuren, omdat Pink te weinig contrast heeft voor tekst.
+   */
+
+  /* Vlakken: lila-grijze grond, kaart, rij erop */
+  --color-lilac-wash: color-mix(
+    in srgb,
+    var(--norday-lilac) 8%,
+    var(--norday-white)
+  );
+  --color-bg: color-mix(
+    in srgb,
+    var(--norday-dark) 7%,
+    var(--color-lilac-wash)
+  );
+  --color-card: color-mix(
+    in srgb,
+    var(--norday-dark) 12%,
+    var(--color-lilac-wash)
+  );
+  --color-raised: color-mix(
+    in srgb,
+    var(--norday-dark) 3%,
+    var(--norday-white)
+  );
+  --color-shell: var(--norday-dark); /* zijmenu en andere donkere velden */
+
+  /* Tekst en lijnen */
+  --color-text: var(--norday-dark);
+  --color-text-muted: color-mix(in srgb, var(--norday-dark) 70%, transparent);
+  --color-on-dark: var(--norday-white);
+  --color-on-dark-muted: color-mix(
+    in srgb,
+    var(--norday-white) 72%,
+    transparent
+  );
+  --color-line: var(--norday-dark);
+  --color-line-subtle: color-mix(
+    in srgb,
+    var(--norday-dark) 50%,
+    transparent
+  ); /* huisstijl: secundaire lijn */
+  --color-line-soft: color-mix(in srgb, var(--norday-dark) 12%, transparent);
+  --color-backdrop: color-mix(in srgb, var(--norday-dark) 50%, transparent);
+
+  /* Zachte tinten voor chips en iconen */
+  --color-pink-soft: color-mix(
+    in srgb,
+    var(--norday-pink) 22%,
+    var(--norday-white)
+  );
+  --color-lilac-soft: color-mix(
+    in srgb,
+    var(--norday-lilac) 40%,
+    var(--norday-white)
+  ); /* huisstijl: Lilac 40% */
+  --color-yellow-soft: color-mix(
+    in srgb,
+    var(--norday-yellow) 40%,
+    var(--norday-white)
+  );
+
+  /* Status: buiten de huisstijl, alleen samen met tekst of icoon gebruiken */
+  --color-warn: #b5002f;
+  --color-ok: #1d6b34;
+  --color-open: #6a3fb0;
+
+  /* Interactie */
+  --color-dark-hover: color-mix(
+    in srgb,
+    var(--norday-dark) 88%,
+    var(--norday-white)
+  );
+  --color-hover-on-dark: color-mix(
+    in srgb,
+    var(--norday-white) 10%,
+    transparent
+  );
+  --color-focus: var(--norday-pink);
+  --color-focus-on-dark: var(--norday-yellow);
+
+  /* Lettertypes */
+  --font-heading:
+    "Apercu Condensed Pro", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-text: "Suisse Intl", "Inter", "Helvetica Neue", Arial, sans-serif;
+  --heading-letter-spacing: -0.03em;
+
+  /* Tekststijlen: vaste maten, het is een tool en geen website */
+  --type-display: 700 clamp(40px, 4.4vw, 64px) / 0.95 var(--font-heading);
+  --type-title: 700 28px/0.95 var(--font-heading);
+  --type-item: 600 15px/1.35 var(--font-text);
+  --type-nav: 400 15px/1.35 var(--font-text);
+  --type-body: 400 14px/1.4 var(--font-text);
+  --type-meta: 400 13px/1.35 var(--font-text);
+  --type-small: 600 12px/1 var(--font-text);
+
+  /* Ruimte */
+  --space-01: 4px;
+  --space-02: 8px;
+  --space-03: 12px;
+  --space-04: 16px;
+  --space-05: 20px;
+  --space-06: 24px;
+  --space-07: 28px;
+  --space-08: 32px;
+  --space-10: 48px;
+  --space-11: 64px;
+
+  /* Vorm */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* Diepte: een binnenrand in plaats van een border, schaduw alleen voor wat zweeft */
+  --ring: inset 0 0 0 1px var(--color-line-subtle);
+  --ring-strong: inset 0 0 0 2px var(--color-line);
+  --ring-accent: inset 0 0 0 2px var(--norday-pink);
+  --shadow-float: 0 8px 24px
+    color-mix(in srgb, var(--norday-dark) 18%, transparent);
+  --shadow-dialog: 0 16px 48px
+    color-mix(in srgb, var(--norday-dark) 30%, transparent);
+
+  /* Beweging */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration: 0.2s;
+}
+
+/* ---------- Basis ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  accent-color: var(--norday-pink);
+  scrollbar-color: var(--color-line-subtle) transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: var(--type-body);
+  caret-color: var(--norday-pink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.nd-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------- Koppen ---------- */
+
+.nd-display,
+.nd-title {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  text-wrap: balance;
+}
+
+.nd-display {
+  font: var(--type-display);
+  overflow-wrap: anywhere;
+}
+
+.nd-title {
+  font: var(--type-title);
+}
+
+/* Aantal naast een kop, in gewone tekst */
+.nd-count {
+  margin-left: 10px;
+  font: 400 15px/1 var(--font-text);
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.nd-muted {
+  color: var(--color-text-muted);
+}
+
+.nd-meta {
+  font: var(--type-meta);
+  color: var(--color-text-muted);
+}
+
+/* Kleine kop boven een groep of kolom */
+.nd-eyebrow {
+  margin: 0;
+  font: var(--type-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Pagina ---------- */
+
+.nd-shell {
+  display: flex;
+  align-items: flex-start;
+}
+
+.nd-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1240px;
+  min-width: 0;
+  padding: var(--space-08) clamp(16px, 3.5vw, 56px) var(--space-11);
+}
+
+.nd-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-03) var(--space-06);
+  margin-bottom: var(--space-07);
+}
+
+.nd-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-02);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--type-body);
+  color: var(--color-text-muted);
+}
+
+.nd-crumbs a {
+  text-decoration: none;
+}
+
+.nd-crumbs a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.nd-crumbs li + li::before {
+  content: "/";
+  margin-right: var(--space-02);
+}
+
+/* ---------- Kaart en rij ---------- */
+
+/* Een kaart groepeert rijen; rijen liggen er licht bovenop. */
+.nd-card {
+  margin-bottom: var(--space-10);
+  padding: var(--space-05) var(--space-03) var(--space-03);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+}
+
+.nd-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-03) var(--space-05);
+  padding: 0 var(--space-02) var(--space-04);
+}
+
+.nd-rows {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nd-row {
+  padding: 14px var(--space-04);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+}
+
+.nd-row--accent {
+  box-shadow: var(--ring-accent);
+}
+
+.nd-row__title {
+  margin: 0;
+  font: var(--type-item);
+  overflow-wrap: anywhere;
+}
+
+/* Rustige acties naast of onder een rij, gescheiden door een zachte lijn */
+.nd-actions {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--space-04);
+  border-left: 1px solid var(--color-line-soft);
+}
+
+/* Kolom van een bord (kanban) */
+.nd-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-02);
+  padding: var(--space-02);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+}
+
+/* ---------- Knoppen ---------- */
+
+.nd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--space-04);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: 500 14px/1 var(--font-text);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+
+.nd-button:hover {
+  background: var(--color-dark-hover);
+}
+
+.nd-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nd-button--quiet {
+  background: var(--color-raised);
+  box-shadow: var(--ring);
+  color: var(--color-text);
+}
+
+.nd-button--quiet:hover {
+  background: var(--norday-white);
+}
+
+.nd-button--small {
+  min-height: 32px;
+  padding: 0 var(--space-03);
+  font-size: 13px;
+}
+
+.nd-button:disabled {
+  background: var(--color-raised);
+  box-shadow: var(--ring);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* Tekstactie: in rijen en kaarten, valt pas op bij hover */
+.nd-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  height: 30px;
+  margin: 0 calc(-1 * var(--space-02));
+  padding: 0 var(--space-02);
+  border: 0;
+  border-radius: var(--space-02);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nd-action:hover {
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.nd-action--main {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.nd-action svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* Rond icoon */
+.nd-icon-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-raised);
+  box-shadow: var(--ring);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+
+.nd-icon-button:hover {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+.nd-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nd-icon-button--small {
+  width: 32px;
+  height: 32px;
+}
+
+/* ---------- Filters ---------- */
+
+/* Filters en weergavewissel: rustig, de actieve krijgt het rijvlak */
+.nd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.nd-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--space-02);
+  background: none;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nd-filter:hover,
+.nd-filter[aria-pressed="true"] {
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+
+.nd-filter[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+/* ---------- Chips, stippen, status ---------- */
+
+.nd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-01);
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  box-shadow: var(--ring);
+  color: var(--norday-dark);
+  font: var(--type-small);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nd-chip[data-tint] {
+  box-shadow: none;
+}
+
+.nd-chip[data-tint="lilac"] {
+  background: var(--norday-lilac);
+}
+
+.nd-chip[data-tint="lilac-soft"] {
+  background: var(--color-lilac-soft);
+}
+
+.nd-chip[data-tint="yellow"] {
+  background: var(--norday-yellow);
+}
+
+.nd-chip[data-tint="yellow-soft"] {
+  background: var(--color-yellow-soft);
+}
+
+.nd-chip[data-tint="pink"] {
+  background: var(--color-pink-soft);
+}
+
+.nd-chip[data-tint="pink-strong"] {
+  background: var(--color-pink-soft);
+  box-shadow: var(--ring-accent);
+}
+
+.nd-chip[data-tint="dark"] {
+  background: var(--norday-dark);
+  color: var(--norday-white);
+}
+
+/* Teller: in menu's en kolomkoppen */
+.nd-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-02);
+  border-radius: var(--radius-pill);
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+  font: var(--type-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.nd-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-line-subtle);
+}
+
+.nd-dot[data-tint="pink"] {
+  background: var(--norday-pink);
+}
+
+.nd-dot[data-tint="pink-soft"] {
+  background: var(--color-pink-soft);
+}
+
+.nd-dot[data-tint="lilac"] {
+  background: var(--norday-lilac);
+}
+
+.nd-dot[data-tint="yellow"] {
+  background: var(--norday-yellow);
+}
+
+/* Rond icoon dat het soort melding aangeeft */
+.nd-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-lilac-soft);
+  color: var(--norday-dark);
+}
+
+.nd-avatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nd-avatar[data-tint="pink"] {
+  background: var(--color-pink-soft);
+  color: var(--color-warn);
+}
+
+.nd-avatar[data-tint="lilac"] {
+  background: var(--norday-lilac);
+}
+
+.nd-avatar[data-tint="yellow"] {
+  background: var(--norday-yellow);
+}
+
+/* Status in tekst, altijd met icoon */
+.nd-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 13px/1.35 var(--font-text);
+}
+
+.nd-status svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.nd-status[data-status="warn"] {
+  color: var(--color-warn);
+}
+
+.nd-status[data-status="ok"] {
+  color: var(--color-ok);
+}
+
+.nd-status[data-status="open"] {
+  color: var(--color-open);
+}
+
+.nd-status[data-status="muted"] {
+  color: var(--color-text-muted);
+}
+
+/* Voortgang: dunne balk, met arcering voor gepland */
+.nd-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-line-soft);
+}
+
+.nd-meter__value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--norday-dark);
+}
+
+.nd-meter__value[data-status="warn"] {
+  background: var(--norday-pink);
+}
+
+/* ---------- Formulier ---------- */
+
+.nd-label {
+  display: block;
+  margin-bottom: 6px;
+  font: 600 14px/1.35 var(--font-text);
+}
+
+.nd-field {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-04);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--norday-white);
+  box-shadow: var(--ring);
+  color: var(--color-text);
+  font: 400 15px/1.35 var(--font-text);
+}
+
+textarea.nd-field {
+  padding-block: var(--space-03);
+  resize: vertical;
+}
+
+.nd-field--search {
+  padding-left: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233d1028' stroke-opacity='.7' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+}
+
+.nd-field[aria-invalid="true"] {
+  box-shadow: var(--ring-accent);
+}
+
+.nd-error {
+  margin: 6px 0 0;
+  color: var(--color-warn);
+  font: 600 13px/1.35 var(--font-text);
+}
+
+/* ---------- Melding, leeg, toast ---------- */
+
+/* Melding: iets wat je moet weten of doen, geel */
+.nd-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03);
+  padding: var(--space-03) var(--space-04);
+  border-radius: var(--radius-md);
+  background: var(--norday-yellow);
+  color: var(--norday-dark);
+}
+
+.nd-alert__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--norday-dark);
+  color: var(--norday-yellow);
+}
+
+.nd-alert__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.nd-alert__text {
+  flex: 1;
+  min-width: 12rem;
+  margin: 0;
+}
+
+.nd-alert :focus-visible {
+  outline-color: var(--norday-dark);
+}
+
+.nd-alert .nd-button {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--norday-dark);
+  color: var(--norday-dark);
+}
+
+.nd-alert .nd-button:hover {
+  background: var(--norday-dark);
+  color: var(--norday-yellow);
+}
+
+/* Leeg: rustig, zegt wat er zou staan en wat je kunt doen */
+.nd-empty {
+  margin: 0;
+  padding: var(--space-06);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-text-muted);
+  font: var(--type-body);
+}
+
+.nd-toast {
+  position: fixed;
+  bottom: var(--space-06);
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  max-width: calc(100vw - 2 * var(--space-04));
+  padding: 10px 10px 10px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--norday-dark);
+  color: var(--norday-white);
+  font: 400 14px/1.3 var(--font-text);
+  box-shadow: var(--shadow-float);
+  transform: translateX(-50%);
+}
+
+.nd-toast[hidden] {
+  display: none;
+}
+
+.nd-toast__check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+}
+
+.nd-toast__check svg {
+  width: 14px;
+  height: 14px;
+}
+
+.nd-toast .nd-button {
+  min-height: 32px;
+  padding: 0 14px;
+  background: color-mix(in srgb, var(--norday-white) 14%, transparent);
+  font: 600 13px/1 var(--font-text);
+}
+
+.nd-toast .nd-button:hover {
+  background: color-mix(in srgb, var(--norday-white) 26%, transparent);
+}
+
+/* ---------- Uitklappen, dialoog, menu ---------- */
+
+/* Gebruik <details class="nd-disclosure"> met <summary> */
+.nd-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  width: max-content;
+  min-height: 44px;
+  padding: 0 var(--space-04) 0 var(--space-03);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.nd-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nd-disclosure > summary svg {
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg);
+  transition: transform var(--duration) var(--ease);
+}
+
+.nd-disclosure[open] > summary svg {
+  transform: none;
+}
+
+/* Gebruik <dialog class="nd-dialog"> met showModal() */
+.nd-dialog {
+  width: min(560px, calc(100vw - 2 * var(--space-04)));
+  padding: var(--space-07);
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-dialog);
+}
+
+.nd-dialog::backdrop {
+  background: var(--color-backdrop);
+}
+
+.nd-dialog[open] {
+  animation: nd-in 0.25s var(--ease);
+}
+
+@keyframes nd-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.nd-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nd-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-02);
+  margin-top: var(--space-02);
+}
+
+/* Gebruik met popover of als losse lijst */
+.nd-menu {
+  min-width: 200px;
+  margin: 0;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--norday-white);
+  color: var(--color-text);
+  box-shadow:
+    0 0 0 1px var(--color-line),
+    var(--shadow-float);
+}
+
+.nd-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-03);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: 500 14px/1 var(--font-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.nd-menu__item:hover,
+.nd-menu__item:focus-visible {
+  background: var(--color-bg);
+}
+
+.nd-menu__item[aria-checked="true"] {
+  font-weight: 700;
+}
+
+.nd-menu__divider {
+  height: 1px;
+  margin: 6px 4px;
+  border: 0;
+  background: var(--color-line-soft);
+}
+
+/* ---------- Navigatie ---------- */
+
+/* Donker zwevend paneel; actieve pagina krijgt een lila vlak */
+.nd-nav {
+  position: sticky;
+  top: var(--space-03);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-05);
+  width: 272px;
+  height: calc(100vh - 2 * var(--space-03));
+  margin: var(--space-03) 0 var(--space-03) var(--space-03);
+  padding: var(--space-06) var(--space-04) var(--space-04);
+  overflow-y: auto;
+  border-radius: var(--radius-xl);
+  background: var(--color-shell);
+  color: var(--color-on-dark);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--norday-white) 25%, transparent)
+    transparent;
+}
+
+.nd-nav :focus-visible {
+  outline-color: var(--color-focus-on-dark);
+}
+
+.nd-nav__brand {
+  padding: 2px var(--space-03) 0;
+  font: 700 30px/0.9 var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: var(--heading-letter-spacing);
+  text-decoration: none;
+}
+
+.nd-nav__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-01);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nd-nav__title {
+  margin: var(--space-02) 10px 2px;
+  font: var(--type-meta);
+  color: var(--color-on-dark-muted);
+}
+
+.nd-nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-03);
+  min-height: 42px;
+  padding: var(--space-02) 10px;
+  border-radius: 14px;
+  color: inherit;
+  font: var(--type-nav);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--duration) var(--ease);
+}
+
+.nd-nav__item:hover {
+  background: var(--color-hover-on-dark);
+}
+
+.nd-nav__item[aria-current="page"] {
+  background: var(--norday-lilac);
+  color: var(--norday-dark);
+}
+
+.nd-nav__item[aria-current="page"]:focus-visible {
+  outline-color: var(--norday-white);
+}
+
+.nd-nav__item svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.nd-nav__item .nd-badge {
+  margin-left: auto;
+}
+
+.nd-nav__item[aria-current="page"] .nd-badge {
+  background: var(--norday-white);
+}
+
+.nd-nav__foot {
+  margin-top: auto;
+  padding-top: var(--space-03);
+  border-top: 1px solid color-mix(in srgb, var(--norday-white) 12%, transparent);
+}
+
+@media (max-width: 1023px) {
+  .nd-shell {
+    display: block;
+  }
+
+  .nd-nav {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: var(--space-02);
+    border-radius: var(--radius-lg);
+  }
+
+  .nd-main {
+    padding-top: var(--space-06);
+  }
+}

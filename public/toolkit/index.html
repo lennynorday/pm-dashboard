@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Norday toolkit</title>
+    <link rel="stylesheet" href="toolkit.css" />
+    <style>
+      /* Alleen voor deze voorbeeldpagina */
+      .demo {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-03);
+        padding: var(--space-02);
+      }
+      .rule {
+        margin: var(--space-03) var(--space-02) 0;
+        max-width: 70ch;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--space-02);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .swatch {
+        padding: var(--space-02);
+        border-radius: var(--radius-md);
+        background: var(--color-raised);
+      }
+      .swatch span {
+        display: block;
+        height: 48px;
+        margin-bottom: var(--space-02);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--ring);
+      }
+      .swatch code {
+        display: block;
+        font: var(--type-meta);
+      }
+      .type-sample {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        align-items: baseline;
+        gap: var(--space-04);
+      }
+      .feed-row {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) 188px;
+        align-items: center;
+        column-gap: var(--space-05);
+        padding-right: var(--space-02);
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: var(--space-03);
+      }
+      .column-head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-02);
+        min-height: 44px;
+        padding: 0 6px 0 var(--space-04);
+      }
+      .column-head h3 {
+        margin: 0;
+        font: 600 14px/1.35 var(--font-text);
+      }
+      .column-head .nd-badge {
+        margin-left: auto;
+      }
+      .todo-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      code {
+        font:
+          400 13px/1.35 ui-monospace,
+          "SF Mono",
+          Menlo,
+          monospace;
+      }
+      @media (max-width: 640px) {
+        .feed-row {
+          grid-template-columns: 36px minmax(0, 1fr);
+        }
+        .feed-row .nd-actions {
+          grid-column: 1 / -1;
+          margin-top: var(--space-03);
+          padding: var(--space-02) 0 0;
+          border-left: 0;
+          border-top: 1px solid var(--color-line-soft);
+        }
+        .type-sample {
+          grid-template-columns: 1fr;
+          gap: var(--space-01);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol
+          id="i-home"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V21h14V9.5" />
+          <path d="M10 21v-6h4v6" />
+        </symbol>
+        <symbol
+          id="i-check"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m5 12 5 5 9-10" />
+        </symbol>
+        <symbol
+          id="i-list"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
+        </symbol>
+        <symbol
+          id="i-inbox"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 13h5l1.5 3h5L16 13h5" />
+          <path d="M5 5h14l2 8v6H3v-6z" />
+        </symbol>
+        <symbol
+          id="i-plus"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol
+          id="i-pencil"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 20h4L19 9l-4-4L4 16z" />
+        </symbol>
+        <symbol
+          id="i-alert"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M12 7v6M12 17h.01" />
+        </symbol>
+        <symbol
+          id="i-warn"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v5M12 16h.01" />
+        </symbol>
+        <symbol
+          id="i-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </symbol>
+        <symbol
+          id="i-external"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"
+          />
+        </symbol>
+        <symbol
+          id="i-clock"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </symbol>
+        <symbol
+          id="i-palette"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="8" cy="10" r="1" />
+          <circle cx="12" cy="7.5" r="1" />
+          <circle cx="16" cy="10" r="1" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="nd-shell">
+      <nav class="nd-nav" aria-label="Hoofdmenu">
+        <a class="nd-nav__brand" href="#">Toolkit</a>
+        <ul class="nd-nav__section">
+          <li>
+            <a class="nd-nav__item" href="#"
+              ><svg><use href="#i-home" /></svg>Overzicht</a
+            >
+          </li>
+          <li>
+            <a class="nd-nav__item" href="#"
+              ><svg><use href="#i-inbox" /></svg>Inbox<span class="nd-badge"
+                >4</span
+              ></a
+            >
+          </li>
+          <li>
+            <a class="nd-nav__item" href="#"
+              ><svg><use href="#i-list" /></svg>To-do's<span class="nd-badge"
+                >12</span
+              ></a
+            >
+          </li>
+          <li>
+            <a class="nd-nav__item" href="#" aria-current="page"
+              ><svg><use href="#i-palette" /></svg>Toolkit</a
+            >
+          </li>
+        </ul>
+        <ul class="nd-nav__section">
+          <li><p class="nd-nav__title">Platforms</p></li>
+          <li><a class="nd-nav__item" href="#">Kunsthal</a></li>
+          <li><a class="nd-nav__item" href="#">Museum Boijmans</a></li>
+        </ul>
+        <div class="nd-nav__foot">
+          <a class="nd-nav__item" href="#">Instellingen</a>
+        </div>
+      </nav>
+
+      <main class="nd-main">
+        <header class="nd-page-head">
+          <ol class="nd-crumbs">
+            <li><a href="/">Overzicht</a></li>
+            <li>Toolkit</li>
+          </ol>
+          <h1 class="nd-display">Toolkit</h1>
+          <a class="nd-button nd-button--quiet" href="toolkit.css"
+            >toolkit.css bekijken</a
+          >
+        </header>
+
+        <section class="nd-card" aria-labelledby="gebruik">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="gebruik">Gebruik</h2>
+          </div>
+          <div class="nd-row">
+            <p style="margin: 0 0 8px">
+              Eén stylesheet, zonder framework. Zet hem in de
+              <code>&lt;head&gt;</code> en gebruik de <code>nd-</code>-klassen:
+            </p>
+            <code
+              >&lt;link rel="stylesheet"
+              href="http://localhost:3999/toolkit/toolkit.css"&gt;</code
+            >
+          </div>
+          <ul class="rule nd-meta">
+            <li>
+              Grond, kaart, rij: drie vlakken op elkaar. Nooit een kaart in een
+              kaart.
+            </li>
+            <li>
+              Diepte met een binnenrand (<code>--ring</code>), schaduw alleen
+              voor wat zweeft: menu, toast, dialoog.
+            </li>
+            <li>
+              Alleen de vijf merkkleuren, gemengd met wit of doorzichtig.
+              Statuskleuren zijn de enige uitzondering.
+            </li>
+            <li>
+              Roze alleen voor randen, stippen en iconen, niet voor lopende
+              tekst (haalt 4,5:1 niet).
+            </li>
+            <li>Status nooit alleen met kleur: altijd tekst of icoon erbij.</li>
+            <li>
+              Koppen in Apercu, hoofdletters. De rest in Suisse. Geen andere
+              tekstmaten dan de tokens.
+            </li>
+          </ul>
+        </section>
+
+        <section class="nd-card" aria-labelledby="kleur">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="kleur">Kleur</h2>
+          </div>
+          <p class="nd-eyebrow" style="padding: 0 8px 8px">Huisstijl</p>
+          <ul class="swatches">
+            <li class="swatch">
+              <span style="background: var(--norday-dark)"></span
+              ><code>--norday-dark</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--norday-lilac)"></span
+              ><code>--norday-lilac</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--norday-yellow)"></span
+              ><code>--norday-yellow</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--norday-pink)"></span
+              ><code>--norday-pink</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--norday-white)"></span
+              ><code>--norday-white</code>
+            </li>
+          </ul>
+          <p class="nd-eyebrow" style="padding: 16px 8px 8px">Gemengd</p>
+          <ul class="swatches">
+            <li class="swatch">
+              <span style="background: var(--color-bg)"></span
+              ><code>--color-bg</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-card)"></span
+              ><code>--color-card</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-raised)"></span
+              ><code>--color-raised</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-lilac-soft)"></span
+              ><code>--color-lilac-soft</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-pink-soft)"></span
+              ><code>--color-pink-soft</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-yellow-soft)"></span
+              ><code>--color-yellow-soft</code>
+            </li>
+          </ul>
+          <p class="nd-eyebrow" style="padding: 16px 8px 8px">Uitzondering</p>
+          <ul class="swatches">
+            <li class="swatch">
+              <span style="background: var(--color-warn)"></span
+              ><code>--color-warn</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-ok)"></span
+              ><code>--color-ok</code>
+            </li>
+            <li class="swatch">
+              <span style="background: var(--color-open)"></span
+              ><code>--color-open</code>
+            </li>
+          </ul>
+        </section>
+
+        <section class="nd-card" aria-labelledby="tekst">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="tekst">Tekst</h2>
+          </div>
+          <ul class="nd-rows">
+            <li class="nd-row type-sample">
+              <code>--type-display</code
+              ><span class="nd-display">Overzicht</span>
+            </li>
+            <li class="nd-row type-sample">
+              <code>--type-title</code><span class="nd-title">Sprints</span>
+            </li>
+            <li class="nd-row type-sample">
+              <code>--type-item</code
+              ><span style="font: var(--type-item)"
+                >Budget bijna op voor Kunsthal SLA</span
+              >
+            </li>
+            <li class="nd-row type-sample">
+              <code>--type-body</code
+              ><span>Nog 6 uur over van 40, sprint eindigt vrijdag.</span>
+            </li>
+            <li class="nd-row type-sample">
+              <code>--type-meta</code
+              ><span class="nd-meta">Opgehaald om 09:42 · Orbit</span>
+            </li>
+            <li class="nd-row type-sample">
+              <code>--type-small</code><span class="nd-eyebrow">Status</span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="nd-card" aria-labelledby="knoppen">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="knoppen">Knoppen</h2>
+          </div>
+          <div class="nd-row">
+            <p class="nd-eyebrow" style="padding: 0 8px">Groot · 44px</p>
+            <div class="demo">
+              <button class="nd-button" type="button">
+                <svg><use href="#i-plus" /></svg>Nieuwe to-do
+              </button>
+              <button class="nd-button nd-button--quiet" type="button">
+                Annuleren
+              </button>
+              <button class="nd-button" type="button" disabled>
+                Verversen
+              </button>
+              <button
+                class="nd-icon-button"
+                type="button"
+                aria-label="Toevoegen"
+              >
+                <svg><use href="#i-plus" /></svg>
+              </button>
+            </div>
+            <p class="nd-eyebrow" style="padding: 12px 8px 0">Klein · 32px</p>
+            <div class="demo">
+              <button class="nd-button nd-button--small" type="button">
+                Gezien
+              </button>
+              <button
+                class="nd-button nd-button--small nd-button--quiet"
+                type="button"
+              >
+                Bewerken
+              </button>
+              <button class="nd-button nd-button--small" type="button" disabled>
+                Verversen
+              </button>
+              <button
+                class="nd-icon-button nd-icon-button--small"
+                type="button"
+                aria-label="Bewerken"
+              >
+                <svg><use href="#i-pencil" /></svg>
+              </button>
+            </div>
+            <p class="rule nd-meta">
+              Groot voor losse acties op de pagina, klein binnen rijen en
+              kaarten. Eén donkere knop per blok voor de hoofdactie. Rustig voor
+              de rest. Klein met <code>nd-button--small</code> en
+              <code>nd-icon-button--small</code>.
+            </p>
+          </div>
+        </section>
+
+        <section class="nd-card" aria-labelledby="feed">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="feed">
+              Aandacht<span class="nd-count">3</span>
+            </h2>
+            <div class="nd-filters" role="group" aria-label="Filter">
+              <button class="nd-filter" type="button" aria-pressed="true">
+                Alles
+              </button>
+              <button class="nd-filter" type="button" aria-pressed="false">
+                <span class="nd-dot" data-tint="pink-soft"></span>Budget
+              </button>
+              <button class="nd-filter" type="button" aria-pressed="false">
+                <span class="nd-dot" data-tint="lilac"></span>Support
+              </button>
+              <button class="nd-filter" type="button" aria-pressed="false">
+                <span class="nd-dot" data-tint="yellow"></span>Sprint
+              </button>
+            </div>
+          </div>
+          <ul class="nd-rows">
+            <li class="nd-row feed-row">
+              <span class="nd-avatar" data-tint="pink"
+                ><svg><use href="#i-alert" /></svg
+              ></span>
+              <div>
+                <p class="nd-meta" style="margin: 0 0 4px">
+                  Kunsthal · SLA 2026
+                </p>
+                <p class="nd-row__title">Budget bijna op</p>
+                <p class="nd-muted" style="margin: 2px 0 0">
+                  Nog 6 uur van 40, en er staat 9 uur gepland.
+                </p>
+              </div>
+              <div class="nd-actions">
+                <a class="nd-action nd-action--main" href="#"
+                  ><svg><use href="#i-external" /></svg>Open in Orbit</a
+                >
+                <button class="nd-action" type="button">
+                  <svg><use href="#i-list" /></svg>Naar to-do's
+                </button>
+                <button class="nd-action" type="button">
+                  <svg><use href="#i-check" /></svg>Negeren
+                </button>
+              </div>
+            </li>
+            <li class="nd-row feed-row">
+              <span class="nd-avatar" data-tint="yellow"
+                ><svg><use href="#i-clock" /></svg
+              ></span>
+              <div>
+                <p class="nd-meta" style="margin: 0 0 4px">
+                  Boijmans · Sprint 14
+                </p>
+                <p class="nd-row__title">Sprint is verlopen</p>
+                <p class="nd-muted" style="margin: 2px 0 0">
+                  Einddatum was gisteren, nog 3 tickets open.
+                </p>
+              </div>
+              <div class="nd-actions">
+                <a class="nd-action nd-action--main" href="#"
+                  ><svg><use href="#i-external" /></svg>Open in Jira</a
+                >
+                <button class="nd-action" type="button">
+                  <svg><use href="#i-check" /></svg>Negeren
+                </button>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="nd-card" aria-labelledby="status">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="status">Chips en status</h2>
+          </div>
+          <div class="nd-row">
+            <div class="demo">
+              <span class="nd-chip">Niet gestart</span>
+              <span class="nd-chip" data-tint="lilac">Bezig</span>
+              <span class="nd-chip" data-tint="yellow">Wacht</span>
+              <span class="nd-chip" data-tint="pink">Geblokkeerd</span>
+              <span class="nd-chip" data-tint="dark">Klaar</span>
+              <span class="nd-chip" data-tint="pink-strong">P1</span>
+              <span class="nd-chip" data-tint="yellow-soft">P3</span>
+              <span class="nd-chip" data-tint="lilac-soft">Slack</span>
+              <span class="nd-badge">7</span>
+            </div>
+            <div class="demo">
+              <span class="nd-status" data-status="warn"
+                ><svg><use href="#i-warn" /></svg>Boven offerte</span
+              >
+              <span class="nd-status" data-status="ok"
+                ><svg><use href="#i-check" /></svg>Op schema</span
+              >
+              <span class="nd-status" data-status="open"
+                ><svg><use href="#i-clock" /></svg>Wacht op klant</span
+              >
+              <span class="nd-status" data-status="muted"
+                ><svg><use href="#i-clock" /></svg>Geen uren</span
+              >
+            </div>
+            <div
+              class="demo"
+              style="display: grid; gap: 10px; max-width: 360px"
+            >
+              <div class="nd-meter" role="img" aria-label="62 procent gebruikt">
+                <div class="nd-meter__value" style="width: 62%"></div>
+              </div>
+              <div class="nd-meter" role="img" aria-label="94 procent gebruikt">
+                <div
+                  class="nd-meter__value"
+                  data-status="warn"
+                  style="width: 94%"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="nd-card" aria-labelledby="bord">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="bord">Bord</h2>
+            <div class="nd-filters" role="group" aria-label="Weergave">
+              <button class="nd-filter" type="button" aria-pressed="true">
+                Bord
+              </button>
+              <button class="nd-filter" type="button" aria-pressed="false">
+                Lijst
+              </button>
+            </div>
+          </div>
+          <div class="board">
+            <div class="nd-column" style="background: var(--color-raised)">
+              <div class="column-head">
+                <h3>Bezig</h3>
+                <span class="nd-badge">2</span
+                ><button
+                  class="nd-icon-button nd-icon-button--small"
+                  type="button"
+                  aria-label="To-do toevoegen aan Bezig"
+                >
+                  <svg><use href="#i-plus" /></svg>
+                </button>
+              </div>
+              <div
+                class="nd-row todo-card"
+                style="background: var(--color-card)"
+              >
+                <p class="nd-row__title">Offerte fase 2 nalopen</p>
+                <div class="demo" style="padding: 0">
+                  <span class="nd-chip" data-tint="pink-strong">P1</span
+                  ><span class="nd-chip" data-tint="lilac-soft">Slack</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="rule nd-meta">
+            Kolom ligt op de kaart, kaartjes erin op het rijvlak. Hier
+            omgedraaid omdat het bord zelf al op een kaart staat: zo blijven het
+            drie lagen.
+          </p>
+        </section>
+
+        <section class="nd-card" aria-labelledby="formulier">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="formulier">Formulier en melding</h2>
+          </div>
+          <div class="nd-rows">
+            <div
+              class="nd-row"
+              style="display: grid; gap: 14px; max-width: 520px"
+            >
+              <input
+                class="nd-field nd-field--search"
+                type="search"
+                placeholder="Zoeken"
+                aria-label="Zoeken"
+              />
+              <div>
+                <label class="nd-label" for="titel">Titel</label>
+                <input
+                  class="nd-field"
+                  id="titel"
+                  aria-invalid="true"
+                  aria-describedby="titel-fout"
+                />
+                <p class="nd-error" id="titel-fout">Vul een titel in.</p>
+              </div>
+            </div>
+            <div class="nd-alert" role="status">
+              <span class="nd-alert__icon"
+                ><svg><use href="#i-alert" /></svg
+              ></span>
+              <p class="nd-alert__text">
+                <strong>Orbit is niet bereikbaar.</strong>
+                <span class="nd-meta" style="color: inherit"
+                  >Je ziet de stand van 09:12.</span
+                >
+              </p>
+              <button class="nd-button nd-button--small" type="button">
+                Opnieuw
+              </button>
+            </div>
+            <p class="nd-empty">
+              Geen meldingen. Alles wat aandacht vraagt verschijnt hier.
+            </p>
+          </div>
+        </section>
+
+        <section class="nd-card" aria-labelledby="lagen">
+          <div class="nd-card__head">
+            <h2 class="nd-title" id="lagen">Uitklappen, menu, dialoog</h2>
+          </div>
+          <div class="nd-row">
+            <div class="demo">
+              <details class="nd-disclosure">
+                <summary>
+                  <svg><use href="#i-chevron" /></svg>Klaar (8)
+                </summary>
+                <p class="nd-meta">Hier staan de afgeronde to-do's.</p>
+              </details>
+              <button
+                class="nd-button nd-button--quiet"
+                type="button"
+                popovertarget="demo-menu"
+              >
+                Sorteren
+              </button>
+              <div class="nd-menu" id="demo-menu" popover role="menu">
+                <button
+                  class="nd-menu__item"
+                  role="menuitemradio"
+                  aria-checked="true"
+                  type="button"
+                >
+                  Eigen volgorde
+                </button>
+                <button
+                  class="nd-menu__item"
+                  role="menuitemradio"
+                  aria-checked="false"
+                  type="button"
+                >
+                  Prioriteit
+                </button>
+                <hr class="nd-menu__divider" />
+                <button class="nd-menu__item" role="menuitem" type="button">
+                  Klaar verbergen
+                </button>
+              </div>
+              <button
+                class="nd-button"
+                type="button"
+                onclick="document.getElementById('demo-dialog').showModal()"
+              >
+                Dialoog openen
+              </button>
+              <button
+                class="nd-button nd-button--quiet"
+                type="button"
+                onclick="toonToast()"
+              >
+                Toast tonen
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="nd-dialog" id="demo-dialog" aria-labelledby="dialog-kop">
+      <form class="nd-dialog__body" method="dialog">
+        <h2 class="nd-title" id="dialog-kop">Nieuwe to-do</h2>
+        <div>
+          <label class="nd-label" for="dialog-titel">Titel</label>
+          <input class="nd-field" id="dialog-titel" />
+        </div>
+        <div class="nd-dialog__foot">
+          <button class="nd-button nd-button--quiet" value="annuleer">
+            Annuleren
+          </button>
+          <button class="nd-button" value="ok">Toevoegen</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="nd-toast" id="demo-toast" role="status" hidden>
+      <span class="nd-toast__check"
+        ><svg><use href="#i-check" /></svg
+      ></span>
+      Naar je to-do's gezet
+      <button
+        class="nd-button"
+        type="button"
+        onclick="this.parentElement.hidden = true"
+      >
+        Ongedaan maken
+      </button>
+    </div>
+
+    <script>
+      // Alleen voor de voorbeelden: wissel en filters, toast.
+      document.querySelectorAll("[aria-pressed]").forEach((knop) =>
+        knop.addEventListener("click", () => {
+          knop.parentElement
+            .querySelectorAll("[aria-pressed]")
+            .forEach((ander) =>
+              ander.setAttribute("aria-pressed", String(ander === knop)),
+            );
+        }),
+      );
+      function toonToast() {
+        const toast = document.getElementById("demo-toast");
+        toast.hidden = false;
+        setTimeout(() => (toast.hidden = true), 4000);
+      }
+    </script>
+  </body>
+</html>
