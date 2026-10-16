@@ -7,14 +7,14 @@ import {
   slaStatus,
 } from "./budgetsignaal.ts";
 
-test("regelStatus: te veel gepland, niet ingepland of vrij", () => {
+test("regelStatus: te veel gepland, ongepland of vrij", () => {
   assert.deepStrictEqual(regelStatus(600, 300, 400), {
     soort: "rood",
     icoon: "alert",
     tekst: "1,7u te veel gepland",
   });
   assert.strictEqual(regelStatus(600, 300, 302).tekst, "0u vrij");
-  assert.strictEqual(regelStatus(600, 100, 0).tekst, "8,3u niet ingepland");
+  assert.strictEqual(regelStatus(600, 100, 0).tekst, "8,3u ongepland");
   assert.strictEqual(regelStatus(600, 100, 0).soort, "open");
   assert.deepStrictEqual(regelStatus(600, 300, 270), {
     soort: "ok",

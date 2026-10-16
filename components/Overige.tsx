@@ -5,8 +5,7 @@ import { dagLabel, somRegels } from "@/lib/sprint";
 import { Budgetregel } from "./Budgetregel";
 import { OrbitLink } from "./OrbitLink";
 import styles from "./Sectie.module.css";
-import eigen from "./Sprints.module.css";
-import { Regel, UrenStand } from "./Sprints";
+import { projectHref, Regel, UrenStand } from "./Sprints";
 import { Uitklapper } from "./Uitklapper";
 
 function Overig({
@@ -18,6 +17,7 @@ function Overig({
     return (
       <Uitklapper
         titel={project.naam}
+        href={projectHref(platform, project)}
         onder={<span className={styles.meta}>{platform.klant.naam}</span>}
         rechts={
           <span className={styles.melding}>
@@ -49,15 +49,14 @@ function Overig({
   return (
     <Uitklapper
       titel={project.naam}
+      href={projectHref(platform, project)}
       onder={
-        <>
-          <span className={styles.meta}>
-            {platform.klant.naam}
-            {laatst && ` · laatst geschreven ${dagLabel(laatst)}`}
-          </span>
-          <UrenStand mensen={mensen} />
-        </>
+        <span className={styles.meta}>
+          {platform.klant.naam}
+          {laatst && ` · laatst geschreven ${dagLabel(laatst)}`}
+        </span>
       }
+      status={<UrenStand mensen={mensen} />}
       rechts={
         <Budgetregel
           budget={budgetSom}
@@ -68,25 +67,25 @@ function Overig({
         />
       }
     >
-      <div className={styles.uitklap}>
-        {mappen.map(({ map, regels }) => (
-          <Fragment key={map.id || map.naam}>
-            {mappen.length > 1 && <h3 className={eigen.blokKop}>{map.naam}</h3>}
-            <ul className={styles.regels}>
-              {regels.map((regel) => (
-                <Regel
-                  key={regel.id}
-                  regel={regel}
-                  mensen={mensen}
-                  periode="in 4 weken"
-                />
-              ))}
-            </ul>
-          </Fragment>
-        ))}
-        <div className={styles.voet}>
-          <OrbitLink project={project} />
-        </div>
+      {mappen.map(({ map, regels }) => (
+        <Fragment key={map.id || map.naam}>
+          {mappen.length > 1 && (
+            <h3 className={`${styles.label} ${styles.groepKop}`}>{map.naam}</h3>
+          )}
+          <ul className={styles.regels}>
+            {regels.map((regel) => (
+              <Regel
+                key={regel.id}
+                regel={regel}
+                mensen={mensen}
+                periode="in 4 weken"
+              />
+            ))}
+          </ul>
+        </Fragment>
+      ))}
+      <div className={styles.voet}>
+        <OrbitLink project={project} />
       </div>
     </Uitklapper>
   );

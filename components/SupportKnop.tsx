@@ -5,7 +5,7 @@ import { ExternalIcon } from "./icons";
 import styles from "./SupportKnop.module.css";
 import { VerbindLink } from "./VerbindLink";
 
-/** Lila knop naar de open supporttickets, of waarom die er niet is. */
+/** Actie naar de open supporttickets, of waarom die er niet is. */
 export function SupportKnop({
   platform,
   support,

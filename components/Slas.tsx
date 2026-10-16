@@ -10,6 +10,7 @@ import type { ProjectBudgetResult, Schrijfregel } from "@/lib/orbit/budget";
 import { Budgetregel } from "./Budgetregel";
 import { AlertIcon, ExternalIcon } from "./icons";
 import { OrbitLink } from "./OrbitLink";
+import { projectHref } from "./Sprints";
 import { SupportKnop } from "./SupportKnop";
 import styles from "./Sectie.module.css";
 import { Uitklapper } from "./Uitklapper";
@@ -45,6 +46,7 @@ function Regel({ regel }: { regel: Schrijfregel }) {
   return (
     <li className={styles.sub} data-op={op}>
       <span className={styles.regelNaam}>{regel.naam}</span>
+      <span className={styles.meldingen} />
       <Budgetregel
         budget={beschikbaar}
         geschreven={geschreven}
@@ -78,22 +80,23 @@ function Sla({
 }) {
   const start = budget.status === "ok" ? budget.data.start : null;
   const onder = (
-    <>
-      <span className={styles.meta}>
-        {platform.klant.naam} ·{" "}
-        {/* Vaste spaties: "1 jan – 31 dec" breekt niet af. */}
-        {looptijd(start, vandaag).replaceAll(" ", "\u00a0")}
-      </span>
-      <SupportKnop platform={platform} support={support} />
-    </>
+    <span className={styles.meta}>
+      {platform.klant.naam} ·{" "}
+      {/* Vaste spaties: "1 jan – 31 dec" breekt niet af. */}
+      {looptijd(start, vandaag).replaceAll(" ", "\u00a0")}
+    </span>
   );
-  const titel = project.naam;
+  const kop = {
+    titel: project.naam,
+    href: projectHref(platform, project),
+    onder,
+    status: <SupportKnop platform={platform} support={support} />,
+  };
 
   if (budget.status !== "ok") {
     return (
       <Uitklapper
-        titel={titel}
-        onder={onder}
+        {...kop}
         rechts={
           <span className={styles.melding}>
             {BUDGET_MELDING[budget.status]}
@@ -126,8 +129,7 @@ function Sla({
   if (regels.length === 0) {
     return (
       <Uitklapper
-        titel={titel}
-        onder={onder}
+        {...kop}
         rechts={
           <span className={styles.leeg}>
             <span className={styles.leegTitel}>
@@ -140,13 +142,11 @@ function Sla({
           </span>
         }
       >
-        <div className={styles.uitklap}>
-          <p className={styles.leegUitleg}>
-            Het dashboard zoekt de pot in de Orbit-map met &quot;change&quot; in
-            de naam. Dit project heeft die niet.
-          </p>
-          {voet}
-        </div>
+        <p className={styles.leegUitleg}>
+          Het dashboard zoekt de pot in de Orbit-map met &quot;change&quot; in
+          de naam. Dit project heeft die niet.
+        </p>
+        {voet}
       </Uitklapper>
     );
   }
@@ -158,8 +158,7 @@ function Sla({
   const geschrevenSom = som("geschreven");
   return (
     <Uitklapper
-      titel={titel}
-      onder={onder}
+      {...kop}
       rechts={
         <Budgetregel
           budget={budgetSom}
@@ -174,14 +173,12 @@ function Sla({
         />
       }
     >
-      <div className={styles.uitklap}>
-        <ul className={styles.regels}>
-          {regels.map((regel) => (
-            <Regel key={regel.id} regel={regel} />
-          ))}
-        </ul>
-        {voet}
-      </div>
+      <ul className={styles.regels}>
+        {regels.map((regel) => (
+          <Regel key={regel.id} regel={regel} />
+        ))}
+      </ul>
+      {voet}
     </Uitklapper>
   );
 }
