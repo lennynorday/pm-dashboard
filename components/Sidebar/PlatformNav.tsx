@@ -10,12 +10,12 @@ type Props = {
 /** Elk platform als gelijkwaardig item; de klant klein eronder als die anders heet. */
 export function PlatformNav({ platforms, currentPlatform }: Props) {
   return (
-    <ul className={styles.list}>
+    <ul className="nd-nav__section">
       {platforms.map((platform) => (
         <li key={platform.slug}>
           <NextLink
             href={`/platforms/${platform.slug}`}
-            className={styles.item}
+            className={`nd-nav__item ${styles.item}`}
             aria-current={
               platform.slug === currentPlatform ? "page" : undefined
             }
