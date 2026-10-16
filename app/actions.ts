@@ -79,11 +79,18 @@ export async function showProjectAction(formData: FormData): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-export async function negeerMeldingAction(formData: FormData): Promise<void> {
+export async function negeerMeldingAction(id: string): Promise<void> {
   const user = await currentUser();
-  const id = formData.get("id");
   if (!user || typeof id !== "string") return;
   negeer(user.email, id);
+  revalidatePath("/");
+}
+
+/** Ongedaan maken van negeren: de melding staat weer in Mijn feed. */
+export async function herstelMeldingAction(id: string): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof id !== "string") return;
+  herstel(user.email, id);
   revalidatePath("/");
 }
 

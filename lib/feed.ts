@@ -58,7 +58,7 @@ function budgetItems({ platform, projecten }: FeedBron): FeedItem[] {
     const basis = {
       ...waar(platform),
       detail: `${formatUren(geschreven)} van ${formatUren(minuten)} uur ${soort} (${percentage}%)`,
-      url: `#project-${project.number}`,
+      url: `/platforms/${platform.slug}#project-${project.number}`,
     };
     if (percentage > 100) {
       return [
