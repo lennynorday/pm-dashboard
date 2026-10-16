@@ -4,6 +4,7 @@ import {
   StreamableHTTPError,
 } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ORBIT_MCP_URL } from "./config";
+import { DEMO } from "@/lib/demo";
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
 import { refreshToken } from "./oauth";
 
@@ -74,6 +75,7 @@ export async function callOrbitTool(
   args: Record<string, unknown>,
   wachtBijPauze = false,
 ): Promise<OrbitResult> {
+  if (DEMO) return { status: "fout", message: "Orbit is uit in de demo." };
   for (let poging = 1; ; poging++) {
     await wachtOpBeurt(wachtBijPauze);
     const gepauzeerd = Date.now() < pauzeTot;

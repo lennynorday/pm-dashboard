@@ -1,4 +1,5 @@
 import { bewaar, lees, vers } from "./db";
+import { DEMO, demoGegevens } from "./demo";
 import type { EigenLink, LinkUrls } from "./links";
 import { fetchTabel, saveKoppelingRijen, savePlatformRij } from "./superhuman";
 
@@ -68,6 +69,7 @@ function melding(error: unknown): string {
 
 /** Uit Superhuman, met een cache van een dag. */
 export async function readAccountGegevens(): Promise<GegevensResult> {
+  if (DEMO) return { gegevens: demoGegevens(), fout: null };
   const hit = lees<AlleAccountGegevens>(SLEUTEL);
   if (hit && vers(hit.opgehaald, CACHE_MS)) {
     return { gegevens: hit.waarde, fout: null };

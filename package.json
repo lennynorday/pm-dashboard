@@ -5,6 +5,7 @@
   "description": "PM-dashboard van Norday",
   "scripts": {
     "dev": "next dev",
+    "demo": "DEMO=1 next dev",
     "build": "next build",
     "start": "next start",
     "serve": "PORT=3999 next start -H localhost",

@@ -1,4 +1,5 @@
 import { decrypt, encrypt } from "./crypto";
+import { DEMO } from "./demo";
 import { database } from "./db";
 
 /** De bronnen waarmee een gebruiker zijn eigen account verbindt. */
@@ -77,6 +78,7 @@ export function saveKoppeling(
 
 /** Of de gebruiker deze bron heeft verbonden; zegt niets over of het token nog werkt. */
 export function isVerbonden(email: string, bron: Bron): boolean {
+  if (DEMO) return true;
   return parseStoredToken(readKoppeling(email, bron)) !== null;
 }
 

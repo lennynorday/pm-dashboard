@@ -16,6 +16,7 @@ import {
   venster,
   wijsToe,
   type Bereik,
+  type Bijregel,
   type Mensen,
   type Planregel,
   type Reservering,
@@ -23,6 +24,13 @@ import {
   type Sprint,
   type Tijdregel,
 } from "@/lib/sprint";
+import {
+  DEMO,
+  demoPlanning,
+  demoReserveringen,
+  demoTimesheet,
+  demoUren,
+} from "@/lib/demo";
 import { opAchtergrond } from "./achtergrond";
 import type { ProjectBudgetResult } from "./budget";
 import { callOrbitTool } from "./client";
@@ -70,7 +78,12 @@ function viaCache<T>(
 const PLANNING_DAGEN = 90;
 
 // ponytail: Orbit geeft maximaal 100 regels per aanroep; een project met meer planning in dit venster wordt afgekapt (de latere dagen vallen af).
-const planning = (email: string, number: string, vandaag: string) => {
+const planning = (
+  email: string,
+  number: string,
+  vandaag: string,
+): Cachet<Planregel[]> => {
+  if (DEMO) return { status: "ok", data: demoPlanning(number) };
   const van = venster(vandaag).van;
   return viaCache(
     email,
@@ -87,19 +100,25 @@ const planning = (email: string, number: string, vandaag: string) => {
 };
 
 // ponytail: ook maximaal 100 regels per aanroep; een project met meer reserveringen mist de latere.
-const reserveringen = (email: string, number: string, vandaag: string) =>
-  viaCache(
-    email,
-    `reserveringen:v1:${email}:${number}:${venster(vandaag).van}`,
-    "ListReservations",
-    {
-      projectId: number,
-      user: "*",
-      dateFrom: venster(vandaag).van,
-      dateTo: dagPlus(vandaag, 365),
-    },
-    parseReserveringen,
-  );
+const reserveringen = (
+  email: string,
+  number: string,
+  vandaag: string,
+): Cachet<Reservering[]> =>
+  DEMO
+    ? { status: "ok", data: demoReserveringen(number) }
+    : viaCache(
+        email,
+        `reserveringen:v1:${email}:${number}:${venster(vandaag).van}`,
+        "ListReservations",
+        {
+          projectId: number,
+          user: "*",
+          dateFrom: venster(vandaag).van,
+          dateTo: dagPlus(vandaag, 365),
+        },
+        parseReserveringen,
+      );
 
 /** Het budget met het open deel van de reserveringen bij gepland. */
 const metOpenReserveringen = (
@@ -133,29 +152,38 @@ export function verrijkBudget(
     : budget;
 }
 
-const uren = (email: string, number: string, van: string, tot: string) =>
-  viaCache(
-    email,
-    `uren:v1:${email}:${number}:${van}:${tot}`,
-    "ListTimeEntries",
-    {
-      projectId: number,
-      user: "*",
-      kind: "logged",
-      dateFrom: van,
-      dateTo: tot,
-    },
-    parseTijd,
-  );
+const uren = (
+  email: string,
+  number: string,
+  van: string,
+  tot: string,
+): Cachet<Tijdregel[]> =>
+  DEMO
+    ? { status: "ok", data: demoUren(number, van) }
+    : viaCache(
+        email,
+        `uren:v1:${email}:${number}:${van}:${tot}`,
+        "ListTimeEntries",
+        {
+          projectId: number,
+          user: "*",
+          kind: "logged",
+          dateFrom: van,
+          dateTo: tot,
+        },
+        parseTijd,
+      );
 
-const timesheet = (email: string, van: string) =>
-  viaCache(
-    email,
-    `timesheet:v1:${email}:${van}`,
-    "GetTimesheetStatus",
-    { dateFrom: van, days: 14 },
-    (tekst) => parseBij(tekst, van),
-  );
+const timesheet = (email: string, van: string): Cachet<Bijregel[]> =>
+  DEMO
+    ? { status: "ok", data: demoTimesheet() }
+    : viaCache(
+        email,
+        `timesheet:v1:${email}:${van}`,
+        "GetTimesheetStatus",
+        { dateFrom: van, days: 14 },
+        (tekst) => parseBij(tekst, van),
+      );
 
 export type SprintBron = {
   platform: Platform;

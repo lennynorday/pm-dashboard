@@ -1,4 +1,5 @@
 import { database } from "@/lib/db";
+import { DEMO } from "@/lib/demo";
 import { bronAan, leesUitsluitingen } from "@/lib/inbox-bronnen";
 import { isUitgesloten } from "@/lib/taak";
 import { deleteKoppeling } from "@/lib/koppelingen";
@@ -60,7 +61,7 @@ const haalThread = (email: string, id: string) =>
 export async function synchroniseerGmail(
   email: string,
 ): Promise<GmailProbleem> {
-  if (!bronAan(email, "gmail")) return null;
+  if (DEMO || !bronAan(email, "gmail")) return null;
   try {
     const ster = await zoekThreads(email, "is:starred");
     // Pas na een gelukte aanroep, anders telt de start van voor de toegang.

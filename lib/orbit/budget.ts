@@ -1,4 +1,5 @@
 import { bewaar, database, lees, vers } from "@/lib/db";
+import { DEMO, demoBudget } from "@/lib/demo";
 import { opAchtergrond } from "./achtergrond";
 import { callOrbitTool } from "./client";
 import { parseProjectUren, type BudgetMap } from "./budget-tekst";
@@ -95,6 +96,12 @@ export function fetchProjectBudget(
   email: string,
   number: string,
 ): ProjectBudgetResult {
+  if (DEMO) {
+    const data = demoBudget(number);
+    return data
+      ? { status: "ok", data }
+      : { status: "fout", message: "Onbekend demoproject." };
+  }
   const sleutel = `budget:v4:${email}:${number}`;
   const hit = lees<ProjectBudget>(sleutel);
   if (hit && vers(hit.opgehaald, CACHE_MS)) {

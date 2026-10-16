@@ -1,3 +1,4 @@
+import { DEMO } from "@/lib/demo";
 import { verwijderBeantwoorde, voegSlackToe } from "@/lib/todos";
 import { SlackNietVerbondenError } from "./api";
 import { fetchSlackInbox } from "./inbox";
@@ -13,6 +14,7 @@ export type SlackProbleem = { verbinden: true } | { fout: string } | null;
 export async function synchroniseerSlack(
   email: string,
 ): Promise<SlackProbleem> {
+  if (DEMO) return null;
   const resultaten = await Promise.allSettled([
     fetchSlackTodos(email).then((todos) => voegSlackToe(email, todos)),
     fetchSlackInbox(email).then(({ items, beantwoord }) => {
