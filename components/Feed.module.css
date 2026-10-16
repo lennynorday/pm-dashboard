@@ -119,10 +119,10 @@
 
 .item {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr) 188px;
   align-items: center;
-  column-gap: var(--space-04);
-  padding: 14px 14px 14px var(--space-04);
+  column-gap: var(--space-05);
+  padding: 14px var(--space-02) 14px var(--space-05);
   border-radius: var(--radius-md);
   background: var(--color-raised);
   max-height: 400px;
@@ -146,39 +146,66 @@
   pointer-events: none;
 }
 
+/* Zelfde rustige actielijst als in Inbox. */
 .acties {
+  align-self: stretch;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-02);
+  flex-direction: column;
+  justify-content: center;
+  padding-left: var(--space-04);
+  border-left: 1px solid var(--color-line-soft);
 }
 
-.naarTodo {
-  display: inline-flex;
+.actie {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 16px;
+  gap: var(--space-02);
+  height: 30px;
+  padding: 0 var(--space-02);
+  margin-left: calc(-1 * var(--space-02));
   border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--norday-dark);
-  color: var(--norday-white);
-  font: 500 14px/1 var(--font-text);
+  border-radius: var(--space-02);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  text-align: left;
+  text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s var(--ease);
 }
 
-.naarTodo:hover {
-  background: #5a1a3b;
+.actie:hover {
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.actie:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.hoofd {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ExternalLink zet het icoon achter de tekst; hier staat het ervoor, zoals bij de andere acties. */
+.actie svg:last-of-type {
+  order: -1;
+}
+
+.actie svg,
+.actieIcoon {
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 
 .icoon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
 }
 
@@ -212,47 +239,21 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-01) 10px;
-  margin-bottom: 2px;
+  margin: 0 0 var(--space-01);
   font: 400 13px/1.35 var(--font-text);
-}
-
-.meta a,
-.klant {
   color: var(--color-text-muted);
 }
 
 .itemTitel {
+  margin: 0;
   font: 600 16px/1.3 var(--font-text);
-  text-decoration: none;
   text-wrap: balance;
 }
 
-.itemTitel:hover {
-  text-decoration: underline;
-}
-
 .detail {
-  font: 400 13px/1.35 var(--font-text);
+  margin: 2px 0 0;
+  font: 400 15px/1.4 var(--font-text);
   color: var(--color-text-muted);
-}
-
-.negeer {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-  color: var(--color-text);
-  cursor: pointer;
-  transition: background 0.2s var(--ease);
-}
-
-.negeer:hover {
-  background: var(--norday-dark);
-  color: var(--norday-white);
 }
 
 .herstel {
@@ -279,14 +280,20 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .item {
-    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-columns: 36px minmax(0, 1fr);
     column-gap: var(--space-03);
   }
 
-  .icoon {
-    width: 36px;
-    height: 36px;
+  .acties {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 var(--space-04);
+    margin-top: var(--space-03);
+    padding: var(--space-02) 0 0 var(--space-02);
+    border-top: 1px solid var(--color-line-soft);
+    border-left: 0;
   }
 }

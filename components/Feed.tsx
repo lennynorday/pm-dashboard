@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import NextLink from "next/link";
 import {
   feedNaarTodoAction,
   feedTodoOngedaanAction,
+  herstelMeldingAction,
   herstelMeldingenAction,
   negeerMeldingAction,
 } from "@/app/actions";
 import type { FeedItem, FeedSoort } from "@/lib/feed";
 import type { Prio } from "@/lib/taak";
+import { ExternalLink } from "./ExternalLink";
+import { CloseIcon, LinkIcon, PlusIcon } from "./icons";
 import { TodoDialoog } from "./TodoDialoog";
 import { useToast } from "./Toast";
 import styles from "./Feed.module.css";
@@ -57,6 +61,15 @@ const FILTERS: { label: string; groep: Groep | null }[] = [
 
 type Props = { items: FeedItem[]; genegeerd: number };
 
+/** Zeg waar de link heen gaat, zoals bij de to-do's. */
+function openTekst(url: string): string {
+  if (url.endsWith("/koppelen")) return "Koppelen";
+  if (url.includes("#project-")) return "Naar project";
+  if (/atlassian\.net/.test(url)) return "Openen in Jira";
+  if (/teamleader\.eu/.test(url)) return "Openen in Orbit";
+  return "Openen";
+}
+
 /** Mijn feed: alles wat aandacht vraagt, te filteren en te negeren. */
 export function Feed({ items, genegeerd }: Props) {
   const [filter, setFilter] = useState<Groep | null>(null);
@@ -101,6 +114,17 @@ export function Feed({ items, genegeerd }: Props) {
       ongedaan: () => {
         zetWeg(item.id, false);
         feedTodoOngedaanAction(item.id);
+      },
+    });
+  }
+
+  function negeer(item: FeedItem) {
+    zetWeg(item.id, true);
+    negeerMeldingAction(item.id).catch(() => zetWeg(item.id, false));
+    toon("Genegeerd", {
+      ongedaan: () => {
+        zetWeg(item.id, false);
+        herstelMeldingAction(item.id);
       },
     });
   }
@@ -172,8 +196,8 @@ export function Feed({ items, genegeerd }: Props) {
                     aria-hidden="true"
                   >
                     <svg
-                      width="20"
-                      height="20"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -184,75 +208,46 @@ export function Feed({ items, genegeerd }: Props) {
                       <path d={icoon} />
                     </svg>
                   </span>
-                  <span className={styles.tekst}>
-                    <span className={styles.meta}>
+                  <div className={styles.tekst}>
+                    <p className={styles.meta}>
                       <span className="visually-hidden">{label}: </span>
-                      <a href={`/platforms/${item.platformSlug}`}>
-                        {item.platformNaam}
-                      </a>
-                      {item.klantNaam && (
-                        <span className={styles.klant}>· {item.klantNaam}</span>
-                      )}
-                    </span>
-                    <a
-                      href={item.url}
-                      className={styles.itemTitel}
-                      target={extern ? "_blank" : undefined}
-                      rel={extern ? "noopener noreferrer" : undefined}
-                    >
-                      {item.titel}
-                      {extern && (
-                        <span className="visually-hidden">
-                          {" "}
-                          (opent in nieuw tabblad)
-                        </span>
-                      )}
-                    </a>
-                    <span className={styles.detail}>{item.detail}</span>
-                  </span>
+                      <span>{item.platformNaam}</span>
+                      {item.klantNaam && <span>{item.klantNaam}</span>}
+                    </p>
+                    <p className={styles.itemTitel}>{item.titel}</p>
+                    <p className={styles.detail}>{item.detail}</p>
+                  </div>
                   <div className={styles.acties}>
                     <button
                       type="button"
-                      className={styles.naarTodo}
+                      className={`${styles.actie} ${styles.hoofd}`}
                       onClick={() => setDialoog(item)}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.4"
-                        strokeLinecap="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
+                      <PlusIcon className={styles.actieIcoon} />
                       Naar to-do
                       <span className="visually-hidden">: {item.titel}</span>
                     </button>
-                    <form action={negeerMeldingAction}>
-                      <input type="hidden" name="id" value={item.id} />
-                      <button
-                        type="submit"
-                        className={styles.negeer}
-                        aria-label={`Negeren: ${item.titel}`}
-                        title="Negeren"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                          aria-hidden="true"
-                        >
-                          <path d="M6 6l12 12M18 6L6 18" />
-                        </svg>
-                      </button>
-                    </form>
+                    {extern ? (
+                      <ExternalLink href={item.url} className={styles.actie}>
+                        {openTekst(item.url)}
+                        <span className="visually-hidden">: {item.titel}</span>
+                      </ExternalLink>
+                    ) : (
+                      <NextLink href={item.url} className={styles.actie}>
+                        <LinkIcon className={styles.actieIcoon} />
+                        {openTekst(item.url)}
+                        <span className="visually-hidden">: {item.titel}</span>
+                      </NextLink>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.actie}
+                      onClick={() => negeer(item)}
+                    >
+                      <CloseIcon className={styles.actieIcoon} />
+                      Negeren
+                      <span className="visually-hidden">: {item.titel}</span>
+                    </button>
                   </div>
                 </li>
               );
