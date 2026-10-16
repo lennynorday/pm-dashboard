@@ -17,8 +17,8 @@
 
 .titel {
   display: flex;
-  align-items: center;
-  gap: var(--space-03);
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
   font: 700 28px/0.95 var(--font-heading);
   text-transform: uppercase;
@@ -26,53 +26,52 @@
 }
 
 .aantal {
-  display: grid;
-  place-items: center;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--norday-lilac);
-  font: 700 20px/1 var(--font-heading);
+  font: 400 15px/1 var(--font-text);
+  color: var(--color-text-muted);
   letter-spacing: 0;
+  text-transform: none;
 }
 
+/* Rustige knoppen zoals de acties in Inbox; de actieve krijgt het rijvlak. */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-01);
-  padding: var(--space-01);
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
+  gap: 2px;
 }
 
 .filter {
   display: inline-flex;
   align-items: center;
   gap: var(--space-02);
-  min-height: 36px;
-  padding: 0 14px;
+  height: 32px;
+  padding: 0 10px;
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--space-02);
   background: none;
-  color: var(--color-text);
-  font: 500 14px/1 var(--font-text);
+  color: var(--color-text-muted);
+  font: 400 14px/1 var(--font-text);
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s var(--ease);
 }
 
-.filter:hover {
-  background: var(--color-bg);
+.filter:hover,
+.filter[aria-pressed="true"] {
+  background: var(--color-raised);
+  color: var(--color-text);
 }
 
 .filter[aria-pressed="true"] {
-  background: var(--norday-dark);
-  color: var(--norday-white);
+  font-weight: 600;
+}
+
+.filter:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .punt {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 
@@ -89,8 +88,7 @@
 }
 
 .filterAantal {
-  font-weight: 600;
-  opacity: 0.75;
+  color: var(--color-text-muted);
 }
 
 .leeg {
