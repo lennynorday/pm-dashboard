@@ -640,10 +640,7 @@ export function Todos({
         <div className={styles.kop}>
           <div className={styles.kopRij}>
             {prioKnop(taak)}
-            <span className={styles.knoppen}>
-              {claudeKnop(taak)}
-              {meer(taak)}
-            </span>
+            <span className={styles.knoppen}>{claudeKnop(taak)}</span>
           </div>
           <span className="nd-row__title">
             {taak.titel}
