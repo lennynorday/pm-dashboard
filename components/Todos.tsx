@@ -15,6 +15,7 @@ import {
   hernoemTaakAction,
   nieuweTaakAction,
   opnieuwUitzettenAction,
+  pasAanAction,
   verplaatsTaakAction,
   wijsAfAction,
   zetGezienAction,
@@ -184,7 +185,11 @@ export function Todos({
       vorigeStand.current.set(opdracht.id, opdracht.status);
       if (vorige !== "bezig") continue;
       const titel = taken.find((t) => t.id === opdracht.taakId)?.titel ?? "";
-      if (opdracht.status === "voorstel") {
+      if (opdracht.status === "voorstel" && opdracht.fout) {
+        toon(`Nieuwe versie mislukt: ${titel}`, {
+          knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
+        });
+      } else if (opdracht.status === "voorstel") {
         toon(`Voorstel klaar: ${titel}`, {
           knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
         });
@@ -311,6 +316,12 @@ export function Todos({
           }
         : {},
     );
+  }
+
+  function pasAan(opdracht: Opdracht, feedback: string) {
+    startTransition(() => pasAanAction(opdracht.id, feedback));
+    focusKaart(opdracht.taakId);
+    toon("Claude maakt een nieuwe versie");
   }
 
   function klaar(opdracht: Opdracht, melding: string) {
@@ -507,10 +518,29 @@ export function Todos({
     if (opdracht.status === "voorstel") {
       return (
         <div className={styles.stand}>
-          <span className="nd-status" data-status="open">
-            <SparkleIcon />
-            Voorstel klaar
-          </span>
+          {opdracht.fout ? (
+            <span className="nd-status" data-status="warn">
+              <AlertIcon />
+              Nieuwe versie mislukt: {opdracht.fout}
+            </span>
+          ) : (
+            <span className="nd-status" data-status="open">
+              <SparkleIcon />
+              Voorstel klaar
+            </span>
+          )}
+          {opdracht.fout && (
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              onClick={() =>
+                startTransition(() => opnieuwUitzettenAction(opdracht.id))
+              }
+            >
+              Opnieuw proberen
+              <span className="visually-hidden">: {taak.titel}</span>
+            </button>
+          )}
           <button
             type="button"
             className="nd-button nd-button--small"
@@ -553,11 +583,7 @@ export function Todos({
       <div className={styles.stand}>
         <span className="nd-status" data-status="ok">
           <CheckIcon />
-          {gmail
-            ? "Concept staat in Gmail"
-            : opdracht.soort === "slack-concept"
-              ? "Tekst gekopieerd"
-              : "Akkoord gegeven"}
+          {gmail ? "Concept staat in Gmail" : "Akkoord gegeven"}
         </span>
         {opdracht.conceptUrl && (
           <ExternalLink href={opdracht.conceptUrl} className="nd-meta">
@@ -977,17 +1003,20 @@ export function Todos({
           onBevestig={(instructie) => zetUit(uitzet, instructie)}
         />
       )}
-      {bekijkOpdracht?.voorstel && bekijkTaak && (
-        <VoorstelDialoog
-          titel={bekijkTaak.titel}
-          opdracht={bekijkOpdracht}
-          bron={dialoogBron(bekijkTaak)}
-          onSluit={() => setBekijk(null)}
-          onAkkoord={() => akkoordAction(bekijkOpdracht.id)}
-          onKlaar={(melding) => klaar(bekijkOpdracht, melding)}
-          onWijsAf={() => wijsAf(bekijkOpdracht)}
-        />
-      )}
+      {(bekijkOpdracht?.status === "voorstel" ||
+        bekijkOpdracht?.status === "akkoord") &&
+        bekijkTaak && (
+          <VoorstelDialoog
+            titel={bekijkTaak.titel}
+            opdracht={bekijkOpdracht}
+            bron={dialoogBron(bekijkTaak)}
+            onSluit={() => setBekijk(null)}
+            onAkkoord={() => akkoordAction(bekijkOpdracht.id)}
+            onKlaar={(melding) => klaar(bekijkOpdracht, melding)}
+            onWijsAf={() => wijsAf(bekijkOpdracht)}
+            onPasAan={(feedback) => pasAan(bekijkOpdracht, feedback)}
+          />
+        )}
       {melding}
     </>
   );

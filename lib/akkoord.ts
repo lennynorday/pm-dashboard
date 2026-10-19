@@ -25,7 +25,8 @@ export async function geefAkkoord(
   opdrachtId: number,
 ): Promise<AkkoordUitkomst> {
   const opdracht = leesOpdrachten(email).find((o) => o.id === opdrachtId);
-  if (opdracht?.status !== "voorstel" || !opdracht.voorstel) {
+  const nieuwste = opdracht?.versies.at(-1);
+  if (opdracht?.status !== "voorstel" || !nieuwste) {
     return { uitkomst: "fout", fout: "Dit voorstel staat niet meer open" };
   }
   if (opdracht.soort !== "gmail-concept") {
@@ -33,7 +34,7 @@ export async function geefAkkoord(
     return { uitkomst: "akkoord", conceptUrl: null };
   }
 
-  const { ontvanger, tekst } = opdracht.voorstel;
+  const { ontvanger, tekst } = nieuwste;
   const gevonden = leesTaak(email, opdracht.taakId);
   if (!ontvanger) {
     return { uitkomst: "fout", fout: "Er is geen ontvanger bekend" };

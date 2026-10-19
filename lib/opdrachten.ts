@@ -5,6 +5,7 @@ import {
   type Opdracht,
   type OpdrachtStatus,
   type Soort,
+  type Versie,
   type Voorstel,
 } from "./claude/voorstel";
 import { TIMEOUT_MS } from "./claude/run";
@@ -16,7 +17,10 @@ function tekst(waarde: unknown): string | null {
   return typeof waarde === "string" ? waarde : null;
 }
 
-function parseOpdracht(row: Record<string, unknown>): Opdracht | null {
+function parseOpdracht(
+  row: Record<string, unknown>,
+  versies: Versie[],
+): Opdracht | null {
   const status = parseOpdrachtStatus(row.status);
   const soort = parseSoort(row.soort);
   if (
@@ -34,42 +38,57 @@ function parseOpdracht(row: Record<string, unknown>): Opdracht | null {
     soort,
     fout: tekst(row.fout),
     conceptUrl: tekst(row.concept_url),
-    voorstel:
-      typeof row.tekst === "string"
-        ? {
-            soort,
-            ontvanger: tekst(row.ontvanger),
-            onderwerp: tekst(row.onderwerp),
-            tekst: row.tekst,
-          }
-        : null,
+    versies,
   };
 }
 
 /**
- * Per taak de nieuwste opdracht die niet is afgewezen, met de nieuwste versie.
+ * Per taak de nieuwste opdracht die niet is afgewezen, met alle versies.
  * Opdrachten die bezig zouden zijn maar nooit klaarkwamen, worden eerst mislukt.
  */
 export function leesOpdrachten(email: string): Opdracht[] {
   database()
     .prepare(
-      `UPDATE opdrachten SET status = 'mislukt', klaar = ?,
+      `UPDATE opdrachten SET klaar = ?,
+         status = CASE WHEN feedback IS NULL THEN 'mislukt' ELSE 'voorstel' END,
          fout = 'De run is onderbroken, probeer het opnieuw'
        WHERE email = ? AND status = 'bezig' AND gestart < ?`,
     )
     .run(Date.now(), email, Date.now() - VERLOREN_MS);
-  return database()
+  const rijen = database()
     .prepare(
-      `SELECT o.*, v.ontvanger, v.onderwerp, v.tekst
-       FROM opdrachten o
-       LEFT JOIN opdracht_versies v ON v.id =
-         (SELECT MAX(id) FROM opdracht_versies WHERE opdracht_id = o.id)
+      `SELECT o.* FROM opdrachten o
        WHERE o.email = ? AND o.status != 'afgewezen'
          AND o.id = (SELECT MAX(id) FROM opdrachten
                      WHERE taak_id = o.taak_id AND status != 'afgewezen')`,
     )
-    .all(email)
-    .map(parseOpdracht)
+    .all(email);
+  const perOpdracht = new Map<number, Versie[]>();
+  const ids = rijen.map((rij) => Number(rij.id));
+  const versieRijen = database()
+    .prepare(
+      `SELECT * FROM opdracht_versies
+       WHERE opdracht_id IN (SELECT value FROM json_each(?)) ORDER BY id`,
+    )
+    .all(JSON.stringify(ids));
+  for (const v of versieRijen) {
+    const rij = rijen.find((r) => r.id === v.opdracht_id);
+    const soort = parseSoort(rij?.soort);
+    if (typeof v.opdracht_id !== "number" || typeof v.tekst !== "string") {
+      continue;
+    }
+    const lijst = perOpdracht.get(v.opdracht_id) ?? [];
+    lijst.push({
+      soort: soort ?? "advies",
+      ontvanger: tekst(v.ontvanger),
+      onderwerp: tekst(v.onderwerp),
+      tekst: v.tekst,
+      feedback: tekst(v.feedback),
+    });
+    perOpdracht.set(v.opdracht_id, lijst);
+  }
+  return rijen
+    .map((rij) => parseOpdracht(rij, perOpdracht.get(Number(rij.id)) ?? []))
     .filter((opdracht): opdracht is Opdracht => opdracht !== null);
 }
 
@@ -104,56 +123,100 @@ export function maakOpdracht(
   return Number(lastInsertRowid);
 }
 
-/** Opnieuw proberen na een mislukte run; true als de opdracht weer bezig is. */
+/** Opnieuw proberen na een mislukte run of een mislukte nieuwe versie; true als de opdracht weer bezig is. */
 export function herstart(email: string, id: number): boolean {
   const { changes } = database()
     .prepare(
       `UPDATE opdrachten SET status = 'bezig', fout = NULL, klaar = NULL, gestart = ?
-       WHERE email = ? AND id = ? AND status = 'mislukt'`,
+       WHERE email = ? AND id = ?
+         AND (status = 'mislukt' OR (status = 'voorstel' AND feedback IS NOT NULL AND fout IS NOT NULL))`,
     )
     .run(Date.now(), email, id);
   return changes === 1;
 }
 
-/** De instructie en soort voor een run, zolang de opdracht bezig is. */
-export function leesBezig(
-  id: number,
-): { email: string; taakId: number; instructie: string; soort: Soort } | null {
+/** Wat een run nodig heeft, zolang de opdracht bezig is; `vorige` (de nieuwste versie met de feedback daarop) alleen bij een aanpassing. */
+export function leesBezig(id: number): {
+  email: string;
+  taakId: number;
+  instructie: string;
+  soort: Soort;
+  vorige: { tekst: string; feedback: string } | null;
+} | null {
   const row = database()
     .prepare("SELECT * FROM opdrachten WHERE id = ? AND status = 'bezig'")
     .get(id);
   const soort = parseSoort(row?.soort);
   if (!row || !soort || typeof row.taak_id !== "number") return null;
+  const laatste = database()
+    .prepare(
+      "SELECT tekst FROM opdracht_versies WHERE opdracht_id = ? ORDER BY id DESC LIMIT 1",
+    )
+    .get(id);
+  const feedback = tekst(row.feedback);
   return {
     email: String(row.email),
     taakId: row.taak_id,
     instructie: tekst(row.instructie) ?? "",
     soort,
+    vorige:
+      feedback && typeof laatste?.tekst === "string"
+        ? { tekst: laatste.tekst, feedback }
+        : null,
   };
 }
 
-/** Bewaart het voorstel als eerste versie en zet de opdracht op voorstel. */
-export function rondAf(id: number, voorstel: Voorstel): void {
+/** Aanpassen: het voorstel gaat terug naar bezig, met de feedback voor de nieuwe versie. True als dat gelukt is. */
+export function startAanpassing(
+  email: string,
+  id: number,
+  feedback: string,
+): boolean {
+  const { changes } = database()
+    .prepare(
+      `UPDATE opdrachten SET status = 'bezig', feedback = ?, fout = NULL, klaar = NULL, gestart = ?
+       WHERE email = ? AND id = ? AND status = 'voorstel'`,
+    )
+    .run(feedback, Date.now(), email, id);
+  return changes === 1;
+}
+
+/** Bewaart het voorstel als nieuwe versie (met de feedback die ertoe leidde) en zet de opdracht op voorstel. */
+export function rondAf(
+  id: number,
+  voorstel: Voorstel,
+  feedback: string | null,
+): void {
   const nu = Date.now();
   // Alleen een opdracht die nog bezig is, krijgt een versie (niet na afwijzen of een time-out).
   const { changes } = database()
     .prepare(
-      "UPDATE opdrachten SET status = 'voorstel', soort = ?, fout = NULL, klaar = ? WHERE id = ? AND status = 'bezig'",
+      "UPDATE opdrachten SET status = 'voorstel', soort = ?, fout = NULL, feedback = NULL, klaar = ? WHERE id = ? AND status = 'bezig'",
     )
     .run(voorstel.soort, nu, id);
   if (changes !== 1) return;
   database()
     .prepare(
-      `INSERT INTO opdracht_versies (opdracht_id, ontvanger, onderwerp, tekst, aangemaakt)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO opdracht_versies (opdracht_id, ontvanger, onderwerp, tekst, feedback, aangemaakt)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(id, voorstel.ontvanger, voorstel.onderwerp, voorstel.tekst, nu);
+    .run(
+      id,
+      voorstel.ontvanger,
+      voorstel.onderwerp,
+      voorstel.tekst,
+      feedback,
+      nu,
+    );
 }
 
 export function markeerMislukt(id: number, fout: string): void {
   database()
     .prepare(
-      "UPDATE opdrachten SET status = 'mislukt', fout = ?, klaar = ? WHERE id = ? AND status = 'bezig'",
+      // Een mislukte nieuwe versie laat het voorstel met zijn versies staan; de feedback blijft voor Opnieuw proberen.
+      `UPDATE opdrachten SET fout = ?, klaar = ?,
+         status = CASE WHEN feedback IS NULL THEN 'mislukt' ELSE 'voorstel' END
+       WHERE id = ? AND status = 'bezig'`,
     )
     .run(fout, Date.now(), id);
 }

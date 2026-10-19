@@ -33,17 +33,21 @@ export type Voorstel = {
   tekst: string;
 };
 
+/** Een versie van het voorstel, met de feedback die ertoe leidde (leeg bij de eerste). */
+export type Versie = Voorstel & { feedback: string | null };
+
 /** Een opdracht zoals de pagina hem toont: de stand en de nieuwste versie. */
 export type Opdracht = {
   id: number;
   taakId: number;
   status: OpdrachtStatus;
   soort: Soort;
-  /** Waarom een run mislukte; alleen bij status mislukt. */
+  /** Waarom een run mislukte: bij status mislukt, of bij voorstel als de nieuwste versie niet lukte. */
   fout: string | null;
   /** De link naar het concept in Gmail, nadat Akkoord het klaarzette. */
   conceptUrl: string | null;
-  voorstel: Voorstel | null;
+  /** Alle versies, oudste eerst. */
+  versies: Versie[];
 };
 
 /** De soort uitkomst die bij de bron van de to-do past. */

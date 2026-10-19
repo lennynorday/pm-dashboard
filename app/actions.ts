@@ -44,7 +44,12 @@ import {
   parsePrio,
   parseStatus,
 } from "@/lib/taak";
-import { herstart, maakOpdracht, zetBesluit } from "@/lib/opdrachten";
+import {
+  herstart,
+  maakOpdracht,
+  startAanpassing,
+  zetBesluit,
+} from "@/lib/opdrachten";
 import {
   hernoem,
   naarTodo,
@@ -638,5 +643,19 @@ export async function wijsAfAction(
     // Ook een mislukte opdracht kan weg, zodat je opnieuw kunt beginnen.
     zetBesluit(email, opdrachtId, "voorstel", "afgewezen");
     zetBesluit(email, opdrachtId, "mislukt", "afgewezen");
+  });
+}
+
+/** Aanpassen: Claude maakt een nieuwe versie met de vorige versie en de feedback als input. */
+export async function pasAanAction(
+  opdrachtId: number,
+  feedback: string,
+): Promise<void> {
+  const schoon = typeof feedback === "string" ? feedback.trim() : "";
+  if (!Number.isInteger(opdrachtId) || !schoon) return;
+  await bijTaken((email) => {
+    if (startAanpassing(email, opdrachtId, schoon.slice(0, MAX_INSTRUCTIE))) {
+      after(() => draaiOpdracht(opdrachtId));
+    }
   });
 }
