@@ -13,6 +13,7 @@ export async function gmailGet(
   email: string,
   pad: string,
   params: URLSearchParams,
+  signal?: AbortSignal,
 ): Promise<Record<string, unknown> | null> {
   const token = await validToken(email, "gmail", parseStoredToken, (_, oud) =>
     vernieuwToken(oud),
@@ -21,7 +22,7 @@ export async function gmailGet(
 
   const response = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/${pad}?${params}`,
-    { headers: { Authorization: `Bearer ${token.accessToken}` } },
+    { headers: { Authorization: `Bearer ${token.accessToken}` }, signal },
   );
   if (response.status === 401) throw new GmailNietVerbondenError();
   if (response.status === 404) return null;

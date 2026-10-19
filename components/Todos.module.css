@@ -132,6 +132,60 @@
   align-self: stretch;
 }
 
+/* Prioriteit links, de knoppen van de kaart rechts */
+.kopRij {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: var(--space-02);
+}
+
+.knoppen {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-02);
+}
+
+/* Ster van Claude in de kleur van "open"; bij hover keert de toolkit hem om. */
+.claudeKnop {
+  color: var(--color-open);
+}
+
+.claudeKnop:hover {
+  color: var(--norday-white);
+}
+
+/* Stand van de opdracht op de kaart en in de lijst */
+.stand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-02);
+  margin: 0;
+}
+
+.stand :global(.nd-button) {
+  margin-left: auto;
+}
+
+.bezig svg {
+  animation: draai 1.2s linear infinite;
+}
+
+@keyframes draai {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bezig svg {
+    animation: none;
+  }
+}
+
 /* Op de kaart een tikje kleiner dan de standaardchip */
 .kop .chipKnop {
   height: 20px;
@@ -224,7 +278,7 @@
 /* Lijst */
 .rij {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 150px 110px 90px 40px;
+  grid-template-columns: 40px minmax(0, 1fr) 150px 110px 90px 72px;
   align-items: center;
   gap: var(--space-03);
 }

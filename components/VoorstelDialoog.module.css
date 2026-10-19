@@ -1,0 +1,104 @@
+/* Breder dan de standaarddialoog: bericht links, concept rechts. */
+.dialoog {
+  width: min(760px, calc(100vw - 2 * var(--space-04)));
+}
+
+.kop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-03);
+}
+
+.sub {
+  margin: var(--space-01) 0 0;
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-05);
+}
+
+.blok {
+  display: grid;
+  align-content: start;
+  gap: var(--space-02);
+  min-width: 0;
+}
+
+.blokKop {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--color-text-muted);
+}
+
+.bericht {
+  margin: 0;
+  padding: var(--space-03);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--ring);
+  font: var(--type-meta);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.concept {
+  display: grid;
+  gap: var(--space-02);
+  padding: var(--space-04);
+  border-radius: var(--radius-sm);
+  background: var(--norday-white);
+  box-shadow: var(--ring);
+}
+
+.regels {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font: var(--type-meta);
+}
+
+.regel {
+  display: flex;
+  gap: var(--space-02);
+}
+
+.regel dt {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.regel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tekst {
+  margin: 0;
+  font: var(--type-body);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.voet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-02);
+}
+
+.eerst {
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .raster {
+    grid-template-columns: 1fr;
+  }
+}
+
+.link {
+  font: var(--type-meta);
+  font-weight: 600;
+}

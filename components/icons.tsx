@@ -267,3 +267,12 @@ export function StarIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function SparkleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+      <path d="M19 16v4M17 18h4" />
+    </Icon>
+  );
+}

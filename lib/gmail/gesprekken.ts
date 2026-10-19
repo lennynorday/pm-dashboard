@@ -20,17 +20,17 @@ const TEKST_LENGTE = 200;
 // Een concept is nog geen antwoord; prullenbak en spam tellen niet mee.
 const OVERSLAAN = ["DRAFT", "TRASH", "SPAM"];
 
-function json(waarde: unknown): Json {
+export function json(waarde: unknown): Json {
   return typeof waarde === "object" && waarde !== null ? (waarde as Json) : {};
 }
 
-const lijst = (waarde: unknown): Json[] =>
+export const lijst = (waarde: unknown): Json[] =>
   Array.isArray(waarde) ? waarde.map(json) : [];
 
 const labels = (bericht: Json): unknown[] =>
   Array.isArray(bericht.labelIds) ? bericht.labelIds : [];
 
-function header(bericht: Json, naam: string): string {
+export function header(bericht: Json, naam: string): string {
   const gevonden = lijst(json(bericht.payload).headers).find(
     (kop) => String(kop.name).toLowerCase() === naam.toLowerCase(),
   );

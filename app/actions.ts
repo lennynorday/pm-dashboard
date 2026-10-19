@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import {
   eigenLinkFouten,
@@ -28,6 +29,8 @@ import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { draaiOpdracht } from "@/lib/claude/draai";
+import { soortVoorBron } from "@/lib/claude/voorstel";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
 import { bronAan, staToe, sluitUit, zetBron } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
@@ -40,9 +43,11 @@ import {
   parsePrio,
   parseStatus,
 } from "@/lib/taak";
+import { herstart, maakOpdracht, zetBesluit } from "@/lib/opdrachten";
 import {
   hernoem,
   naarTodo,
+  leesTaak,
   leesTaken,
   nieuweTaak,
   verplaats,
@@ -568,4 +573,61 @@ export async function zetBronAction(formData: FormData): Promise<void> {
 export async function staToeFormAction(formData: FormData): Promise<void> {
   const waarde = formData.get("waarde");
   if (typeof waarde === "string") await staToeAction(waarde);
+}
+
+const MAX_INSTRUCTIE = 2000;
+
+/**
+ * Zet een to-do uit bij Claude: slaat de opdracht op en start de run op de
+ * achtergrond. De status van de to-do blijft zoals hij is.
+ */
+export async function zetUitAction(
+  taakId: number,
+  instructie: string,
+): Promise<void> {
+  if (!Number.isInteger(taakId) || typeof instructie !== "string") return;
+  await bijTaken((email) => {
+    const bron = leesTaak(email, taakId)?.taak.bron;
+    if (!bron) return;
+    const id = maakOpdracht(
+      email,
+      taakId,
+      instructie.trim().slice(0, MAX_INSTRUCTIE),
+      soortVoorBron(bron),
+    );
+    if (id) after(() => draaiOpdracht(id));
+  });
+}
+
+/** Opnieuw proberen na een mislukte run. */
+export async function opnieuwUitzettenAction(
+  opdrachtId: number,
+): Promise<void> {
+  if (!Number.isInteger(opdrachtId)) return;
+  await bijTaken((email) => {
+    if (herstart(email, opdrachtId)) after(() => draaiOpdracht(opdrachtId));
+  });
+}
+
+/** Akkoord op het voorstel. De echte actie (concept klaarzetten) komt later; de to-do blijft ongemoeid. */
+export async function akkoordAction(opdrachtId: number): Promise<void> {
+  if (!Number.isInteger(opdrachtId)) return;
+  await bijTaken((email) =>
+    zetBesluit(email, opdrachtId, "voorstel", "akkoord"),
+  );
+}
+
+/** Afwijzen haalt het voorstel (of de mislukte opdracht) weg; `afwijzen = false` maakt dat voor een voorstel ongedaan. */
+export async function wijsAfAction(
+  opdrachtId: number,
+  afwijzen: boolean,
+): Promise<void> {
+  if (!Number.isInteger(opdrachtId)) return;
+  await bijTaken((email) => {
+    if (!afwijzen)
+      return zetBesluit(email, opdrachtId, "afgewezen", "voorstel");
+    // Ook een mislukte opdracht kan weg, zodat je opnieuw kunt beginnen.
+    zetBesluit(email, opdrachtId, "voorstel", "afgewezen");
+    zetBesluit(email, opdrachtId, "mislukt", "afgewezen");
+  });
 }

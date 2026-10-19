@@ -1,0 +1,16 @@
+.context {
+  margin: 0;
+  padding: var(--space-03);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--ring);
+}
+
+.veld {
+  min-height: 96px;
+  padding-block: var(--space-03);
+  resize: vertical;
+}
+
+.hint {
+  margin: var(--space-01) 0 0;
+}
