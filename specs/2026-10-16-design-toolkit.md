@@ -37,12 +37,12 @@
 Eén PR per stap, zodat elke PR klein blijft.
 
 1. Toolkit en voorbeeldpagina toevoegen, en `globals.css` laten importeren uit `toolkit.css`. Er verandert dan nog niets zichtbaars, behalve de licht aangepaste tinten.
-2. Navigatie (`components/Sidebar`).
-3. Overzicht:
+2. To-do's: Todos en TodoDialoog. Hierin zit de wissel naar filterknoppen. Deze stap gaat voor, omdat Uitzetten bij Claude op de to-do-pagina voortbouwt (2026-10-19, Lenny).
+3. Navigatie (`components/Sidebar`).
+4. Overzicht:
    - Feed, Sprints, Slas en Overige, via `Sectie.module.css`
    - PageHeading, Melding, Toast
    - `app/grid.module.css`
-4. To-do's: Todos en TodoDialoog. Hierin zit de wissel naar filterknoppen.
 5. De rest: Inbox, Instellingen en Platforms.
 
 ## Acceptatiecriteria
