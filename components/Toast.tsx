@@ -8,6 +8,8 @@ import styles from "./Toast.module.css";
 export type ToastOpties = {
   ongedaan?: () => void;
   link?: { label: string; href: string };
+  /** Een knop die iets doet in de pagina, zoals een dialoog openen. */
+  knop?: { label: string; kies: () => void };
 };
 
 type Getoond = { tekst: string; opties: ToastOpties };
@@ -48,6 +50,18 @@ export function useToast() {
             <NextLink href={getoond.opties.link.href} className={styles.actie}>
               {getoond.opties.link.label}
             </NextLink>
+          )}
+          {getoond.opties.knop && (
+            <button
+              type="button"
+              className={styles.actie}
+              onClick={() => {
+                getoond.opties.knop?.kies();
+                setZichtbaar(false);
+              }}
+            >
+              {getoond.opties.knop.label}
+            </button>
           )}
           {getoond.opties.ongedaan && (
             <button

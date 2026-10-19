@@ -98,6 +98,27 @@ function open(): DatabaseSync {
       toegevoegd INTEGER NOT NULL,
       UNIQUE (email, bron, bron_id)
     );
+    -- Uitzetten bij Claude: een opdracht hoort bij één taak en heeft één of meer versies.
+    CREATE TABLE IF NOT EXISTS opdrachten (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      taak_id INTEGER NOT NULL REFERENCES taken (id) ON DELETE CASCADE,
+      instructie TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL,
+      soort TEXT NOT NULL,
+      fout TEXT,
+      gestart INTEGER NOT NULL,
+      klaar INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS opdracht_versies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      opdracht_id INTEGER NOT NULL REFERENCES opdrachten (id) ON DELETE CASCADE,
+      ontvanger TEXT,
+      onderwerp TEXT,
+      tekst TEXT NOT NULL,
+      feedback TEXT,
+      aangemaakt INTEGER NOT NULL
+    );
   `);
   // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
   const kolommen = db.prepare("PRAGMA table_info(taken)").all();

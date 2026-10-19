@@ -67,6 +67,18 @@ export function leesTaken(email: string, lijst: Lijst): Taak[] {
     .filter((taak): taak is Taak => taak !== null);
 }
 
+/** Eén taak van deze gebruiker, met het id uit de bron (Gmail-thread, Slack-link). */
+export function leesTaak(
+  email: string,
+  id: number,
+): { taak: Taak; bronId: string | null } | null {
+  const row = database()
+    .prepare("SELECT * FROM taken WHERE email = ? AND id = ?")
+    .get(email, id);
+  const taak = row ? parseTaak(row) : null;
+  return taak && row ? { taak, bronId: tekst(row.bron_id) } : null;
+}
+
 /** Open to-do's met een nieuwe reactie die je nog niet hebt gezien, nieuwste eerst. */
 export function leesUpdates(email: string): Taak[] {
   return database()

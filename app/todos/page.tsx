@@ -9,6 +9,7 @@ import {
   TODOS_COOKIE,
 } from "@/components/TodosWeergave";
 import { currentUser } from "@/lib/session";
+import { leesOpdrachten } from "@/lib/opdrachten";
 import { leesTaken } from "@/lib/todos";
 
 const HOME = { label: "Overzicht", href: "/" };
@@ -25,6 +26,7 @@ export default async function TodosPage() {
       <PageHeading title="To-do's" crumbs={[HOME]} />
       <Todos
         taken={leesTaken(user.email, "todo")}
+        opdrachten={leesOpdrachten(user.email)}
         weergave={parseWeergave(cookieStore.get(TODOS_COOKIE)?.value)}
         sortering={parseSortering(cookieStore.get(SORTERING_COOKIE)?.value)}
       />

@@ -1,6 +1,7 @@
 "use client";
 
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Fragment,
   useEffect,
@@ -10,14 +11,19 @@ import {
   useTransition,
 } from "react";
 import {
+  akkoordAction,
   hernoemTaakAction,
   nieuweTaakAction,
+  opnieuwUitzettenAction,
   verplaatsTaakAction,
+  wijsAfAction,
   zetGezienAction,
   zetPrioAction,
   zetStatusAction,
+  zetUitAction,
   zetVolgordeAction,
 } from "@/app/actions";
+import { type Opdracht, type OpdrachtStatus } from "@/lib/claude/voorstel";
 import {
   BRON_LABELS,
   parseInboxBron,
@@ -31,6 +37,7 @@ import {
 } from "@/lib/taak";
 import { setPreferenceCookie } from "./Sidebar/cookies";
 import {
+  AlertIcon,
   CheckIcon,
   ChevronIcon,
   ExternalIcon,
@@ -38,9 +45,12 @@ import {
   MoreIcon,
   PencilIcon,
   PlusIcon,
+  SparkleIcon,
 } from "./icons";
 import styles from "./Todos.module.css";
 import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
+import { UitzetDialoog } from "./UitzetDialoog";
+import { VoorstelDialoog } from "./VoorstelDialoog";
 import { useToast } from "./Toast";
 import { TodosMenu, type MenuItem } from "./TodosMenu";
 import {
@@ -111,14 +121,31 @@ function dialoogBron(taak: Taak): DialoogBron | undefined {
   };
 }
 
-type Props = { taken: Taak[]; weergave: Weergave; sortering: Sortering };
+/** Hoe vaak de pagina ververst zolang Claude bezig is. */
+const POLL_MS = 3000;
 
-export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
+type Props = {
+  taken: Taak[];
+  opdrachten: Opdracht[];
+  weergave: Weergave;
+  sortering: Sortering;
+};
+
+export function Todos({
+  taken,
+  opdrachten,
+  weergave: start,
+  sortering: kiesStart,
+}: Props) {
+  const router = useRouter();
   const [weergave, setWeergave] = useState(start);
   const [sortering, setSortering] = useState(kiesStart);
   const [zoek, setZoek] = useState("");
   const [nieuw, setNieuw] = useState<Status | null>(null);
   const [bewerk, setBewerk] = useState<Taak | null>(null);
+  const [uitzet, setUitzet] = useState<Taak | null>(null);
+  const [bekijk, setBekijk] = useState<number | null>(null);
+  const vorigeStand = useRef(new Map<number, OpdrachtStatus>());
   const { toon, element: melding } = useToast();
   const [sleepId, setSleepId] = useState<number | null>(null);
   const [over, setOver] = useState<Status | null>(null);
@@ -140,6 +167,27 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
   useEffect(() => {
     if (nieuw) nieuwVeld.current?.focus();
   }, [nieuw]);
+
+  // Zolang Claude bezig is, verversen we de pagina; de run zelf draait op de server.
+  const claudeBezig = opdrachten.some((o) => o.status === "bezig");
+  useEffect(() => {
+    if (!claudeBezig) return;
+    const timer = setInterval(() => router.refresh(), POLL_MS);
+    return () => clearInterval(timer);
+  }, [claudeBezig, router]);
+
+  // Een melding zodra een voorstel van bezig naar klaar gaat.
+  useEffect(() => {
+    for (const opdracht of opdrachten) {
+      const vorige = vorigeStand.current.get(opdracht.id);
+      vorigeStand.current.set(opdracht.id, opdracht.status);
+      if (vorige !== "bezig" || opdracht.status !== "voorstel") continue;
+      const titel = taken.find((t) => t.id === opdracht.taakId)?.titel ?? "";
+      toon(`Voorstel klaar: ${titel}`, {
+        knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
+      });
+    }
+  }, [opdrachten, taken, toon]);
 
   const zichtbaar = optimistisch.filter((taak) =>
     taak.titel.toLowerCase().includes(zoek.trim().toLowerCase()),
@@ -218,6 +266,31 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       </div>
     );
 
+  const opdrachtVan = (taak: Taak) =>
+    opdrachten.find((o) => o.taakId === taak.id);
+
+  /** Op Klaar en met een lopende of afgeronde opdracht staat geen knop. */
+  const kanUitzetten = (taak: Taak) =>
+    taak.status !== "klaar" && !opdrachtVan(taak);
+
+  function zetUit(taak: Taak, instructie: string) {
+    setUitzet(null);
+    startTransition(() => zetUitAction(taak.id, instructie));
+    toon("Uitgezet bij Claude");
+  }
+
+  function wijsAf(opdracht: Opdracht) {
+    startTransition(() => wijsAfAction(opdracht.id, true));
+    toon("Voorstel afgewezen", {
+      ongedaan: () => startTransition(() => wijsAfAction(opdracht.id, false)),
+    });
+  }
+
+  function akkoord(opdracht: Opdracht) {
+    startTransition(() => akkoordAction(opdracht.id));
+    toon("Akkoord gegeven");
+  }
+
   function hernoem(taak: Taak, titel: string) {
     setBewerk(null);
     wijzig({ id: taak.id, titel }, () => hernoemTaakAction(taak.id, titel));
@@ -264,6 +337,9 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
 
   function actieItems(taak: Taak): MenuItem[] {
     const items = [
+      ...(kanUitzetten(taak)
+        ? [{ label: "Uitzetten bij Claude", kies: () => setUitzet(taak) }]
+        : []),
       { label: "Titel bewerken", kies: () => setBewerk(taak) },
       ...statusItems(taak, true),
     ];
@@ -372,6 +448,81 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     </TodosMenu>
   );
 
+  /** Rond knopje met de ster; alleen op een open to-do zonder opdracht. */
+  const claudeKnop = (taak: Taak) =>
+    kanUitzetten(taak) && (
+      <button
+        type="button"
+        className={`nd-icon-button nd-icon-button--small ${styles.claudeKnop}`}
+        aria-label={`Uitzetten bij Claude: ${taak.titel}`}
+        title="Uitzetten bij Claude"
+        onClick={() => setUitzet(taak)}
+      >
+        <SparkleIcon />
+      </button>
+    );
+
+  /** Op de kaart en in de lijst alleen de stand; het voorstel zelf staat in de dialoog. */
+  const claudeStand = (taak: Taak) => {
+    const opdracht = opdrachtVan(taak);
+    if (!opdracht) return null;
+    if (opdracht.status === "bezig") {
+      return (
+        <p
+          className={`nd-status ${styles.stand} ${styles.bezig}`}
+          data-status="open"
+          role="status"
+        >
+          <SparkleIcon />
+          Claude is bezig…
+        </p>
+      );
+    }
+    if (opdracht.status === "voorstel") {
+      return (
+        <div className={styles.stand}>
+          <span className="nd-status" data-status="open">
+            <SparkleIcon />
+            Voorstel klaar
+          </span>
+          <button
+            type="button"
+            className="nd-button nd-button--small"
+            onClick={() => setBekijk(opdracht.id)}
+          >
+            Bekijken<span className="visually-hidden">: {taak.titel}</span>
+          </button>
+        </div>
+      );
+    }
+    if (opdracht.status === "mislukt") {
+      return (
+        <div className={styles.stand} role="status">
+          <span className="nd-status" data-status="warn">
+            <AlertIcon />
+            Mislukt: {opdracht.fout ?? "onbekende fout"}
+          </span>
+          <button
+            type="button"
+            className="nd-button nd-button--small nd-button--quiet"
+            onClick={() =>
+              startTransition(() => opnieuwUitzettenAction(opdracht.id))
+            }
+          >
+            Opnieuw proberen
+            <span className="visually-hidden">: {taak.titel}</span>
+          </button>
+        </div>
+      );
+    }
+    return (
+      <span className={`nd-status ${styles.stand}`} data-status="ok">
+        <CheckIcon />
+        Akkoord gegeven
+      </span>
+    );
+  };
+
   const kaartReactie = (taak: Taak) =>
     taak.reactie !== null &&
     taak.status !== "klaar" && (
@@ -453,7 +604,13 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         }}
       >
         <div className={styles.kop}>
-          {prioKnop(taak)}
+          <div className={styles.kopRij}>
+            {prioKnop(taak)}
+            <span className={styles.knoppen}>
+              {claudeKnop(taak)}
+              {meer(taak)}
+            </span>
+          </div>
           <span className="nd-row__title">
             {taak.titel}
             <button
@@ -467,6 +624,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           </span>
         </div>
         {context(taak)}
+        {claudeStand(taak)}
         {kaartReactie(taak)}
         {kaartActies(taak)}
       </li>
@@ -583,6 +741,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           <span className={`nd-row__title ${styles.titel}`}>{taak.titel}</span>
           {context(taak)}
           {reactie(taak)}
+          {claudeStand(taak)}
         </span>
         <TodosMenu
           knopClass={`nd-chip ${styles.chipKnop}`}
@@ -595,7 +754,10 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         </TodosMenu>
         <span>{prioKnop(taak)}</span>
         <span>{bron(taak) ?? <span className="nd-meta">Eigen</span>}</span>
-        {meer(taak)}
+        <span className={styles.knoppen}>
+          {claudeKnop(taak)}
+          {meer(taak)}
+        </span>
       </li>
     );
   }
@@ -637,6 +799,9 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       </>
     );
   }
+
+  const bekijkOpdracht = opdrachten.find((o) => o.id === bekijk);
+  const bekijkTaak = taken.find((t) => t.id === bekijkOpdracht?.taakId);
 
   return (
     <>
@@ -756,6 +921,24 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           bron={dialoogBron(bewerk)}
           onSluit={() => setBewerk(null)}
           onBevestig={(titel) => hernoem(bewerk, titel)}
+        />
+      )}
+      {uitzet && (
+        <UitzetDialoog
+          titel={uitzet.titel}
+          wie={dialoogBron(uitzet)?.wie ?? ""}
+          onSluit={() => setUitzet(null)}
+          onBevestig={(instructie) => zetUit(uitzet, instructie)}
+        />
+      )}
+      {bekijkOpdracht?.status === "voorstel" && bekijkTaak && (
+        <VoorstelDialoog
+          titel={bekijkTaak.titel}
+          opdracht={bekijkOpdracht}
+          bron={dialoogBron(bekijkTaak)}
+          onSluit={() => setBekijk(null)}
+          onAkkoord={() => akkoord(bekijkOpdracht)}
+          onWijsAf={() => wijsAf(bekijkOpdracht)}
         />
       )}
       {melding}
