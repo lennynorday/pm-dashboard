@@ -140,3 +140,14 @@
   display: grid;
   gap: var(--space-02);
 }
+
+/* aria-disabled in plaats van disabled: de focus blijft staan en de knop zegt waarom. */
+.uit[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.uit:global(.nd-icon-button)[aria-disabled="true"]:hover {
+  background: var(--color-raised);
+  color: var(--color-text);
+}

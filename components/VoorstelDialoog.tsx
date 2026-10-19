@@ -52,12 +52,13 @@ export function VoorstelDialoog({
   onPasAan,
 }: Props) {
   const dialoog = useRef<HTMLDialogElement>(null);
-  const voorstel = opdracht.voorstel;
+  const voorstel = opdracht.versies.at(-1);
   const [stand, setStand] = useState<Stand | null>(null);
   const [bezig, setBezig] = useState(false);
   const [gekozen, setGekozen] = useState<number | null>(null);
   const [aanpassen, setAanpassen] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [feedbackFout, setFeedbackFout] = useState(false);
   const feedbackVeld = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export function VoorstelDialoog({
   }
 
   async function akkoord() {
-    if (!voorstel || bezig) return;
+    if (!voorstel || bezig || !nieuwste) return;
     setBezig(true);
     const uitkomst = await onAkkoord().catch((): AkkoordUitkomst => ({
       uitkomst: "fout",
@@ -123,7 +124,10 @@ export function VoorstelDialoog({
   function pasAan(event: React.FormEvent) {
     event.preventDefault();
     const schoon = feedback.trim();
-    if (!schoon) return feedbackVeld.current?.focus();
+    if (!schoon) {
+      setFeedbackFout(true);
+      return feedbackVeld.current?.focus();
+    }
     dialoog.current?.close();
     onPasAan(schoon);
   }
@@ -196,10 +200,10 @@ export function VoorstelDialoog({
                 <div className={styles.versies}>
                   <button
                     type="button"
-                    className="nd-icon-button nd-icon-button--small"
+                    className={`nd-icon-button nd-icon-button--small ${styles.uit}`}
                     aria-label="Vorige versie"
-                    disabled={index === 0}
-                    onClick={() => setGekozen(index - 1)}
+                    aria-disabled={index === 0 || undefined}
+                    onClick={() => index > 0 && setGekozen(index - 1)}
                   >
                     <ChevronIcon className={styles.vorige} />
                   </button>
@@ -208,10 +212,10 @@ export function VoorstelDialoog({
                   </span>
                   <button
                     type="button"
-                    className="nd-icon-button nd-icon-button--small"
+                    className={`nd-icon-button nd-icon-button--small ${styles.uit}`}
                     aria-label="Volgende versie"
-                    disabled={nieuwste}
-                    onClick={() => setGekozen(index + 1)}
+                    aria-disabled={nieuwste || undefined}
+                    onClick={() => !nieuwste && setGekozen(index + 1)}
                   >
                     <ChevronIcon className={styles.volgende} />
                   </button>
@@ -268,13 +272,32 @@ export function VoorstelDialoog({
               </VerbindLink>
             </p>
           )}
+          {opdracht.fout && !stand && (
+            <p className={styles.melding}>
+              Nieuwe versie mislukt: {opdracht.fout}. De vorige versie staat er
+              nog.
+            </p>
+          )}
           {stand?.soort === "fout" && (
             <p className={styles.melding}>{stand.fout}</p>
           )}
         </div>
 
+        {!nieuwste && !afgerond && !aanpassen && (
+          <p id="voorstel-oud" className={styles.melding}>
+            Klaarzetten en aanpassen kan alleen bij de nieuwste versie.{" "}
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              onClick={() => setGekozen(null)}
+            >
+              Naar nieuwste
+            </button>
+          </p>
+        )}
+
         {!afgerond && aanpassen && (
-          <form className={styles.aanpassen} onSubmit={pasAan}>
+          <form className={styles.aanpassen} noValidate onSubmit={pasAan}>
             <label className="nd-label" htmlFor="voorstel-feedback">
               Wat moet er anders?
             </label>
@@ -284,8 +307,21 @@ export function VoorstelDialoog({
               className={`nd-field ${styles.handmatig}`}
               value={feedback}
               maxLength={2000}
-              onChange={(event) => setFeedback(event.target.value)}
+              required
+              aria-invalid={feedbackFout || undefined}
+              aria-describedby={
+                feedbackFout ? "voorstel-feedback-fout" : undefined
+              }
+              onChange={(event) => {
+                setFeedback(event.target.value);
+                setFeedbackFout(false);
+              }}
             />
+            {feedbackFout && (
+              <p id="voorstel-feedback-fout" className="nd-error" role="alert">
+                Schrijf op wat er anders moet.
+              </p>
+            )}
             <div className={styles.voet}>
               <button
                 type="button"
@@ -314,18 +350,22 @@ export function VoorstelDialoog({
             {opdracht.status === "voorstel" && (
               <button
                 type="button"
-                className="nd-button nd-button--quiet"
-                disabled={bezig || !nieuwste}
-                onClick={() => setAanpassen(true)}
+                className={`nd-button nd-button--quiet ${styles.uit}`}
+                disabled={bezig}
+                aria-disabled={!nieuwste || undefined}
+                aria-describedby={nieuwste ? undefined : "voorstel-oud"}
+                onClick={() => nieuwste && setAanpassen(true)}
               >
                 Aanpassen
               </button>
             )}
             <button
               type="button"
-              className="nd-button"
+              className={`nd-button ${styles.uit}`}
               aria-busy={bezig}
-              disabled={bezig || !nieuwste}
+              disabled={bezig}
+              aria-disabled={!nieuwste || undefined}
+              aria-describedby={nieuwste ? undefined : "voorstel-oud"}
               onClick={akkoord}
             >
               {AKKOORD_LABELS[voorstel.soort]}

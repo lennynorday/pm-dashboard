@@ -39,7 +39,6 @@ function parseOpdracht(
     fout: tekst(row.fout),
     conceptUrl: tekst(row.concept_url),
     versies,
-    voorstel: versies.at(-1) ?? null,
   };
 }
 
@@ -50,7 +49,8 @@ function parseOpdracht(
 export function leesOpdrachten(email: string): Opdracht[] {
   database()
     .prepare(
-      `UPDATE opdrachten SET status = 'mislukt', klaar = ?,
+      `UPDATE opdrachten SET klaar = ?,
+         status = CASE WHEN feedback IS NULL THEN 'mislukt' ELSE 'voorstel' END,
          fout = 'De run is onderbroken, probeer het opnieuw'
        WHERE email = ? AND status = 'bezig' AND gestart < ?`,
     )
@@ -63,28 +63,32 @@ export function leesOpdrachten(email: string): Opdracht[] {
                      WHERE taak_id = o.taak_id AND status != 'afgewezen')`,
     )
     .all(email);
-  const versies = database().prepare(
-    "SELECT * FROM opdracht_versies WHERE opdracht_id = ? ORDER BY id",
-  );
-  return rijen
-    .map((rij) =>
-      parseOpdracht(
-        rij,
-        versies.all(Number(rij.id)).flatMap((v): Versie[] =>
-          typeof v.tekst !== "string"
-            ? []
-            : [
-                {
-                  soort: parseSoort(rij.soort) ?? "advies",
-                  ontvanger: tekst(v.ontvanger),
-                  onderwerp: tekst(v.onderwerp),
-                  tekst: v.tekst,
-                  feedback: tekst(v.feedback),
-                },
-              ],
-        ),
-      ),
+  const perOpdracht = new Map<number, Versie[]>();
+  const ids = rijen.map((rij) => Number(rij.id));
+  const versieRijen = database()
+    .prepare(
+      `SELECT * FROM opdracht_versies
+       WHERE opdracht_id IN (SELECT value FROM json_each(?)) ORDER BY id`,
     )
+    .all(JSON.stringify(ids));
+  for (const v of versieRijen) {
+    const rij = rijen.find((r) => r.id === v.opdracht_id);
+    const soort = parseSoort(rij?.soort);
+    if (typeof v.opdracht_id !== "number" || typeof v.tekst !== "string") {
+      continue;
+    }
+    const lijst = perOpdracht.get(v.opdracht_id) ?? [];
+    lijst.push({
+      soort: soort ?? "advies",
+      ontvanger: tekst(v.ontvanger),
+      onderwerp: tekst(v.onderwerp),
+      tekst: v.tekst,
+      feedback: tekst(v.feedback),
+    });
+    perOpdracht.set(v.opdracht_id, lijst);
+  }
+  return rijen
+    .map((rij) => parseOpdracht(rij, perOpdracht.get(Number(rij.id)) ?? []))
     .filter((opdracht): opdracht is Opdracht => opdracht !== null);
 }
 
@@ -119,18 +123,19 @@ export function maakOpdracht(
   return Number(lastInsertRowid);
 }
 
-/** Opnieuw proberen na een mislukte run; true als de opdracht weer bezig is. */
+/** Opnieuw proberen na een mislukte run of een mislukte nieuwe versie; true als de opdracht weer bezig is. */
 export function herstart(email: string, id: number): boolean {
   const { changes } = database()
     .prepare(
       `UPDATE opdrachten SET status = 'bezig', fout = NULL, klaar = NULL, gestart = ?
-       WHERE email = ? AND id = ? AND status = 'mislukt'`,
+       WHERE email = ? AND id = ?
+         AND (status = 'mislukt' OR (status = 'voorstel' AND feedback IS NOT NULL AND fout IS NOT NULL))`,
     )
     .run(Date.now(), email, id);
   return changes === 1;
 }
 
-/** Wat een run nodig heeft, zolang de opdracht bezig is; `vorige` en `feedback` alleen bij een aanpassing. */
+/** Wat een run nodig heeft, zolang de opdracht bezig is; `vorige` (de nieuwste versie met de feedback daarop) alleen bij een aanpassing. */
 export function leesBezig(id: number): {
   email: string;
   taakId: number;
@@ -208,7 +213,10 @@ export function rondAf(
 export function markeerMislukt(id: number, fout: string): void {
   database()
     .prepare(
-      "UPDATE opdrachten SET status = 'mislukt', fout = ?, klaar = ? WHERE id = ? AND status = 'bezig'",
+      // Een mislukte nieuwe versie laat het voorstel met zijn versies staan; de feedback blijft voor Opnieuw proberen.
+      `UPDATE opdrachten SET fout = ?, klaar = ?,
+         status = CASE WHEN feedback IS NULL THEN 'mislukt' ELSE 'voorstel' END
+       WHERE id = ? AND status = 'bezig'`,
     )
     .run(fout, Date.now(), id);
 }

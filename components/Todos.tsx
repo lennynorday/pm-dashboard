@@ -185,7 +185,11 @@ export function Todos({
       vorigeStand.current.set(opdracht.id, opdracht.status);
       if (vorige !== "bezig") continue;
       const titel = taken.find((t) => t.id === opdracht.taakId)?.titel ?? "";
-      if (opdracht.status === "voorstel") {
+      if (opdracht.status === "voorstel" && opdracht.fout) {
+        toon(`Nieuwe versie mislukt: ${titel}`, {
+          knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
+        });
+      } else if (opdracht.status === "voorstel") {
         toon(`Voorstel klaar: ${titel}`, {
           knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
         });
@@ -514,10 +518,29 @@ export function Todos({
     if (opdracht.status === "voorstel") {
       return (
         <div className={styles.stand}>
-          <span className="nd-status" data-status="open">
-            <SparkleIcon />
-            Voorstel klaar
-          </span>
+          {opdracht.fout ? (
+            <span className="nd-status" data-status="warn">
+              <AlertIcon />
+              Nieuwe versie mislukt: {opdracht.fout}
+            </span>
+          ) : (
+            <span className="nd-status" data-status="open">
+              <SparkleIcon />
+              Voorstel klaar
+            </span>
+          )}
+          {opdracht.fout && (
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              onClick={() =>
+                startTransition(() => opnieuwUitzettenAction(opdracht.id))
+              }
+            >
+              Opnieuw proberen
+              <span className="visually-hidden">: {taak.titel}</span>
+            </button>
+          )}
           <button
             type="button"
             className="nd-button nd-button--small"

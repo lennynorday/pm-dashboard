@@ -42,14 +42,12 @@ export type Opdracht = {
   taakId: number;
   status: OpdrachtStatus;
   soort: Soort;
-  /** Waarom een run mislukte; alleen bij status mislukt. */
+  /** Waarom een run mislukte: bij status mislukt, of bij voorstel als de nieuwste versie niet lukte. */
   fout: string | null;
   /** De link naar het concept in Gmail, nadat Akkoord het klaarzette. */
   conceptUrl: string | null;
   /** Alle versies, oudste eerst. */
   versies: Versie[];
-  /** De nieuwste versie. */
-  voorstel: Versie | null;
 };
 
 /** De soort uitkomst die bij de bron van de to-do past. */
