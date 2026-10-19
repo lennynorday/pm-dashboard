@@ -11,6 +11,8 @@ export type OAuthToken = {
   accessToken: string;
   refreshToken: string | null;
   expiresAt: number;
+  /** De toegestane scopes, gescheiden door spaties; leeg als het token van voor het bewaren van scopes komt. */
+  scope?: string | null;
 };
 
 function record(data: unknown): Record<string, unknown> | null {
@@ -34,6 +36,7 @@ export function parseTokenResponse(data: unknown, now: number): OAuthToken {
         ? response.refresh_token
         : null,
     expiresAt: now + expiresIn * 1000,
+    scope: typeof response.scope === "string" ? response.scope : null,
   };
 }
 
@@ -47,6 +50,7 @@ export function parseStoredToken(data: unknown): OAuthToken | null {
     refreshToken:
       typeof stored.refreshToken === "string" ? stored.refreshToken : null,
     expiresAt: stored.expiresAt,
+    scope: typeof stored.scope === "string" ? stored.scope : null,
   };
 }
 

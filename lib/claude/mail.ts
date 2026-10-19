@@ -1,4 +1,5 @@
 import { gmailGet } from "../gmail/api";
+import { metRe } from "../gmail/antwoord";
 import { header, json, lijst, parseVan } from "../gmail/gesprekken";
 
 const AANTAL_MAILS = 3;
@@ -55,7 +56,7 @@ export async function laatsteMails(
       antwoordAan: parseVan(
         header(laatste, "Reply-To") || header(laatste, "From"),
       ).adres,
-      onderwerp: /^re:/i.test(onderwerp) ? onderwerp : `Re: ${onderwerp}`,
+      onderwerp: metRe(onderwerp),
     };
   } catch {
     return null;

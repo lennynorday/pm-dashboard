@@ -35,6 +35,7 @@ import {
   type Status,
   type Taak,
 } from "@/lib/taak";
+import { ExternalLink } from "./ExternalLink";
 import { setPreferenceCookie } from "./Sidebar/cookies";
 import {
   AlertIcon,
@@ -312,10 +313,9 @@ export function Todos({
     );
   }
 
-  function akkoord(opdracht: Opdracht) {
-    startTransition(() => akkoordAction(opdracht.id));
+  function klaar(opdracht: Opdracht, melding: string) {
     focusKaart(opdracht.taakId);
-    toon("Akkoord gegeven");
+    toon(melding);
   }
 
   function hernoem(taak: Taak, titel: string) {
@@ -548,11 +548,24 @@ export function Todos({
         </div>
       );
     }
+    const gmail = opdracht.soort === "gmail-concept";
     return (
-      <span className={`nd-status ${styles.stand}`} data-status="ok">
-        <CheckIcon />
-        Akkoord gegeven
-      </span>
+      <div className={styles.stand}>
+        <span className="nd-status" data-status="ok">
+          <CheckIcon />
+          {gmail
+            ? "Concept staat in Gmail"
+            : opdracht.soort === "slack-concept"
+              ? "Tekst gekopieerd"
+              : "Akkoord gegeven"}
+        </span>
+        {opdracht.conceptUrl && (
+          <ExternalLink href={opdracht.conceptUrl} className="nd-meta">
+            Openen in Gmail
+            <span className="visually-hidden">: {taak.titel}</span>
+          </ExternalLink>
+        )}
+      </div>
     );
   };
 
@@ -964,13 +977,14 @@ export function Todos({
           onBevestig={(instructie) => zetUit(uitzet, instructie)}
         />
       )}
-      {bekijkOpdracht?.status === "voorstel" && bekijkTaak && (
+      {bekijkOpdracht?.voorstel && bekijkTaak && (
         <VoorstelDialoog
           titel={bekijkTaak.titel}
           opdracht={bekijkOpdracht}
           bron={dialoogBron(bekijkTaak)}
           onSluit={() => setBekijk(null)}
-          onAkkoord={() => akkoord(bekijkOpdracht)}
+          onAkkoord={() => akkoordAction(bekijkOpdracht.id)}
+          onKlaar={(melding) => klaar(bekijkOpdracht, melding)}
           onWijsAf={() => wijsAf(bekijkOpdracht)}
         />
       )}

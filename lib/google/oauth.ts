@@ -8,6 +8,12 @@ const ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
 export const GOOGLE_REDIRECT_URI = appUrl("/api/google/callback");
 
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+// Alleen concepten maken en bewerken; versturen doet het dashboard nooit.
+const GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose";
+
+/** Mag dit token concepten in Gmail klaarzetten? Oude tokens zonder scope: nee, tot hij opnieuw verbindt of het token vernieuwt. */
+export const heeftComposeScope = (token: OAuthToken): boolean =>
+  token.scope?.split(" ").includes(GMAIL_COMPOSE_SCOPE) ?? false;
 
 /** Alleen Google-accounts van dit domein mogen inloggen. */
 export const NORDAY_DOMEIN = "norday.nl";
@@ -39,7 +45,7 @@ export function startLogin(): Pkce & { authorizeUrl: string } {
     client_id: setting("GOOGLE_CLIENT_ID"),
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
-    scope: `openid email profile ${GMAIL_SCOPE}`,
+    scope: `openid email profile ${GMAIL_SCOPE} ${GMAIL_COMPOSE_SCOPE}`,
     code_challenge: login.challenge,
     code_challenge_method: "S256",
     state: login.state,

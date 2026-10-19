@@ -33,6 +33,7 @@ function parseOpdracht(row: Record<string, unknown>): Opdracht | null {
     status,
     soort,
     fout: tekst(row.fout),
+    conceptUrl: tekst(row.concept_url),
     voorstel:
       typeof row.tekst === "string"
         ? {
@@ -157,7 +158,21 @@ export function markeerMislukt(id: number, fout: string): void {
     .run(fout, Date.now(), id);
 }
 
-/** Van voorstel naar akkoord of afgewezen, of terug (Ongedaan maken); raakt de taak niet aan. */
+/** Akkoord; bij een Gmail-concept met het draft-id en de link naar het concept. */
+export function zetAkkoord(
+  email: string,
+  id: number,
+  concept: { id: string; url: string } | null,
+): void {
+  database()
+    .prepare(
+      `UPDATE opdrachten SET status = 'akkoord', concept_id = ?, concept_url = ?
+       WHERE email = ? AND id = ? AND status = 'voorstel'`,
+    )
+    .run(concept?.id ?? null, concept?.url ?? null, email, id);
+}
+
+/** Van voorstel naar afgewezen, of terug (Ongedaan maken); raakt de taak niet aan. */
 export function zetBesluit(
   email: string,
   id: number,
