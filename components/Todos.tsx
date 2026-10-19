@@ -31,11 +31,9 @@ import {
 } from "@/lib/taak";
 import { setPreferenceCookie } from "./Sidebar/cookies";
 import {
-  BoardIcon,
   CheckIcon,
   ChevronIcon,
   ExternalIcon,
-  MenuIcon,
   InboxIcon,
   MoreIcon,
   PencilIcon,
@@ -68,29 +66,35 @@ const SORTEERDERS: Record<Sortering, (a: Taak, b: Taak) => number> = {
   eigen: (a, b) => (a.positie ?? -1) - (b.positie ?? -1),
 };
 
-const statusKlasse = (status: Status) => styles[`st-${status}`];
-const prioKlasse = (prio: Prio) => styles[`pr-${prio}`];
+/** Kleur van de chip (data-tint van de toolkit); zonder tint is de chip neutraal. */
+const STATUS_TINT: Record<Status, string | undefined> = {
+  "niet-gestart": undefined,
+  bezig: "lilac",
+  wacht: "yellow",
+  klaar: "dark",
+  geblokkeerd: "pink",
+};
+const PRIO_TINT: Record<Prio, string | undefined> = {
+  1: "pink-strong",
+  2: "pink",
+  3: "yellow-soft",
+  4: undefined,
+};
+/** Dezelfde keuzes als stip in het menu. */
+const STATUS_STIP: Record<Status, string | null> = {
+  "niet-gestart": null,
+  bezig: "lilac",
+  wacht: "yellow",
+  klaar: null,
+  geblokkeerd: "pink-soft",
+};
+const PRIO_STIP: Record<Prio, string | null> = {
+  1: "pink",
+  2: "pink-soft",
+  3: "yellow",
+  4: null,
+};
 const prioLabel = (prio: Prio) => `${prio} | ${PRIO_LABELS[prio]}`;
-
-function SearchIcon() {
-  return (
-    <svg
-      className={styles.zoekIcoon}
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
-  );
-}
 
 const berichtTekst = (taak: Taak) => taak.bericht ?? taak.titel;
 
@@ -196,14 +200,17 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     taak.status !== "klaar" && (
       <div className={styles.reactie}>
         <span className={styles.reactieLabel}>
+          <span className="nd-dot" data-tint="pink" aria-hidden="true" />
           Nieuwe reactie{taak.auteur && ` van ${taak.auteur}`}
         </span>
         {taak.bericht && (
-          <span className={styles.reactieTekst}>{taak.bericht}</span>
+          <span className={`nd-meta ${styles.reactieTekst}`}>
+            {taak.bericht}
+          </span>
         )}
         <button
           type="button"
-          className={styles.gezien}
+          className="nd-button nd-button--small"
           onClick={() => zetGezien(taak)}
         >
           Gezien<span className="visually-hidden">: {taak.titel}</span>
@@ -240,7 +247,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return STATUSSEN.map((status, nummer) => ({
       label: STATUS_LABELS[status],
       scheiding: nummer === 0 ? scheiding : undefined,
-      stip: statusKlasse(status),
+      stip: STATUS_STIP[status],
       gekozen: status === taak.status,
       kies: () => zetStatus(taak, status),
     }));
@@ -249,7 +256,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
   function prioItems(taak: Taak): MenuItem[] {
     return PRIOS.map((prio) => ({
       label: prioLabel(prio),
-      stip: prioKlasse(prio),
+      stip: PRIO_STIP[prio],
       gekozen: prio === taak.prio,
       kies: () => zetPrio(taak, prio),
     }));
@@ -276,7 +283,8 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
 
   const prioKnop = (taak: Taak) => (
     <TodosMenu
-      knopClass={`${styles.chip} ${styles.chipKnop} ${prioKlasse(taak.prio)}`}
+      knopClass={`nd-chip ${styles.chipKnop}`}
+      tint={PRIO_TINT[taak.prio]}
       ariaLabel={`${prioLabel(taak.prio)}, prioriteit wijzigen: ${taak.titel}`}
       items={prioItems(taak)}
     >
@@ -292,7 +300,12 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return "Openen";
   };
 
-  const bronLink = (taak: Taak, klasse: string, inhoud: React.ReactNode) => {
+  const bronLink = (
+    taak: Taak,
+    klasse: string,
+    inhoud: React.ReactNode,
+    tint?: string,
+  ) => {
     if (!taak.url) return null;
     const extern = /^https?:/.test(taak.url);
     const label = `${openTekst(taak)}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
@@ -300,6 +313,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       <a
         href={taak.url}
         className={klasse}
+        data-tint={tint}
         aria-label={label}
         target="_blank"
         rel="noopener noreferrer"
@@ -307,7 +321,12 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         {inhoud}
       </a>
     ) : (
-      <NextLink href={taak.url} className={klasse} aria-label={label}>
+      <NextLink
+        href={taak.url}
+        className={klasse}
+        data-tint={tint}
+        aria-label={label}
+      >
         {inhoud}
       </NextLink>
     );
@@ -319,12 +338,17 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return (
       bronLink(
         taak,
-        `${styles.chip} ${styles.slack} ${styles.chipLink}`,
+        `nd-chip ${styles.chipLink}`,
         <>
           {naam}
           <ExternalIcon aria-hidden="true" />
         </>,
-      ) ?? <span className={`${styles.chip} ${styles.slack}`}>{naam}</span>
+        "lilac-soft",
+      ) ?? (
+        <span className="nd-chip" data-tint="lilac-soft">
+          {naam}
+        </span>
+      )
     );
   };
 
@@ -335,12 +359,12 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       .filter(Boolean)
       .join(" · ");
     if (taak.bron === "eigen" || !tekst) return null;
-    return <span className={styles.context}>{tekst}</span>;
+    return <span className={`nd-meta ${styles.context}`}>{tekst}</span>;
   };
 
   const meer = (taak: Taak) => (
     <TodosMenu
-      knopClass={styles.rondeKnop}
+      knopClass="nd-icon-button nd-icon-button--small"
       ariaLabel={`Acties: ${taak.titel}`}
       items={actieItems(taak)}
     >
@@ -352,11 +376,14 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     taak.reactie !== null &&
     taak.status !== "klaar" && (
       <div className={styles.reactieBlok}>
-        <span className={styles.blokLabel}>
+        <span className={styles.reactieLabel}>
+          <span className="nd-dot" data-tint="pink" aria-hidden="true" />
           Nieuwe reactie{taak.auteur && ` van ${taak.auteur}`}
         </span>
         {taak.bericht && (
-          <span className={styles.blokTekst}>{taak.bericht}</span>
+          <span className={`nd-meta ${styles.reactieTekst}`}>
+            {taak.bericht}
+          </span>
         )}
       </div>
     );
@@ -367,7 +394,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       taak.bron !== "eigen" &&
       bronLink(
         taak,
-        styles.regel,
+        "nd-action",
         <>
           <ExternalIcon aria-hidden="true" />
           {openTekst(taak)}
@@ -380,7 +407,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         {gezien && (
           <button
             type="button"
-            className={`${styles.regel} ${styles.hoofd}`}
+            className="nd-action nd-action--main"
             onClick={() => zetGezien(taak)}
           >
             <CheckIcon aria-hidden="true" />
@@ -391,7 +418,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         {terug && (
           <button
             type="button"
-            className={styles.regel}
+            className="nd-action"
             onClick={() =>
               wijzig({ id: taak.id, lijst: "inbox" }, () =>
                 verplaatsTaakAction(taak.id, "inbox"),
@@ -411,7 +438,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return (
       <li
         key={taak.id}
-        className={`${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""} ${taak.reactie !== null && taak.status !== "klaar" ? styles.heeftReactie : ""}`}
+        className={`nd-row ${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""} ${taak.reactie !== null && taak.status !== "klaar" ? "nd-row--accent" : ""}`}
         data-kaart={taak.id}
         draggable
         onDragStart={(e) => {
@@ -426,7 +453,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         }}
       >
         <div className={styles.kop}>
-          <span className={styles.titel}>
+          <span className="nd-row__title">
             {taak.titel}
             <button
               type="button"
@@ -457,7 +484,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
       <section
         key={status}
         aria-label={STATUS_LABELS[status]}
-        className={`${styles.kolom} ${klaar ? styles.klaarZone : ""} ${over === status ? styles.over : ""}`}
+        className={`nd-column ${styles.kolom} ${klaar ? styles.klaarZone : ""} ${over === status ? styles.over : ""}`}
         onDragOver={(e) => {
           if (sleepId === null) return;
           e.preventDefault();
@@ -495,13 +522,13 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           setLijn(undefined);
         }}
       >
-        <div className={`${styles.kolomKop} ${statusKlasse(status)}`}>
+        <div className={styles.kolomKop}>
           <h2 className={styles.kolomNaam}>{STATUS_LABELS[status]}</h2>
-          <span className={styles.aantal}>{rijen.length}</span>
+          <span className="nd-badge">{rijen.length}</span>
           {!klaar && (
             <button
               type="button"
-              className={styles.plus}
+              className="nd-icon-button nd-icon-button--small"
               aria-label={`Taak toevoegen in ${STATUS_LABELS[status]}`}
               onClick={() => setNieuw(status)}
             >
@@ -510,12 +537,12 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           )}
         </div>
         {klaar ? (
-          <p className={styles.leeg}>
+          <p className="nd-empty">
             Sleep een kaart hierheen om af te ronden. Afgeronde taken staan in
             de lijstweergave.
           </p>
         ) : (
-          <ul className={styles.kaarten}>
+          <ul className={`nd-rows ${styles.kaarten}`}>
             {rijen.map((taak) => (
               <Fragment key={taak.id}>
                 {lijn?.status === status && lijn.voor === taak.id && (
@@ -528,7 +555,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
               <li className={styles.lijn} aria-hidden="true" />
             )}
             {rijen.length === 0 && (
-              <li className={styles.leeg}>Niets in deze kolom.</li>
+              <li className="nd-empty">Niets in deze kolom.</li>
             )}
           </ul>
         )}
@@ -541,11 +568,11 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     return (
       <li
         key={taak.id}
-        className={`${styles.rij} ${klaar ? styles.isKlaar : ""}`}
+        className={`nd-row ${styles.rij} ${klaar ? styles.isKlaar : ""}`}
       >
         <button
           type="button"
-          className={styles.vink}
+          className={`nd-icon-button nd-icon-button--small ${styles.vink}`}
           aria-pressed={klaar}
           aria-label={`${klaar ? "Weer openzetten" : "Afvinken"}: ${taak.titel}`}
           onClick={() => zetStatus(taak, klaar ? "niet-gestart" : "klaar")}
@@ -553,20 +580,21 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           <CheckIcon />
         </button>
         <span className={styles.titelBlok}>
-          <span className={styles.titel}>{taak.titel}</span>
+          <span className={`nd-row__title ${styles.titel}`}>{taak.titel}</span>
           {context(taak)}
           {reactie(taak)}
         </span>
         <TodosMenu
-          knopClass={`${styles.chip} ${styles.chipKnop} ${statusKlasse(taak.status)}`}
+          knopClass={`nd-chip ${styles.chipKnop}`}
+          tint={STATUS_TINT[taak.status]}
           ariaLabel={`${STATUS_LABELS[taak.status]}, status wijzigen: ${taak.titel}`}
           items={statusItems(taak)}
         >
           {STATUS_LABELS[taak.status]}
-          <ChevronIcon className={styles.chipPijl} />
+          <ChevronIcon aria-hidden="true" />
         </TodosMenu>
         <span>{prioKnop(taak)}</span>
-        <span>{bron(taak) ?? <span className={styles.stil}>Eigen</span>}</span>
+        <span>{bron(taak) ?? <span className="nd-meta">Eigen</span>}</span>
         {meer(taak)}
       </li>
     );
@@ -579,7 +607,10 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
     const klaar = zichtbaar.filter((taak) => taak.status === "klaar");
     return (
       <>
-        <div className={`${styles.rij} ${styles.rijKop}`} aria-hidden="true">
+        <div
+          className={`nd-eyebrow ${styles.rij} ${styles.rijKop}`}
+          aria-hidden="true"
+        >
           <span />
           <span>Taak</span>
           <span>Status</span>
@@ -587,19 +618,19 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           <span>Bron</span>
           <span />
         </div>
-        <ul className={styles.rijen}>
+        <ul className="nd-rows">
           {open.map(rij)}
-          {open.length === 0 && <li className={styles.leeg}>Niets open.</li>}
+          {open.length === 0 && <li className="nd-empty">Niets open.</li>}
         </ul>
-        <details className={styles.klaarBlok}>
+        <details className={`nd-disclosure ${styles.klaarBlok}`}>
           <summary>
-            <ChevronIcon className={styles.klaarPijl} />
+            <ChevronIcon aria-hidden="true" />
             Klaar ({klaar.length})
           </summary>
-          <ul className={styles.rijen}>
+          <ul className={`nd-rows ${styles.rijen}`}>
             {klaar.map(rij)}
             {klaar.length === 0 && (
-              <li className={styles.leeg}>Nog niets afgerond.</li>
+              <li className="nd-empty">Nog niets afgerond.</li>
             )}
           </ul>
         </details>
@@ -610,33 +641,31 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
   return (
     <>
       <div className={styles.balk}>
-        <div className={styles.wissel} role="group" aria-label="Weergave">
+        <div className="nd-filters" role="group" aria-label="Weergave">
           <button
             type="button"
-            className={styles.tab}
+            className="nd-filter"
             aria-pressed={weergave === "lijst"}
             onClick={() => kiesWeergave("lijst")}
           >
-            <MenuIcon />
             Lijst
           </button>
           <button
             type="button"
-            className={styles.tab}
+            className="nd-filter"
             aria-pressed={weergave === "kanban"}
             onClick={() => kiesWeergave("kanban")}
           >
-            <BoardIcon />
             Kanban
           </button>
         </div>
         {weergave === "kanban" && (
           <div className={styles.sorteer}>
-            <span className={styles.sorteerLabel} id="todos-sorteren">
+            <span className="nd-meta" id="todos-sorteren">
               Sorteren
             </span>
             <div
-              className={styles.wissel}
+              className="nd-filters"
               role="group"
               aria-labelledby="todos-sorteren"
             >
@@ -644,7 +673,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
                 <button
                   key={optie}
                   type="button"
-                  className={styles.tab}
+                  className="nd-filter"
                   aria-pressed={sortering === optie}
                   onClick={() => kiesSortering(optie)}
                 >
@@ -655,13 +684,13 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           </div>
         )}
         <div className={styles.zoek}>
-          <SearchIcon />
           <label className="visually-hidden" htmlFor="todos-zoek">
             Zoek in to-do&apos;s
           </label>
           <input
             id="todos-zoek"
             type="search"
+            className="nd-field nd-field--search"
             placeholder="Zoeken"
             autoComplete="off"
             value={zoek}
@@ -670,7 +699,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         </div>
         <button
           type="button"
-          className={styles.knop}
+          className="nd-button"
           aria-expanded={nieuw !== null}
           onClick={() => setNieuw(nieuw ? null : "niet-gestart")}
         >
@@ -687,6 +716,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
           <input
             ref={nieuwVeld}
             id="todos-nieuw"
+            className="nd-field"
             required
             placeholder={
               nieuw === "niet-gestart"
@@ -695,14 +725,14 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
             }
             autoComplete="off"
           />
-          <button type="submit" className={styles.knop}>
+          <button type="submit" className="nd-button">
             Toevoegen
           </button>
         </form>
       )}
 
       {zoek && zichtbaar.length === 0 ? (
-        <p className={styles.leeg}>Niets gevonden.</p>
+        <p className="nd-empty">Niets gevonden.</p>
       ) : weergave === "kanban" ? (
         <div
           className={styles.kanban}

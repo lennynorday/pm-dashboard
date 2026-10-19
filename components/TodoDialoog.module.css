@@ -1,71 +1,9 @@
-.dialoog {
-  width: min(560px, calc(100vw - 2 * var(--space-04)));
-  padding: var(--space-07);
-  border: 0;
-  border-radius: var(--radius-xl);
-  background: var(--color-raised);
-  color: var(--color-text);
-  box-shadow: 0 16px 48px rgb(61 16 40 / 0.3);
-}
-
-.dialoog::backdrop {
-  background: rgb(61 16 40 / 0.5);
-}
-
-.dialoog[open] {
-  animation: in 0.25s var(--ease);
-}
-
-@keyframes in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-
-.formulier {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.kop {
-  margin: 0;
-  font: 700 28px/0.95 var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: var(--heading-letter-spacing);
-}
-
-.label {
-  padding: 0;
-  font: 600 14px/1.35 var(--font-text);
-}
-
-.veld {
-  min-height: 48px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--norday-white);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-  color: var(--color-text);
-  font: 400 16px/1.35 var(--font-text);
-}
-
-.veld[aria-invalid="true"] {
-  box-shadow: inset 0 0 0 2px var(--norday-pink);
-}
-
-.fout {
-  margin: -6px 0 0;
-  color: #b5002f;
-  font: 600 13px/1.35 var(--font-text);
-}
+/* Alleen wat de toolkit-dialoog niet heeft: het bronbericht en de prioriteitskeuze. */
 
 .bericht {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
+  padding: var(--space-03) var(--space-04);
+  border-radius: var(--radius-sm);
   background: var(--color-card);
 }
 
@@ -73,29 +11,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
+  gap: var(--space-01) var(--space-03);
   margin-bottom: var(--space-02);
-  color: var(--color-text-muted);
-  font: 400 13px/1.35 var(--font-text);
-}
-
-.bron {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--radius-pill);
-  background: var(--norday-lilac);
-  color: var(--color-text);
-  font-weight: 600;
 }
 
 .link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-01);
   margin-left: auto;
-  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -103,7 +27,7 @@
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  font: 400 14px/1.45 var(--font-text);
+  font: var(--type-body);
   overflow-wrap: anywhere;
   white-space: pre-line;
   -webkit-box-orient: vertical;
@@ -122,19 +46,12 @@
 
 .prio legend {
   float: left;
-  margin-right: var(--space-02);
+  margin: 0 var(--space-02) 0 0;
 }
 
+/* Radio als knop: het echte invoerveld ligt onzichtbaar over de pil. */
 .keuze {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
-  background: var(--norday-white);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-  font: 500 13px/1 var(--font-text);
   cursor: pointer;
 }
 
@@ -148,56 +65,11 @@
 
 .keuze:has(input:checked) {
   background: var(--norday-dark);
-  color: var(--norday-white);
   box-shadow: none;
+  color: var(--norday-white);
 }
 
 .keuze:has(input:focus-visible) {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
-}
-
-.acties {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-02);
-  margin-top: 6px;
-}
-
-.annuleer,
-.bevestig {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  font: 500 14px/1 var(--font-text);
-  cursor: pointer;
-  transition: background 0.2s var(--ease);
-}
-
-.annuleer {
-  background: var(--norday-white);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-  color: var(--color-text);
-}
-
-.annuleer:hover {
-  background: var(--color-bg);
-}
-
-.bevestig {
-  background: var(--norday-dark);
-  color: var(--norday-white);
-}
-
-.bevestig:hover {
-  background: var(--color-dark-hover);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dialoog[open] {
-    animation: none;
-  }
 }
