@@ -64,45 +64,49 @@ export function TodoDialoog({
   return (
     <dialog
       ref={dialoog}
-      className={styles.dialoog}
+      className="nd-dialog"
       aria-labelledby="todo-dialoog-kop"
       onClose={onSluit}
       onClick={(event) => {
         if (event.target === event.currentTarget) dialoog.current?.close();
       }}
     >
-      <form className={styles.formulier} noValidate onSubmit={verstuur}>
-        <h2 id="todo-dialoog-kop" className={styles.kop}>
+      <form className="nd-dialog__body" noValidate onSubmit={verstuur}>
+        <h2 id="todo-dialoog-kop" className="nd-title">
           {modus === "nieuw" ? "Op je to-do's zetten" : "Titel aanpassen"}
         </h2>
-        <label className={styles.label} htmlFor="todo-dialoog-titel">
-          Wat moet er gebeuren?
-        </label>
-        <input
-          ref={veld}
-          id="todo-dialoog-titel"
-          className={styles.veld}
-          value={tekst}
-          maxLength={120}
-          autoComplete="off"
-          placeholder="Bijvoorbeeld: eindtijden agendapagina Effenaar controleren"
-          aria-invalid={fout || undefined}
-          aria-describedby={fout ? "todo-dialoog-fout" : undefined}
-          onChange={(event) => {
-            setTekst(event.target.value);
-            setFout(false);
-          }}
-        />
-        {fout && (
-          <p id="todo-dialoog-fout" className={styles.fout} role="alert">
-            Schrijf kort op wat er moet gebeuren.
-          </p>
-        )}
+        <div>
+          <label className="nd-label" htmlFor="todo-dialoog-titel">
+            Wat moet er gebeuren?
+          </label>
+          <input
+            ref={veld}
+            id="todo-dialoog-titel"
+            className="nd-field"
+            value={tekst}
+            maxLength={120}
+            autoComplete="off"
+            placeholder="Bijvoorbeeld: eindtijden agendapagina Effenaar controleren"
+            aria-invalid={fout || undefined}
+            aria-describedby={fout ? "todo-dialoog-fout" : undefined}
+            onChange={(event) => {
+              setTekst(event.target.value);
+              setFout(false);
+            }}
+          />
+          {fout && (
+            <p id="todo-dialoog-fout" className="nd-error" role="alert">
+              Schrijf kort op wat er moet gebeuren.
+            </p>
+          )}
+        </div>
 
         {bron && (
           <figure className={styles.bericht}>
-            <figcaption className={styles.herkomst}>
-              <span className={styles.bron}>{bron.label}</span>
+            <figcaption className={`nd-meta ${styles.herkomst}`}>
+              <span className="nd-chip" data-tint="lilac">
+                {bron.label}
+              </span>
               <span>{bron.wie}</span>
               {bron.url &&
                 (/^https?:/.test(bron.url) ? (
@@ -121,9 +125,12 @@ export function TodoDialoog({
 
         {modus === "nieuw" && (
           <fieldset className={styles.prio}>
-            <legend className={styles.label}>Prioriteit</legend>
+            <legend className="nd-label">Prioriteit</legend>
             {PRIOS.map((optie) => (
-              <label key={optie} className={styles.keuze}>
+              <label
+                key={optie}
+                className={`nd-button nd-button--small nd-button--quiet ${styles.keuze}`}
+              >
                 <input
                   type="radio"
                   name="prio"
@@ -137,15 +144,15 @@ export function TodoDialoog({
           </fieldset>
         )}
 
-        <div className={styles.acties}>
+        <div className="nd-dialog__foot">
           <button
             type="button"
-            className={styles.annuleer}
+            className="nd-button nd-button--quiet"
             onClick={() => dialoog.current?.close()}
           >
             Annuleren
           </button>
-          <button type="submit" className={styles.bevestig}>
+          <button type="submit" className="nd-button">
             {modus === "nieuw" ? "Zet op to-do's" : "Opslaan"}
           </button>
         </div>

@@ -368,7 +368,7 @@ a:hover {
 .nd-row__title {
   margin: 0;
   font: var(--type-item);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Rustige acties naast of onder een rij, gescheiden door een zachte lijn */

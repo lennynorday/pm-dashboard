@@ -5,8 +5,8 @@ import styles from "./Todos.module.css";
 
 export type MenuItem = {
   label: string;
-  /** Klasse voor het gekleurde stipje; het label blijft de eigenlijke informatie. */
-  stip?: string;
+  /** data-tint van het gekleurde stipje (nd-dot), null voor een neutrale stip; het label blijft de eigenlijke informatie. */
+  stip?: string | null;
   /** Alleen bij keuzes uit een rij (status, prioriteit); anders een gewone actie. */
   gekozen?: boolean;
   /** Een streep boven dit item. */
@@ -16,13 +16,21 @@ export type MenuItem = {
 
 type Props = {
   knopClass: string;
+  /** data-tint voor de knop zelf, als die een chip is. */
+  tint?: string;
   ariaLabel: string;
   items: MenuItem[];
   children: React.ReactNode;
 };
 
 /** Klein popover-menu bij een knop. De browser regelt klikken buiten en Escape. */
-export function TodosMenu({ knopClass, ariaLabel, items, children }: Props) {
+export function TodosMenu({
+  knopClass,
+  tint,
+  ariaLabel,
+  items,
+  children,
+}: Props) {
   const knop = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
@@ -53,6 +61,7 @@ export function TodosMenu({ knopClass, ariaLabel, items, children }: Props) {
         ref={knop}
         type="button"
         className={knopClass}
+        data-tint={tint}
         aria-haspopup="menu"
         aria-label={ariaLabel}
         onPointerDown={() => {
@@ -67,7 +76,7 @@ export function TodosMenu({ knopClass, ariaLabel, items, children }: Props) {
         popover="auto"
         role="menu"
         aria-label={ariaLabel}
-        className={styles.menu}
+        className={`nd-menu ${styles.menu}`}
         onToggle={(e) => {
           if (e.newState === "open")
             menu.current?.querySelector("button")?.focus();
@@ -76,20 +85,21 @@ export function TodosMenu({ knopClass, ariaLabel, items, children }: Props) {
       >
         {items.map((item) => (
           <div key={item.label} role="none">
-            {item.scheiding && <hr className={styles.streep} />}
+            {item.scheiding && <hr className="nd-menu__divider" />}
             <button
               type="button"
               role={item.gekozen === undefined ? "menuitem" : "menuitemradio"}
               aria-checked={item.gekozen}
-              className={styles.menuItem}
+              className="nd-menu__item"
               onClick={() => {
                 menu.current?.hidePopover();
                 item.kies();
               }}
             >
-              {item.stip && (
+              {item.stip !== undefined && (
                 <span
-                  className={`${styles.stip} ${item.stip}`}
+                  className="nd-dot"
+                  data-tint={item.stip ?? undefined}
                   aria-hidden="true"
                 />
               )}

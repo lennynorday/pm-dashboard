@@ -1,3 +1,5 @@
+/* Alleen layout; knoppen, chips, velden, kaarten en menu's komen uit de toolkit. */
+
 /* Werkbalk */
 .balk {
   display: flex;
@@ -7,66 +9,17 @@
   margin-bottom: var(--space-05);
 }
 
-.wissel {
-  display: inline-flex;
-  padding: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
-}
-
-.tab {
-  display: inline-flex;
+.sorteer {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 var(--space-04);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--color-text);
-  font: 500 14px/1 var(--font-text);
-  cursor: pointer;
-}
-
-.tab svg {
-  width: 16px;
-  height: 16px;
-}
-
-.tab[aria-pressed="true"] {
-  background: var(--norday-dark);
-  color: var(--norday-white);
+  gap: var(--space-02) var(--space-03);
 }
 
 .zoek {
-  position: relative;
-  margin-left: auto;
-}
-
-.zoekIcoon {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.zoek input,
-.nieuw input {
-  min-height: 44px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line);
-  color: var(--color-text);
-  font: 400 14px/1 var(--font-text);
-}
-
-.zoek input {
   width: 240px;
   max-width: 100%;
-  padding: 0 var(--space-04) 0 40px;
+  margin-left: auto;
 }
 
 .nieuw {
@@ -78,103 +31,29 @@
 .nieuw input {
   flex: 1;
   max-width: 480px;
-  padding: 0 var(--space-04);
 }
 
-.knop {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 var(--space-04);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--norday-dark);
-  color: var(--norday-white);
-  font: 500 14px/1 var(--font-text);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.2s var(--ease);
+/* Het popover-menu staat op de plek die TodosMenu inline instelt. */
+.menu {
+  position: fixed;
+  inset: auto;
 }
 
-.knop:hover {
-  background: var(--color-dark-hover);
-}
-
-.knop svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Labels voor status, prioriteit en bron */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  color: var(--norday-dark);
-  font: 600 12px/1 var(--font-text);
-  white-space: nowrap;
-}
-
-.chipKnop {
+/* Chips die een menu of link openen */
+.chipKnop,
+.chipLink {
   cursor: pointer;
 }
 
-.chipKnop:hover {
+.chipKnop:hover,
+.chipLink:hover {
   filter: brightness(0.95);
 }
 
-.chipPijl {
+.chipKnop svg,
+.chipLink svg {
   width: 12px;
   height: 12px;
-}
-
-.slack {
-  background: var(--color-lilac-soft);
-}
-
-.st-niet-gestart {
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-}
-
-.st-bezig {
-  background: var(--norday-lilac);
-}
-
-.st-wacht {
-  background: var(--norday-yellow);
-}
-
-.st-klaar {
-  background: var(--norday-dark);
-  color: var(--norday-white);
-}
-
-.st-geblokkeerd {
-  background: var(--color-pink-soft);
-}
-
-.pr-1 {
-  background: var(--color-pink-soft);
-  box-shadow: inset 0 0 0 2px var(--norday-pink);
-}
-
-.pr-2 {
-  background: var(--color-pink-soft);
-}
-
-.pr-3 {
-  background: rgb(255 243 85 / 0.4);
-}
-
-.pr-4 {
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
 }
 
 /* Kanban */
@@ -184,24 +63,17 @@
   gap: var(--space-03);
   padding-bottom: var(--space-03);
   overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 .kolom {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-02);
   min-height: 260px;
-  padding: var(--space-02);
-  border-radius: var(--radius-lg);
-  background: var(--color-card);
 }
 
 .over {
-  box-shadow: inset 0 0 0 2px var(--norday-dark);
+  box-shadow: var(--ring-strong);
 }
 
-.klaarZone {
+.kolom.klaarZone {
   border: 2px dashed var(--color-line);
   background: transparent;
 }
@@ -215,82 +87,32 @@
   align-items: center;
   gap: var(--space-02);
   min-height: 44px;
-  padding: 0 6px 0 var(--space-04);
-  border-radius: var(--radius-pill);
+  padding: 0 var(--space-04);
+}
+
+/* De plusknop zit dichter bij de rand; zonder knop (Klaar) blijft de padding gelijk. */
+.kolomKop > button {
+  margin-right: calc(-1 * var(--space-02));
 }
 
 .kolomNaam {
   margin: 0;
-  font: 600 14px/1.35 var(--font-text);
+  font: var(--type-item);
 }
 
-.aantal {
+.kolomKop > :global(.nd-badge) {
   margin-left: auto;
-  font: 600 14px/1.35 var(--font-text);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Zonder plus-knop (Klaar) evenveel ruimte rechts als links. */
-.aantal:last-child {
-  margin-right: calc(var(--space-04) - 6px);
-}
-
-.plus,
-.rondeKnop {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: inherit;
-  cursor: pointer;
-}
-
-.plus {
-  background: rgb(255 255 255 / 0.5);
-}
-
-.plus svg,
-.rondeKnop svg {
-  width: 18px;
-  height: 18px;
-}
-
-.rondeKnop {
-  background: var(--color-card);
-  color: var(--color-text);
-}
-
-.plus:hover,
-.rondeKnop:hover {
-  background: var(--norday-dark);
-  color: var(--norday-white);
-}
-
-.kaarten,
-.rijen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-02);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .kaarten {
   flex: 1;
+  align-content: start;
 }
 
 .kaart {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
+  gap: var(--space-03);
   cursor: grab;
 }
 
@@ -298,16 +120,26 @@
   opacity: 0.4;
 }
 
-.titel {
-  font: 600 15px/1.35 var(--font-text);
-  overflow-wrap: anywhere;
-}
-
+/* Prioriteit linksboven op een eigen regel, de titel eronder over de volle breedte */
 .kop {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
   gap: var(--space-02);
+}
+
+.kop :global(.nd-row__title) {
+  align-self: stretch;
+}
+
+/* Op de kaart een tikje kleiner dan de standaardchip */
+.kop .chipKnop {
+  height: 20px;
+  padding: 0 var(--space-02);
+}
+
+.kaart > .context {
+  margin-top: calc(-1 * var(--space-01));
 }
 
 .potlood {
@@ -315,10 +147,10 @@
   place-items: center;
   width: 24px;
   height: 24px;
-  margin: -2px 0 -2px 2px;
+  margin-left: var(--space-01);
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--color-text-muted);
   vertical-align: middle;
@@ -329,28 +161,64 @@
   color: var(--color-text);
 }
 
-.potlood:focus-visible,
-.regel:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
 .potlood svg {
   width: 14px;
   height: 14px;
 }
 
-.leeg {
-  margin: 0;
-  padding: var(--space-03) var(--space-02);
-  color: var(--color-text-muted);
-  font: var(--type-label);
-  font-size: 13px;
+/* Invoegplek bij Eigen volgorde */
+.lijn {
+  height: 3px;
+  margin: calc(var(--space-01) / -2) var(--space-02);
+  border-radius: var(--radius-pill);
+  background: var(--norday-pink);
+  pointer-events: none;
 }
 
-.stil {
-  color: var(--color-text-muted);
-  font-size: 13px;
+/* Nieuwe reactie in het gesprek van een to-do */
+.reactie,
+.reactieBlok {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-02);
+}
+
+.reactieBlok {
+  align-items: stretch;
+  gap: 2px;
+  padding: var(--space-02) var(--space-03);
+  border-radius: var(--radius-sm);
+  background: var(--norday-white);
+  box-shadow: inset 0 0 0 1px var(--color-pink-soft);
+}
+
+.reactieLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  font: var(--type-small);
+}
+
+.reactieTekst {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.reactie .reactieTekst {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.acties {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-02);
+  border-top: 1px solid var(--color-line-soft);
 }
 
 /* Lijst */
@@ -364,16 +232,12 @@
 .rijKop {
   margin-bottom: var(--space-02);
   padding: 0 var(--space-04);
-  color: var(--color-text-muted);
-  font: 600 12px/1 var(--font-text);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
-.rijen .rij {
-  padding: var(--space-03) 14px var(--space-03) var(--space-04);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
+.titelBlok {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
 }
 
 .isKlaar .titel {
@@ -381,62 +245,23 @@
   text-decoration: line-through;
 }
 
-.vink {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  box-shadow: inset 0 0 0 2px var(--color-line);
-  color: var(--norday-white);
-  cursor: pointer;
-}
-
-.vink svg {
-  width: 18px;
-  height: 18px;
-}
-
+/* Afvinkcirkel: het vinkje verschijnt pas bij hover, focus of als de taak klaar is. */
 .vink[aria-pressed="true"] {
   background: var(--norday-dark);
+  color: var(--norday-white);
 }
 
-.vink:hover:not([aria-pressed="true"]) {
+.vink:not([aria-pressed="true"]):hover {
+  background: var(--color-raised);
   color: var(--color-text-muted);
+}
+
+.vink:not([aria-pressed="true"]):not(:hover):not(:focus-visible) svg {
+  opacity: 0;
 }
 
 .klaarBlok {
   margin-top: var(--space-06);
-}
-
-.klaarBlok summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-02);
-  width: max-content;
-  min-height: 44px;
-  padding: 0 var(--space-04) 0 var(--space-03);
-  border-radius: var(--radius-pill);
-  background: var(--color-card);
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-
-.klaarBlok summary::-webkit-details-marker {
-  display: none;
-}
-
-.klaarPijl {
-  transform: rotate(-90deg);
-  transition: transform 0.2s var(--ease);
-}
-
-.klaarBlok[open] .klaarPijl {
-  transform: none;
 }
 
 .klaarBlok .rijen {
@@ -456,250 +281,4 @@
     grid-column: 2;
     justify-self: start;
   }
-}
-
-/* Menu */
-.menu {
-  position: fixed;
-  inset: auto;
-  min-width: 200px;
-  margin: 0;
-  padding: 6px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--norday-white);
-  color: var(--color-text);
-  box-shadow:
-    0 0 0 1px var(--color-line),
-    0 8px 24px rgb(61 16 40 / 0.14);
-}
-
-.menuItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 40px;
-  padding: 0 var(--space-03);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text);
-  font: 500 14px/1 var(--font-text);
-  text-align: left;
-  cursor: pointer;
-}
-
-.menuItem:hover,
-.menuItem:focus-visible {
-  background: var(--color-bg);
-}
-
-.menuItem[aria-checked="true"] {
-  font-weight: 700;
-}
-
-.stip {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border-radius: 50%;
-}
-
-.streep {
-  height: 1px;
-  margin: 6px 4px;
-  border: 0;
-  background: var(--color-line-soft);
-}
-
-/* Bron en context bij taken uit Slack of de feed */
-.chipLink {
-  text-decoration: none;
-  color: var(--color-text);
-}
-
-.chipLink:hover {
-  filter: brightness(0.95);
-}
-
-.chipLink:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.chipLink svg {
-  width: 11px;
-  height: 11px;
-  opacity: 0.7;
-}
-
-.titelBlok {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.context {
-  color: var(--color-text-muted);
-  font-size: 12.5px;
-  overflow-wrap: anywhere;
-}
-
-.kaart > .context {
-  margin-top: -4px;
-}
-
-.sorteer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-02) var(--space-03);
-}
-
-.sorteerLabel {
-  color: var(--color-text-muted);
-  font: var(--type-label);
-}
-
-/* Invoegplek bij Eigen volgorde */
-.lijn {
-  height: 3px;
-  margin: -2px var(--space-02);
-  border-radius: 2px;
-  background: var(--norday-pink);
-  pointer-events: none;
-}
-
-/* Nieuwe reactie in het gesprek van een to-do */
-.heeftReactie {
-  box-shadow: inset 0 0 0 2px var(--norday-pink);
-}
-
-.reactie {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.reactieLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--norday-pink);
-  font: 600 12.5px/1.35 var(--font-text);
-}
-
-.reactieLabel::before {
-  content: "";
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--norday-pink);
-}
-
-.reactieTekst {
-  display: -webkit-box;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.gezien {
-  min-height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--norday-dark);
-  color: var(--norday-white);
-  font: 500 13px/1 var(--font-text);
-  cursor: pointer;
-}
-
-.gezien:hover {
-  background: #5a1a3b;
-}
-
-/* Reactie en acties op de kanbankaart */
-.reactieBlok {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--norday-white);
-  box-shadow: inset 0 0 0 1px var(--color-pink-soft);
-}
-
-.blokLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font: 600 12.5px/1.35 var(--font-text);
-}
-
-.blokLabel::before {
-  content: "";
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--norday-pink);
-}
-
-.blokTekst {
-  display: -webkit-box;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.acties {
-  display: flex;
-  flex-direction: column;
-  padding-top: 6px;
-  border-top: 1px solid var(--color-line-soft);
-}
-
-.regel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-02);
-  height: 30px;
-  padding: 0 var(--space-02);
-  margin: 0 calc(-1 * var(--space-02));
-  border: 0;
-  border-radius: var(--space-02);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: 400 14px/1 var(--font-text);
-  text-align: left;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.regel:hover {
-  background: var(--color-card);
-  color: var(--color-text);
-}
-
-.hoofd {
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.regel svg {
-  flex: none;
-  width: 16px;
-  height: 16px;
 }
