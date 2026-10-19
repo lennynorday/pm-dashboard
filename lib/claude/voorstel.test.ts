@@ -8,12 +8,11 @@ const envelop = (result: string, is_error = false) =>
 test("een geldig object, ook in een codeblok, wordt een voorstel", () => {
   const object = {
     soort: "gmail-concept",
-    ontvanger: "klant@voorbeeld.nl",
-    onderwerp: "Re: Offerte",
     tekst: "Dag Jan, dank voor je mail.",
   };
+  // Ontvanger en onderwerp komen uit de bron, niet van Claude.
   const uitkomst = {
-    voorstel: { ...object },
+    voorstel: { ...object, ontvanger: null, onderwerp: null },
   };
   assert.deepStrictEqual(
     parseUitvoer(envelop(JSON.stringify(object)), "gmail-concept"),
@@ -28,7 +27,7 @@ test("een geldig object, ook in een codeblok, wordt een voorstel", () => {
   );
 });
 
-test("een advies mag altijd, en krijgt geen ontvanger of onderwerp", () => {
+test("een advies mag altijd; een ontvanger van Claude wordt genegeerd", () => {
   assert.deepStrictEqual(
     parseUitvoer(
       envelop('{"soort":"advies","ontvanger":"x@y.nl","tekst":"Bel hem."}'),

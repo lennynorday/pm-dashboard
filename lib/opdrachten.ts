@@ -32,7 +32,6 @@ function parseOpdracht(row: Record<string, unknown>): Opdracht | null {
     taakId: row.taak_id,
     status,
     soort,
-    instructie: tekst(row.instructie) ?? "",
     fout: tekst(row.fout),
     voorstel:
       typeof row.tekst === "string"
@@ -104,28 +103,15 @@ export function maakOpdracht(
   return Number(lastInsertRowid);
 }
 
-/** Opnieuw proberen na een mislukte run; geeft de opdracht terug als hij weer bezig is. */
-export function herstart(
-  email: string,
-  id: number,
-): { taakId: number; instructie: string; soort: Soort } | null {
-  const row = database()
+/** Opnieuw proberen na een mislukte run; true als de opdracht weer bezig is. */
+export function herstart(email: string, id: number): boolean {
+  const { changes } = database()
     .prepare(
-      "SELECT taak_id, instructie, soort FROM opdrachten WHERE email = ? AND id = ? AND status = 'mislukt'",
+      `UPDATE opdrachten SET status = 'bezig', fout = NULL, klaar = NULL, gestart = ?
+       WHERE email = ? AND id = ? AND status = 'mislukt'`,
     )
-    .get(email, id);
-  const soort = parseSoort(row?.soort);
-  if (!row || !soort || typeof row.taak_id !== "number") return null;
-  database()
-    .prepare(
-      "UPDATE opdrachten SET status = 'bezig', fout = NULL, klaar = NULL, gestart = ? WHERE id = ?",
-    )
-    .run(Date.now(), id);
-  return {
-    taakId: row.taak_id,
-    instructie: tekst(row.instructie) ?? "",
-    soort,
-  };
+    .run(Date.now(), email, id);
+  return changes === 1;
 }
 
 /** De instructie en soort voor een run, zolang de opdracht bezig is. */
@@ -148,17 +134,19 @@ export function leesBezig(
 /** Bewaart het voorstel als eerste versie en zet de opdracht op voorstel. */
 export function rondAf(id: number, voorstel: Voorstel): void {
   const nu = Date.now();
+  // Alleen een opdracht die nog bezig is, krijgt een versie (niet na afwijzen of een time-out).
+  const { changes } = database()
+    .prepare(
+      "UPDATE opdrachten SET status = 'voorstel', soort = ?, fout = NULL, klaar = ? WHERE id = ? AND status = 'bezig'",
+    )
+    .run(voorstel.soort, nu, id);
+  if (changes !== 1) return;
   database()
     .prepare(
       `INSERT INTO opdracht_versies (opdracht_id, ontvanger, onderwerp, tekst, aangemaakt)
        VALUES (?, ?, ?, ?, ?)`,
     )
     .run(id, voorstel.ontvanger, voorstel.onderwerp, voorstel.tekst, nu);
-  database()
-    .prepare(
-      "UPDATE opdrachten SET status = 'voorstel', soort = ?, fout = NULL, klaar = ? WHERE id = ? AND status = 'bezig'",
-    )
-    .run(voorstel.soort, nu, id);
 }
 
 export function markeerMislukt(id: number, fout: string): void {

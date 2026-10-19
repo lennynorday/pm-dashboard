@@ -35,27 +35,33 @@ export async function draaiClaude(prompt: string): Promise<Run> {
   const map = await mkdtemp(path.join(tmpdir(), "pm-claude-"));
   try {
     return await new Promise<Run>((klaar) => {
-      const proces = spawn(CLAUDE, ARGS, {
-        cwd: map,
-        timeout: TIMEOUT_MS,
-        killSignal: "SIGKILL",
-      });
+      const proces = spawn(CLAUDE, ARGS, { cwd: map });
+      let verlopen = false;
+      const timer = setTimeout(() => {
+        verlopen = true;
+        proces.kill("SIGKILL");
+      }, TIMEOUT_MS);
       let stdout = "";
       let stderr = "";
       proces.stdout.on("data", (deel: Buffer) => (stdout += deel));
       proces.stderr.on("data", (deel: Buffer) => (stderr += deel));
       proces.stdin.on("error", () => {});
-      proces.on("error", (fout: NodeJS.ErrnoException) =>
+      proces.on("error", (fout: NodeJS.ErrnoException) => {
+        clearTimeout(timer);
         klaar({
           fout:
             fout.code === "ENOENT"
               ? "Claude Code niet gevonden"
               : `Claude Code starten mislukte: ${fout.message}`,
-        }),
-      );
+        });
+      });
       proces.on("close", (code, signaal) => {
-        if (signaal) {
+        clearTimeout(timer);
+        if (verlopen) {
           return klaar({ fout: "Claude reageerde niet binnen 3 minuten" });
+        }
+        if (signaal) {
+          return klaar({ fout: `Claude Code werd onderbroken (${signaal})` });
         }
         if (code !== 0 && !stdout.trim()) {
           return klaar({

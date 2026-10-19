@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import {
   eigenLinkFouten,
@@ -594,7 +595,7 @@ export async function zetUitAction(
       instructie.trim().slice(0, MAX_INSTRUCTIE),
       soortVoorBron(bron),
     );
-    if (id) void draaiOpdracht(id);
+    if (id) after(() => draaiOpdracht(id));
   });
 }
 
@@ -604,7 +605,7 @@ export async function opnieuwUitzettenAction(
 ): Promise<void> {
   if (!Number.isInteger(opdrachtId)) return;
   await bijTaken((email) => {
-    if (herstart(email, opdrachtId)) void draaiOpdracht(opdrachtId);
+    if (herstart(email, opdrachtId)) after(() => draaiOpdracht(opdrachtId));
   });
 }
 
@@ -616,15 +617,17 @@ export async function akkoordAction(opdrachtId: number): Promise<void> {
   );
 }
 
-/** Afwijzen haalt het voorstel weg; `afwijzen = false` maakt dat ongedaan. */
+/** Afwijzen haalt het voorstel (of de mislukte opdracht) weg; `afwijzen = false` maakt dat voor een voorstel ongedaan. */
 export async function wijsAfAction(
   opdrachtId: number,
   afwijzen: boolean,
 ): Promise<void> {
   if (!Number.isInteger(opdrachtId)) return;
-  await bijTaken((email) =>
-    afwijzen
-      ? zetBesluit(email, opdrachtId, "voorstel", "afgewezen")
-      : zetBesluit(email, opdrachtId, "afgewezen", "voorstel"),
-  );
+  await bijTaken((email) => {
+    if (!afwijzen)
+      return zetBesluit(email, opdrachtId, "afgewezen", "voorstel");
+    // Ook een mislukte opdracht kan weg, zodat je opnieuw kunt beginnen.
+    zetBesluit(email, opdrachtId, "voorstel", "afgewezen");
+    zetBesluit(email, opdrachtId, "mislukt", "afgewezen");
+  });
 }

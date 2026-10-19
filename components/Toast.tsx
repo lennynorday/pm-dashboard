@@ -1,7 +1,7 @@
 "use client";
 
 import NextLink from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckIcon } from "./icons";
 import styles from "./Toast.module.css";
 
@@ -27,18 +27,31 @@ export function useToast() {
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  function toon(tekst: string, opties: ToastOpties = {}) {
+  const loop = useCallback(() => {
     clearTimeout(timer.current);
-    setGetoond({ tekst, opties });
-    setZichtbaar(true);
     timer.current = setTimeout(() => setZichtbaar(false), TOON_MS);
-  }
+  }, []);
+
+  /** Stabiel, zodat een effect hem kan gebruiken. */
+  const toon = useCallback(
+    (tekst: string, opties: ToastOpties = {}) => {
+      setGetoond({ tekst, opties });
+      setZichtbaar(true);
+      loop();
+    },
+    [loop],
+  );
 
   const element = (
     <div
       role="status"
       className={styles.toast}
       data-zichtbaar={zichtbaar || undefined}
+      // Met de muis erop of de focus erin blijft de melding staan (WCAG 2.2.1).
+      onMouseEnter={() => clearTimeout(timer.current)}
+      onMouseLeave={() => zichtbaar && loop()}
+      onFocus={() => clearTimeout(timer.current)}
+      onBlur={() => zichtbaar && loop()}
     >
       {getoond && (
         <>

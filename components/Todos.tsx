@@ -181,11 +181,15 @@ export function Todos({
     for (const opdracht of opdrachten) {
       const vorige = vorigeStand.current.get(opdracht.id);
       vorigeStand.current.set(opdracht.id, opdracht.status);
-      if (vorige !== "bezig" || opdracht.status !== "voorstel") continue;
+      if (vorige !== "bezig") continue;
       const titel = taken.find((t) => t.id === opdracht.taakId)?.titel ?? "";
-      toon(`Voorstel klaar: ${titel}`, {
-        knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
-      });
+      if (opdracht.status === "voorstel") {
+        toon(`Voorstel klaar: ${titel}`, {
+          knop: { label: "Bekijken", kies: () => setBekijk(opdracht.id) },
+        });
+      } else if (opdracht.status === "mislukt") {
+        toon(`Claude kon geen voorstel maken: ${titel}`);
+      }
     }
   }, [opdrachten, taken, toon]);
 
@@ -269,25 +273,48 @@ export function Todos({
   const opdrachtVan = (taak: Taak) =>
     opdrachten.find((o) => o.taakId === taak.id);
 
-  /** Op Klaar en met een lopende of afgeronde opdracht staat geen knop. */
+  /** Op Klaar en met een open opdracht (bezig, voorstel, mislukt) staat geen knop. */
   const kanUitzetten = (taak: Taak) =>
-    taak.status !== "klaar" && !opdrachtVan(taak);
+    taak.status !== "klaar" &&
+    (opdrachtVan(taak)?.status ?? "akkoord") === "akkoord";
+
+  /** Na een dialoog staat de focus op de kaart, want de knop waar hij vandaan kwam kan weg zijn. */
+  function focusKaart(taakId: number) {
+    setTimeout(
+      () =>
+        document
+          .querySelector<HTMLElement>(`[data-kaart="${taakId}"]`)
+          ?.focus(),
+      0,
+    );
+  }
 
   function zetUit(taak: Taak, instructie: string) {
     setUitzet(null);
     startTransition(() => zetUitAction(taak.id, instructie));
     toon("Uitgezet bij Claude");
+    focusKaart(taak.id);
   }
 
+  /** Een voorstel kun je terughalen; een mislukte opdracht gewoon weghalen. */
   function wijsAf(opdracht: Opdracht) {
+    const voorstel = opdracht.status === "voorstel";
     startTransition(() => wijsAfAction(opdracht.id, true));
-    toon("Voorstel afgewezen", {
-      ongedaan: () => startTransition(() => wijsAfAction(opdracht.id, false)),
-    });
+    focusKaart(opdracht.taakId);
+    toon(
+      voorstel ? "Voorstel afgewezen" : "Opdracht weggehaald",
+      voorstel
+        ? {
+            ongedaan: () =>
+              startTransition(() => wijsAfAction(opdracht.id, false)),
+          }
+        : {},
+    );
   }
 
   function akkoord(opdracht: Opdracht) {
     startTransition(() => akkoordAction(opdracht.id));
+    focusKaart(opdracht.taakId);
     toon("Akkoord gegeven");
   }
 
@@ -471,7 +498,6 @@ export function Todos({
         <p
           className={`nd-status ${styles.stand} ${styles.bezig}`}
           data-status="open"
-          role="status"
         >
           <SparkleIcon />
           Claude is bezig…
@@ -497,7 +523,7 @@ export function Todos({
     }
     if (opdracht.status === "mislukt") {
       return (
-        <div className={styles.stand} role="status">
+        <div className={styles.stand}>
           <span className="nd-status" data-status="warn">
             <AlertIcon />
             Mislukt: {opdracht.fout ?? "onbekende fout"}
@@ -511,6 +537,13 @@ export function Todos({
           >
             Opnieuw proberen
             <span className="visually-hidden">: {taak.titel}</span>
+          </button>
+          <button
+            type="button"
+            className="nd-button nd-button--small nd-button--quiet"
+            onClick={() => wijsAf(opdracht)}
+          >
+            Weghalen<span className="visually-hidden">: {taak.titel}</span>
           </button>
         </div>
       );
@@ -591,6 +624,7 @@ export function Todos({
         key={taak.id}
         className={`nd-row ${styles.kaart} ${sleepId === taak.id ? styles.sleept : ""} ${taak.reactie !== null && taak.status !== "klaar" ? "nd-row--accent" : ""}`}
         data-kaart={taak.id}
+        tabIndex={-1}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
@@ -727,6 +761,8 @@ export function Todos({
       <li
         key={taak.id}
         className={`nd-row ${styles.rij} ${klaar ? styles.isKlaar : ""}`}
+        data-kaart={taak.id}
+        tabIndex={-1}
       >
         <button
           type="button"

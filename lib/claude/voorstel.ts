@@ -26,9 +26,9 @@ export const parseSoort = (waarde: unknown): Soort | null =>
 
 export type Voorstel = {
   soort: Soort;
-  /** Alleen bij een concept. */
+  /** Alleen bij een concept; komt van het dashboard, niet van Claude. */
   ontvanger: string | null;
-  /** Alleen bij een mailconcept. */
+  /** Alleen bij een mailconcept; komt van het dashboard, niet van Claude. */
   onderwerp: string | null;
   tekst: string;
 };
@@ -39,7 +39,6 @@ export type Opdracht = {
   taakId: number;
   status: OpdrachtStatus;
   soort: Soort;
-  instructie: string;
   /** Waarom een run mislukte; alleen bij status mislukt. */
   fout: string | null;
   voorstel: Voorstel | null;
@@ -73,7 +72,7 @@ function parseJson(tekst: string): unknown {
 /**
  * Parset de uitvoer van `claude -p --output-format json` naar een Voorstel.
  * Claude mag het object in een codeblok of een zin zetten; wat geen geldig
- * object met de verwachte soort is, wordt een fout. Advies is altijd toegestaan,
+ * object met de verwachte soort en een tekst is, wordt een fout. Advies is altijd toegestaan,
  * zodat Claude kan zeggen dat een concept niet past.
  */
 export function parseUitvoer(stdout: string, verwacht: Soort): Uitvoer {
@@ -101,13 +100,6 @@ export function parseUitvoer(stdout: string, verwacht: Soort): Uitvoer {
   const tekst = optioneel(kern.tekst);
   if (!tekst) return { fout: "Claude gaf geen tekst terug" };
 
-  const concept = soort !== "advies";
-  return {
-    voorstel: {
-      soort,
-      ontvanger: concept ? optioneel(kern.ontvanger) : null,
-      onderwerp: soort === "gmail-concept" ? optioneel(kern.onderwerp) : null,
-      tekst,
-    },
-  };
+  // Claude levert alleen soort en tekst; ontvanger en onderwerp komen uit de bron.
+  return { voorstel: { soort, ontvanger: null, onderwerp: null, tekst } };
 }

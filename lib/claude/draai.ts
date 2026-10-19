@@ -18,14 +18,14 @@ export async function draaiOpdracht(id: number): Promise<void> {
     const { taak, bronId } = gevonden;
 
     // Bij Gmail liever de laatste mails van de thread dan de ±200 tekens in het dashboard.
-    const mails =
+    const mail =
       taak.bron === "gmail" && bronId
         ? await laatsteMails(opdracht.email, bronId)
         : null;
     const run = await draaiClaude(
       bouwPrompt({
         taak,
-        gesprek: mails ?? taak.bericht ?? "",
+        gesprek: mail?.gesprek ?? taak.bericht ?? "",
         instructie: opdracht.instructie,
         soort: opdracht.soort,
       }),
@@ -34,8 +34,20 @@ export async function draaiOpdracht(id: number): Promise<void> {
 
     const uitvoer = parseUitvoer(run.stdout, opdracht.soort);
     if ("fout" in uitvoer) return markeerMislukt(id, uitvoer.fout);
-    rondAf(id, uitvoer.voorstel);
+    const { voorstel } = uitvoer;
+    // Ontvanger en onderwerp komen uit de bron, niet van Claude.
+    if (voorstel.soort === "gmail-concept") {
+      voorstel.ontvanger = mail?.antwoordAan ?? taak.afzender;
+      voorstel.onderwerp = mail?.onderwerp ?? null;
+    } else if (voorstel.soort === "slack-concept") {
+      voorstel.ontvanger = taak.auteur ?? taak.plek;
+    }
+    rondAf(id, voorstel);
   } catch (fout) {
-    markeerMislukt(id, fout instanceof Error ? fout.message : String(fout));
+    try {
+      markeerMislukt(id, fout instanceof Error ? fout.message : String(fout));
+    } catch {
+      // De database zelf is het probleem; leesOpdrachten zet de opdracht later op mislukt.
+    }
   }
 }
