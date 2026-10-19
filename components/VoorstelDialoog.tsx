@@ -72,24 +72,10 @@ export function VoorstelDialoog({
   async function akkoord() {
     if (!voorstel || bezig) return;
     setBezig(true);
-    // Kopiëren en openen moeten in de klik zelf beginnen, vóór de eerste await.
-    const slack = voorstel.soort === "slack-concept";
-    const kopie = slack
-      ? (navigator.clipboard?.writeText(voorstel.tekst) ?? null)
-      : null;
-    if (slack && bron?.url && /^https?:/.test(bron.url)) {
-      window.open(bron.url, "_blank", "noopener,noreferrer");
-    }
     const uitkomst = await onAkkoord().catch((): AkkoordUitkomst => ({
       uitkomst: "fout",
       fout: "Akkoord geven mislukte, probeer het opnieuw",
     }));
-    const gekopieerd = kopie
-      ? await kopie.then(
-          () => true,
-          () => false,
-        )
-      : false;
     setBezig(false);
     if (uitkomst.uitkomst === "verbinden")
       return setStand({ soort: "verbinden" });
@@ -99,13 +85,23 @@ export function VoorstelDialoog({
     if (voorstel.soort === "gmail-concept") {
       return setStand({ soort: "gmail", url: uitkomst.conceptUrl });
     }
-    if (slack && !gekopieerd) return setStand({ soort: "handmatig" });
+    if (voorstel.soort === "advies") {
+      dialoog.current?.close();
+      return onKlaar("Akkoord gegeven");
+    }
+    // Slack: pas na het akkoord kopiëren, en pas na het kopiëren openen.
+    const gekopieerd = await navigator.clipboard
+      ?.writeText(voorstel.tekst)
+      .then(
+        () => true,
+        () => false,
+      );
+    if (!gekopieerd) return setStand({ soort: "handmatig" });
+    if (bron?.url && /^https?:/.test(bron.url)) {
+      window.open(bron.url, "_blank", "noopener,noreferrer");
+    }
     dialoog.current?.close();
-    onKlaar(
-      slack
-        ? "Tekst gekopieerd. Plak hem in Slack om te versturen."
-        : "Akkoord gegeven",
-    );
+    onKlaar("Tekst gekopieerd. Plak hem in Slack om te versturen.");
   }
 
   // Na Gmail of een mislukte kopie blijft de dialoog open met het resultaat.

@@ -33,23 +33,21 @@ export async function geefAkkoord(
     return { uitkomst: "akkoord", conceptUrl: null };
   }
 
-  const { ontvanger, onderwerp, tekst } = opdracht.voorstel;
+  const { ontvanger, tekst } = opdracht.voorstel;
   const gevonden = leesTaak(email, opdracht.taakId);
   if (!ontvanger) {
     return { uitkomst: "fout", fout: "Er is geen ontvanger bekend" };
   }
-  let concept = { id: "demo", url: DEMO_CONCEPT };
+  let conceptUrl = DEMO_CONCEPT;
   if (!DEMO) {
     if (gevonden?.taak.bron !== "gmail" || !gevonden.bronId) {
       return { uitkomst: "fout", fout: "Deze to-do hoort niet bij een mail" };
     }
     try {
-      const klaar = await zetConceptKlaar(email, gevonden.bronId, {
+      conceptUrl = await zetConceptKlaar(email, gevonden.bronId, {
         aan: ontvanger,
-        onderwerp: onderwerp ?? gevonden.taak.titel,
         tekst,
       });
-      concept = { id: klaar.draftId, url: klaar.url };
     } catch (fout) {
       if (
         fout instanceof GmailComposeOntbreektError ||
@@ -64,6 +62,6 @@ export async function geefAkkoord(
       };
     }
   }
-  zetAkkoord(email, opdrachtId, concept);
-  return { uitkomst: "akkoord", conceptUrl: concept.url };
+  zetAkkoord(email, opdrachtId, conceptUrl);
+  return { uitkomst: "akkoord", conceptUrl };
 }

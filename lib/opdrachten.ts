@@ -158,18 +158,18 @@ export function markeerMislukt(id: number, fout: string): void {
     .run(fout, Date.now(), id);
 }
 
-/** Akkoord; bij een Gmail-concept met het draft-id en de link naar het concept. */
+/** Akkoord; bij een Gmail-concept met de link naar het concept. */
 export function zetAkkoord(
   email: string,
   id: number,
-  concept: { id: string; url: string } | null,
+  conceptUrl: string | null,
 ): void {
   database()
     .prepare(
-      `UPDATE opdrachten SET status = 'akkoord', concept_id = ?, concept_url = ?
+      `UPDATE opdrachten SET status = 'akkoord', concept_url = ?
        WHERE email = ? AND id = ? AND status = 'voorstel'`,
     )
-    .run(concept?.id ?? null, concept?.url ?? null, email, id);
+    .run(conceptUrl, email, id);
 }
 
 /** Van voorstel naar afgewezen, of terug (Ongedaan maken); raakt de taak niet aan. */

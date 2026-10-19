@@ -164,13 +164,10 @@ function open(): DatabaseSync {
     const kanaal = String(rij.bron_id).split("/archives/")[1]?.split("/")[0];
     if (kanaal) omzetten.run(`dm:${kanaal}`, Number(rij.id));
   }
-  // Het Gmail-concept dat Akkoord klaarzette: het draft-id en de link om het te openen.
+  // De link naar het Gmail-concept dat Akkoord klaarzette.
   const opdrachtKolommen = db.prepare("PRAGMA table_info(opdrachten)").all();
-  if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_id")) {
-    db.exec(`
-      ALTER TABLE opdrachten ADD COLUMN concept_id TEXT;
-      ALTER TABLE opdrachten ADD COLUMN concept_url TEXT;
-    `);
+  if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_url")) {
+    db.exec("ALTER TABLE opdrachten ADD COLUMN concept_url TEXT");
   }
   if (DEMO) vulDemo(db);
   return db;
