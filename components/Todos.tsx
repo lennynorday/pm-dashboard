@@ -453,7 +453,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         }}
       >
         <div className={styles.kop}>
-          <span className={styles.prio}>{prioKnop(taak)}</span>
+          {prioKnop(taak)}
           <span className="nd-row__title">
             {taak.titel}
             <button
