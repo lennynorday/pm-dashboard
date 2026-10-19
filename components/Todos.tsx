@@ -15,6 +15,7 @@ import {
   hernoemTaakAction,
   nieuweTaakAction,
   opnieuwUitzettenAction,
+  pasAanAction,
   verplaatsTaakAction,
   wijsAfAction,
   zetGezienAction,
@@ -311,6 +312,12 @@ export function Todos({
           }
         : {},
     );
+  }
+
+  function pasAan(opdracht: Opdracht, feedback: string) {
+    startTransition(() => pasAanAction(opdracht.id, feedback));
+    focusKaart(opdracht.taakId);
+    toon("Claude maakt een nieuwe versie");
   }
 
   function klaar(opdracht: Opdracht, melding: string) {
@@ -977,17 +984,20 @@ export function Todos({
           onBevestig={(instructie) => zetUit(uitzet, instructie)}
         />
       )}
-      {bekijkOpdracht?.voorstel && bekijkTaak && (
-        <VoorstelDialoog
-          titel={bekijkTaak.titel}
-          opdracht={bekijkOpdracht}
-          bron={dialoogBron(bekijkTaak)}
-          onSluit={() => setBekijk(null)}
-          onAkkoord={() => akkoordAction(bekijkOpdracht.id)}
-          onKlaar={(melding) => klaar(bekijkOpdracht, melding)}
-          onWijsAf={() => wijsAf(bekijkOpdracht)}
-        />
-      )}
+      {(bekijkOpdracht?.status === "voorstel" ||
+        bekijkOpdracht?.status === "akkoord") &&
+        bekijkTaak && (
+          <VoorstelDialoog
+            titel={bekijkTaak.titel}
+            opdracht={bekijkOpdracht}
+            bron={dialoogBron(bekijkTaak)}
+            onSluit={() => setBekijk(null)}
+            onAkkoord={() => akkoordAction(bekijkOpdracht.id)}
+            onKlaar={(melding) => klaar(bekijkOpdracht, melding)}
+            onWijsAf={() => wijsAf(bekijkOpdracht)}
+            onPasAan={(feedback) => pasAan(bekijkOpdracht, feedback)}
+          />
+        )}
       {melding}
     </>
   );

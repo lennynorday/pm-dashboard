@@ -113,3 +113,30 @@
   padding-block: var(--space-03);
   resize: vertical;
 }
+
+.blokRij {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-02);
+  min-height: 32px;
+}
+
+.versies {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+}
+
+.vorige {
+  transform: rotate(90deg);
+}
+
+.volgende {
+  transform: rotate(-90deg);
+}
+
+.aanpassen {
+  display: grid;
+  gap: var(--space-02);
+}

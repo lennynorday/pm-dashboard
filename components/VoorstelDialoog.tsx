@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AkkoordUitkomst } from "@/lib/akkoord";
 import { SOORT_LABELS, type Opdracht } from "@/lib/claude/voorstel";
 import { ExternalLink } from "./ExternalLink";
-import { CloseIcon } from "./icons";
+import { ChevronIcon, CloseIcon } from "./icons";
 import { VerbindLink } from "./VerbindLink";
 import styles from "./VoorstelDialoog.module.css";
 import type { DialoogBron } from "./TodoDialoog";
@@ -20,6 +20,8 @@ type Props = {
   /** Het voorstel is afgehandeld en de dialoog sluit zichzelf; dit is de melding daarvoor. */
   onKlaar: (melding: string) => void;
   onWijsAf: () => void;
+  /** Feedback voor een nieuwe versie; de dialoog sluit zichzelf. */
+  onPasAan: (feedback: string) => void;
 };
 
 const AKKOORD_LABELS: Record<Opdracht["soort"], string> = {
@@ -47,21 +49,35 @@ export function VoorstelDialoog({
   onAkkoord,
   onKlaar,
   onWijsAf,
+  onPasAan,
 }: Props) {
   const dialoog = useRef<HTMLDialogElement>(null);
   const voorstel = opdracht.voorstel;
   const [stand, setStand] = useState<Stand | null>(null);
   const [bezig, setBezig] = useState(false);
+  const [gekozen, setGekozen] = useState<number | null>(null);
+  const [aanpassen, setAanpassen] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const feedbackVeld = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     dialoog.current?.showModal();
   }, []);
 
+  useEffect(() => {
+    if (aanpassen) feedbackVeld.current?.focus();
+  }, [aanpassen]);
+
   if (!voorstel) return null;
+  // Terugbladeren mag; klaarzetten en aanpassen kan alleen bij de nieuwste versie.
+  const laatste = opdracht.versies.length - 1;
+  const index = Math.min(gekozen ?? laatste, laatste);
+  const versie = opdracht.versies[index];
+  const nieuwste = index === laatste;
   const soort = SOORT_LABELS[voorstel.soort];
   const regels = [
-    ["Aan", voorstel.ontvanger],
-    ["Onderwerp", voorstel.onderwerp],
+    ["Aan", versie.ontvanger],
+    ["Onderwerp", versie.onderwerp],
   ].filter((regel): regel is [string, string] => regel[1] !== null);
 
   function beslis(actie: () => void) {
@@ -102,6 +118,14 @@ export function VoorstelDialoog({
     }
     dialoog.current?.close();
     onKlaar("Tekst gekopieerd. Plak hem in Slack om te versturen.");
+  }
+
+  function pasAan(event: React.FormEvent) {
+    event.preventDefault();
+    const schoon = feedback.trim();
+    if (!schoon) return feedbackVeld.current?.focus();
+    dialoog.current?.close();
+    onPasAan(schoon);
   }
 
   // Na Gmail of een mislukte kopie blijft de dialoog open met het resultaat.
@@ -158,9 +182,42 @@ export function VoorstelDialoog({
                   Openen
                 </NextLink>
               ))}
+            {versie.feedback && (
+              <>
+                <h3 className={styles.blokKop}>Jouw feedback</h3>
+                <p className={styles.bericht}>{versie.feedback}</p>
+              </>
+            )}
           </div>
           <div className={styles.blok}>
-            <h3 className={styles.blokKop}>{soort}</h3>
+            <div className={styles.blokRij}>
+              <h3 className={styles.blokKop}>{soort}</h3>
+              {opdracht.versies.length > 1 && (
+                <div className={styles.versies}>
+                  <button
+                    type="button"
+                    className="nd-icon-button nd-icon-button--small"
+                    aria-label="Vorige versie"
+                    disabled={index === 0}
+                    onClick={() => setGekozen(index - 1)}
+                  >
+                    <ChevronIcon className={styles.vorige} />
+                  </button>
+                  <span className="nd-meta" aria-live="polite">
+                    Versie {index + 1} van {opdracht.versies.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="nd-icon-button nd-icon-button--small"
+                    aria-label="Volgende versie"
+                    disabled={nieuwste}
+                    onClick={() => setGekozen(index + 1)}
+                  >
+                    <ChevronIcon className={styles.volgende} />
+                  </button>
+                </div>
+              )}
+            </div>
             <div className={styles.concept}>
               {regels.length > 0 && (
                 <dl className={styles.regels}>
@@ -176,12 +233,12 @@ export function VoorstelDialoog({
                 <textarea
                   className={`nd-field ${styles.handmatig}`}
                   readOnly
-                  value={voorstel.tekst}
+                  value={versie.tekst}
                   aria-label="Tekst van het concept"
                   onFocus={(event) => event.target.select()}
                 />
               ) : (
-                <p className={styles.tekst}>{voorstel.tekst}</p>
+                <p className={styles.tekst}>{versie.tekst}</p>
               )}
             </div>
           </div>
@@ -216,7 +273,35 @@ export function VoorstelDialoog({
           )}
         </div>
 
-        {!afgerond && (
+        {!afgerond && aanpassen && (
+          <form className={styles.aanpassen} onSubmit={pasAan}>
+            <label className="nd-label" htmlFor="voorstel-feedback">
+              Wat moet er anders?
+            </label>
+            <textarea
+              ref={feedbackVeld}
+              id="voorstel-feedback"
+              className={`nd-field ${styles.handmatig}`}
+              value={feedback}
+              maxLength={2000}
+              onChange={(event) => setFeedback(event.target.value)}
+            />
+            <div className={styles.voet}>
+              <button
+                type="button"
+                className={`nd-button nd-button--quiet ${styles.eerst}`}
+                onClick={() => setAanpassen(false)}
+              >
+                Annuleren
+              </button>
+              <button type="submit" className="nd-button">
+                Nieuwe versie maken
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!afgerond && !aanpassen && (
           <div className={styles.voet}>
             <button
               type="button"
@@ -226,11 +311,21 @@ export function VoorstelDialoog({
             >
               Afwijzen
             </button>
+            {opdracht.status === "voorstel" && (
+              <button
+                type="button"
+                className="nd-button nd-button--quiet"
+                disabled={bezig || !nieuwste}
+                onClick={() => setAanpassen(true)}
+              >
+                Aanpassen
+              </button>
+            )}
             <button
               type="button"
               className="nd-button"
               aria-busy={bezig}
-              disabled={bezig}
+              disabled={bezig || !nieuwste}
               onClick={akkoord}
             >
               {AKKOORD_LABELS[voorstel.soort]}

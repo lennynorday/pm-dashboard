@@ -169,6 +169,10 @@ function open(): DatabaseSync {
   if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_url")) {
     db.exec("ALTER TABLE opdrachten ADD COLUMN concept_url TEXT");
   }
+  // Feedback die nog in een nieuwe versie moet worden verwerkt; leeg als Claude niet bezig is met een aanpassing.
+  if (!opdrachtKolommen.some((kolom) => kolom.name === "feedback")) {
+    db.exec("ALTER TABLE opdrachten ADD COLUMN feedback TEXT");
+  }
   if (DEMO) vulDemo(db);
   return db;
 }

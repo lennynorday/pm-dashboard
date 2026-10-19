@@ -28,6 +28,7 @@ export async function draaiOpdracht(id: number): Promise<void> {
         gesprek: mail?.gesprek ?? taak.bericht ?? "",
         instructie: opdracht.instructie,
         soort: opdracht.soort,
+        vorige: opdracht.vorige,
       }),
     );
     if ("fout" in run) return markeerMislukt(id, run.fout);
@@ -42,7 +43,7 @@ export async function draaiOpdracht(id: number): Promise<void> {
     } else if (voorstel.soort === "slack-concept") {
       voorstel.ontvanger = taak.auteur ?? taak.plek;
     }
-    rondAf(id, voorstel);
+    rondAf(id, voorstel, opdracht.vorige?.feedback ?? null);
   } catch (fout) {
     try {
       markeerMislukt(id, fout instanceof Error ? fout.message : String(fout));
