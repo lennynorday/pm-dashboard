@@ -120,11 +120,19 @@
   opacity: 0.4;
 }
 
+/* Prioriteit zweeft rechtsboven, de titel loopt eromheen over de volle breedte */
 .kop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-02);
+  display: flow-root;
+}
+
+/* Niet afbreken naast de prioriteit: een te lang woord zakt onder het label */
+.kop :global(.nd-row__title) {
+  overflow-wrap: normal;
+}
+
+.prio {
+  float: right;
+  margin: 0 0 var(--space-01) var(--space-02);
 }
 
 .kaart > .context {

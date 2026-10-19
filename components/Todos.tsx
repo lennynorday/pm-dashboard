@@ -453,6 +453,7 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
         }}
       >
         <div className={styles.kop}>
+          <span className={styles.prio}>{prioKnop(taak)}</span>
           <span className="nd-row__title">
             {taak.titel}
             <button
@@ -464,7 +465,6 @@ export function Todos({ taken, weergave: start, sortering: kiesStart }: Props) {
               <PencilIcon aria-hidden="true" />
             </button>
           </span>
-          {prioKnop(taak)}
         </div>
         {context(taak)}
         {kaartReactie(taak)}
