@@ -33,6 +33,12 @@
   max-width: 480px;
 }
 
+/* Het popover-menu staat op de plek die TodosMenu inline instelt. */
+.menu {
+  position: fixed;
+  inset: auto;
+}
+
 /* Chips die een menu of link openen */
 .chipKnop,
 .chipLink {
@@ -81,7 +87,12 @@
   align-items: center;
   gap: var(--space-02);
   min-height: 44px;
-  padding: 0 var(--space-02) 0 var(--space-04);
+  padding: 0 var(--space-04);
+}
+
+/* De plusknop zit dichter bij de rand; zonder knop (Klaar) blijft de padding gelijk. */
+.kolomKop > button {
+  margin-right: calc(-1 * var(--space-02));
 }
 
 .kolomNaam {
@@ -89,7 +100,7 @@
   font: var(--type-item);
 }
 
-.kolomKop .nd-badge {
+.kolomKop > :global(.nd-badge) {
   margin-left: auto;
 }
 
@@ -128,7 +139,7 @@
   margin-left: var(--space-01);
   padding: 0;
   border: 0;
-  border-radius: var(--space-02);
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--color-text-muted);
   vertical-align: middle;
@@ -183,7 +194,13 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.reactie .reactieTekst {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .acties {
@@ -221,6 +238,11 @@
 .vink[aria-pressed="true"] {
   background: var(--norday-dark);
   color: var(--norday-white);
+}
+
+.vink:not([aria-pressed="true"]):hover {
+  background: var(--color-raised);
+  color: var(--color-text-muted);
 }
 
 .vink:not([aria-pressed="true"]):not(:hover):not(:focus-visible) svg {

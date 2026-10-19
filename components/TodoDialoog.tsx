@@ -75,29 +75,31 @@ export function TodoDialoog({
         <h2 id="todo-dialoog-kop" className="nd-title">
           {modus === "nieuw" ? "Op je to-do's zetten" : "Titel aanpassen"}
         </h2>
-        <label className="nd-label" htmlFor="todo-dialoog-titel">
-          Wat moet er gebeuren?
-        </label>
-        <input
-          ref={veld}
-          id="todo-dialoog-titel"
-          className="nd-field"
-          value={tekst}
-          maxLength={120}
-          autoComplete="off"
-          placeholder="Bijvoorbeeld: eindtijden agendapagina Effenaar controleren"
-          aria-invalid={fout || undefined}
-          aria-describedby={fout ? "todo-dialoog-fout" : undefined}
-          onChange={(event) => {
-            setTekst(event.target.value);
-            setFout(false);
-          }}
-        />
-        {fout && (
-          <p id="todo-dialoog-fout" className="nd-error" role="alert">
-            Schrijf kort op wat er moet gebeuren.
-          </p>
-        )}
+        <div>
+          <label className="nd-label" htmlFor="todo-dialoog-titel">
+            Wat moet er gebeuren?
+          </label>
+          <input
+            ref={veld}
+            id="todo-dialoog-titel"
+            className="nd-field"
+            value={tekst}
+            maxLength={120}
+            autoComplete="off"
+            placeholder="Bijvoorbeeld: eindtijden agendapagina Effenaar controleren"
+            aria-invalid={fout || undefined}
+            aria-describedby={fout ? "todo-dialoog-fout" : undefined}
+            onChange={(event) => {
+              setTekst(event.target.value);
+              setFout(false);
+            }}
+          />
+          {fout && (
+            <p id="todo-dialoog-fout" className="nd-error" role="alert">
+              Schrijf kort op wat er moet gebeuren.
+            </p>
+          )}
+        </div>
 
         {bron && (
           <figure className={styles.bericht}>

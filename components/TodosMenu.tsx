@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import styles from "./Todos.module.css";
 
 export type MenuItem = {
   label: string;
@@ -75,7 +76,7 @@ export function TodosMenu({
         popover="auto"
         role="menu"
         aria-label={ariaLabel}
-        className="nd-menu"
+        className={`nd-menu ${styles.menu}`}
         onToggle={(e) => {
           if (e.newState === "open")
             menu.current?.querySelector("button")?.focus();
