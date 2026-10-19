@@ -583,11 +583,7 @@ export function Todos({
       <div className={styles.stand}>
         <span className="nd-status" data-status="ok">
           <CheckIcon />
-          {gmail
-            ? "Concept staat in Gmail"
-            : opdracht.soort === "slack-concept"
-              ? "Tekst gekopieerd"
-              : "Akkoord gegeven"}
+          {gmail ? "Concept staat in Gmail" : "Akkoord gegeven"}
         </span>
         {opdracht.conceptUrl && (
           <ExternalLink href={opdracht.conceptUrl} className="nd-meta">
