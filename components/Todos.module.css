@@ -120,16 +120,22 @@
   opacity: 0.4;
 }
 
-/* Prioriteit linksboven op een eigen regel, de titel eronder over de volle breedte */
+/* Prioriteit rechtsboven op een eigen regel, de titel eronder over de volle breedte */
 .kop {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: var(--space-02);
 }
 
 .kop :global(.nd-row__title) {
   align-self: stretch;
+}
+
+/* Op de kaart een tikje kleiner dan de standaardchip */
+.kop .chipKnop {
+  height: 20px;
+  padding: 0 var(--space-02);
 }
 
 .kaart > .context {
