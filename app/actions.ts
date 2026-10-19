@@ -29,6 +29,7 @@ import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
@@ -609,12 +610,20 @@ export async function opnieuwUitzettenAction(
   });
 }
 
-/** Akkoord op het voorstel. De echte actie (concept klaarzetten) komt later; de to-do blijft ongemoeid. */
-export async function akkoordAction(opdrachtId: number): Promise<void> {
-  if (!Number.isInteger(opdrachtId)) return;
-  await bijTaken((email) =>
-    zetBesluit(email, opdrachtId, "voorstel", "akkoord"),
-  );
+/**
+ * Akkoord op het voorstel: bij een Gmail-concept wordt het concept klaargezet in
+ * Gmail (niet verstuurd). De to-do blijft ongemoeid.
+ */
+export async function akkoordAction(
+  opdrachtId: number,
+): Promise<AkkoordUitkomst> {
+  const user = await currentUser();
+  if (!user || !Number.isInteger(opdrachtId)) {
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  }
+  const uitkomst = await geefAkkoord(user.email, opdrachtId);
+  revalidatePath("/", "layout");
+  return uitkomst;
 }
 
 /** Afwijzen haalt het voorstel (of de mislukte opdracht) weg; `afwijzen = false` maakt dat voor een voorstel ongedaan. */

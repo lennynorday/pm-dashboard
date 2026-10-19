@@ -102,3 +102,14 @@
   font: var(--type-meta);
   font-weight: 600;
 }
+
+.melding {
+  margin: 0;
+  font: var(--type-body);
+}
+
+.handmatig {
+  min-height: 120px;
+  padding-block: var(--space-03);
+  resize: vertical;
+}

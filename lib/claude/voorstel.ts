@@ -41,6 +41,8 @@ export type Opdracht = {
   soort: Soort;
   /** Waarom een run mislukte; alleen bij status mislukt. */
   fout: string | null;
+  /** De link naar het concept in Gmail, nadat Akkoord het klaarzette. */
+  conceptUrl: string | null;
   voorstel: Voorstel | null;
 };
 
