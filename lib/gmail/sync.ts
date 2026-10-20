@@ -13,6 +13,13 @@ export type GmailProbleem = { toestaan: true } | { fout: string } | null;
 const AANTAL = "50";
 // threads.get kost 10 quota-eenheden; in groepjes blijft het onder de limiet per seconde.
 const GROEPJE = 10;
+// Elke synchronisatie haalt alle threads op (~1000 quota-eenheden; limiet 15.000 per minuut).
+// Elke render van de Inbox synchroniseert, dus hooguit één keer per minuut per gebruiker.
+const MIN_TUSSENPOOS_MS = 60_000;
+const laatste = new Map<
+  string,
+  { tijd: number; uitkomst: Promise<GmailProbleem> }
+>();
 
 /** Het moment van de eerste synchronisatie, in Unix-seconden; zet het als het er nog niet is. */
 function leesStart(email: string): number | null {
@@ -58,9 +65,17 @@ const haalThread = (email: string, id: string) =>
  * ster. Wat niet meer op je wacht, gaat uit de inbox. `{ toestaan: true }` =
  * geen (werkende) Gmail-toegang.
  */
-export async function synchroniseerGmail(
-  email: string,
-): Promise<GmailProbleem> {
+export function synchroniseerGmail(email: string): Promise<GmailProbleem> {
+  const vorige = laatste.get(email);
+  if (vorige && Date.now() - vorige.tijd < MIN_TUSSENPOOS_MS) {
+    return vorige.uitkomst;
+  }
+  const uitkomst = synchroniseer(email);
+  laatste.set(email, { tijd: Date.now(), uitkomst });
+  return uitkomst;
+}
+
+async function synchroniseer(email: string): Promise<GmailProbleem> {
   if (DEMO || !bronAan(email, "gmail")) return null;
   try {
     const ster = await zoekThreads(email, "is:starred");
