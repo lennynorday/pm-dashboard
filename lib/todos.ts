@@ -106,6 +106,30 @@ export function leesUpdates(email: string): Taak[] {
     .filter((taak): taak is Taak => taak !== null);
 }
 
+const amsterdamDatum = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Europe/Amsterdam",
+});
+
+/** De to-do's die op deze dag (yyyy-mm-dd, Nederlandse tijd) op klaar gingen, met tijdstip in ms. */
+export function afgerondOp(
+  email: string,
+  datum: string,
+): { taak: Taak; afgerond: number }[] {
+  return database()
+    .prepare(
+      "SELECT * FROM taken WHERE email = ? AND afgerond IS NOT NULL ORDER BY afgerond",
+    )
+    .all(email)
+    .flatMap((row) => {
+      const taak = parseTaak(row);
+      const afgerond = row.afgerond;
+      if (!taak || typeof afgerond !== "number") return [];
+      return amsterdamDatum.format(afgerond) === datum
+        ? [{ taak, afgerond }]
+        : [];
+    });
+}
+
 /** Gezien haalt de update weg; ongedaan maken zet hem terug op de tijd van de reactie. */
 export function zetGezien(email: string, id: number, gezien: boolean): void {
   database()
