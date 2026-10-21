@@ -1,11 +1,11 @@
 ---
 name: weekplanning
-description: Vul een weekplanning in voor een (samenwerk)sprint en lever die als JSON-bestand dat je opent in de Weekplanning-tool van Norday. Gebruik deze skill wanneer iemand vraagt om een weekplanning, sprintplanning of samenwerksprint in te plannen, uit te werken of om te zetten naar de weekplanning, ook als het woord "JSON" niet valt.
+description: Vul een weekplanning in voor een (samenwerk)sprint en lever die als JSON-bestand dat je opent in de Weekplanner van Norday. Gebruik deze skill wanneer iemand vraagt om een weekplanning, sprintplanning of samenwerksprint in te plannen, uit te werken of om te zetten naar de weekplanning, ook als het woord "JSON" niet valt.
 ---
 
 # Weekplanning invullen
 
-De Weekplanning-tool toont een planning in blokken per dag, van 09:00 tot 17:00, voor één of meer weken. Jij maakt het bestand. De gebruiker opent het in de tool met **Open bestand**.
+De Weekplanner toont een planning in blokken per dag, van 09:00 tot 17:00, voor één of meer weken. Jij maakt het bestand. De gebruiker opent het in de tool met **Open bestand**.
 
 ## Werkwijze
 
