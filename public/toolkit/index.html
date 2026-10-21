@@ -684,6 +684,22 @@
                 />
                 <p class="nd-error" id="titel-fout">Vul een titel in.</p>
               </div>
+              <div style="display: flex; align-items: center; gap: 12px">
+                <button
+                  class="nd-switch"
+                  type="button"
+                  role="switch"
+                  aria-checked="true"
+                  aria-labelledby="schakel-label"
+                  onclick="
+                    this.setAttribute(
+                      'aria-checked',
+                      this.getAttribute('aria-checked') !== 'true',
+                    )
+                  "
+                ></button>
+                <span id="schakel-label">Slack in de Inbox</span>
+              </div>
             </div>
             <div class="nd-alert" role="status">
               <span class="nd-alert__icon"
