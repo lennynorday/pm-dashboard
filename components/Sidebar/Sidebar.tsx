@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
+  CalendarIcon,
   ChevronIcon,
   CloseIcon,
   HomeIcon,
@@ -249,6 +250,19 @@ export function Sidebar({
                 )}
                 <span className={styles.tooltip} aria-hidden="true">
                   To-do&apos;s
+                </span>
+              </NextLink>
+            </li>
+            <li>
+              <NextLink
+                href="/weekplanning"
+                className={styles.item}
+                aria-current={pathname === "/weekplanning" ? "page" : undefined}
+              >
+                <CalendarIcon />
+                <span className={styles.label}>Weekplanning</span>
+                <span className={styles.tooltip} aria-hidden="true">
+                  Weekplanning
                 </span>
               </NextLink>
             </li>

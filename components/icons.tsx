@@ -234,6 +234,15 @@ export function TodoIcon(props: IconProps) {
   );
 }
 
+export function CalendarIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="M4 10h16M9 3v4M15 3v4" />
+    </Icon>
+  );
+}
+
 export function InboxIcon(props: IconProps) {
   return (
     <Icon {...props}>

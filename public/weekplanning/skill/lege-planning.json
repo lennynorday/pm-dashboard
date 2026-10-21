@@ -1,0 +1,13 @@
+{
+  "titel": "",
+  "start": "2027-01-04",
+  "weken": 1,
+  "categorieen": [
+    { "id": "sessie", "naam": "Sessie", "kleur": "#fff355" },
+    { "id": "norday", "naam": "Werk Norday", "kleur": "#3d1028" },
+    { "id": "klant", "naam": "Werk klant", "kleur": "#ff0d4a" },
+    { "id": "voorbereiden", "naam": "Voorbereiden", "kleur": "#d5b3ff" }
+  ],
+  "notities": {},
+  "blokken": []
+}
