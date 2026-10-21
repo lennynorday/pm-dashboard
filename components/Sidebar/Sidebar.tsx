@@ -255,14 +255,14 @@ export function Sidebar({
             </li>
             <li>
               <NextLink
-                href="/weekplanning"
+                href="/weekplanner"
                 className={styles.item}
-                aria-current={pathname === "/weekplanning" ? "page" : undefined}
+                aria-current={pathname === "/weekplanner" ? "page" : undefined}
               >
                 <CalendarIcon />
-                <span className={styles.label}>Weekplanning</span>
+                <span className={styles.label}>Weekplanner</span>
                 <span className={styles.tooltip} aria-hidden="true">
-                  Weekplanning
+                  Weekplanner
                 </span>
               </NextLink>
             </li>

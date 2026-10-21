@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Weekplanning</title>
-<!-- Draait in het PM-dashboard, binnen /weekplanning. De toolkit levert ook de lettertypes. -->
+<title>Weekplanner</title>
+<!-- Draait in het PM-dashboard, binnen /weekplanner. De toolkit levert ook de lettertypes. -->
 <link rel="stylesheet" href="/toolkit/toolkit.css" />
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <style>
@@ -132,7 +132,7 @@ select.stil { appearance: none; cursor: pointer; }
 <body>
 <main class="nd-main" style="max-width: none">
   <div class="nd-page-head">
-    <h1 class="nd-display">Weekplanning</h1>
+    <h1 class="nd-display">Weekplanner</h1>
     <div class="kop-acties">
       <button type="button" class="nd-button nd-button--quiet" id="nieuw-plan">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -239,7 +239,7 @@ function inkt(hex) {
 }
 const kleurStijl = (id) => `--kleur: ${cat(id).kleur}; --inkt: ${inkt(cat(id).kleur)}`;
 const BEGIN = 9, EIND = 17, UUR = 64, KWARTIER = 0.25;
-const KEY = "weekplanning";
+const KEY = "weekplanning"; // niet hernoemen: daaronder staan bestaande planningen
 
 // Dag is een index over de hele planning: 0–4 is week 1, 5–9 week 2.
 let staat = laad();
