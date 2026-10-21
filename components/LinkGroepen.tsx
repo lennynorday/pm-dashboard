@@ -17,6 +17,7 @@ import {
   GlobeIcon,
   LinkIcon,
   SlackIcon,
+  SparkleIcon,
 } from "./icons";
 import { LinkToevoegen } from "./LinkToevoegen";
 import styles from "./LinkGroepen.module.css";
@@ -29,6 +30,7 @@ const ICOON: Record<LinkType, typeof LinkIcon> = {
   "jira-board": BoardIcon,
   drive: FolderIcon,
   figma: FigmaIcon,
+  "claude-project": SparkleIcon,
   "omgeving-acc": GlobeIcon,
   "omgeving-prod": GlobeIcon,
   "cms-acc": CmsIcon,

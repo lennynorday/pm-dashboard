@@ -45,6 +45,7 @@ const LINK_KOLOM: Record<LinkType, string> = {
   "jira-board": "c-bWOcV9NxJl",
   drive: "c-19LH-bHx2g",
   figma: "c-aAwUPFYIor",
+  "claude-project": "c-8EhQSNw3g8",
   "omgeving-acc": "c-Qj6ml7we-K",
   "omgeving-prod": "c-xQA47jnGKo",
   "cms-acc": "c-k2JYz6vZS-",
