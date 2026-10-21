@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weekplanning</title>
+<!-- Draait in het PM-dashboard, binnen /weekplanning. De toolkit levert ook de lettertypes. -->
+<link rel="stylesheet" href="/toolkit/toolkit.css" />
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<style>
+/* Alleen wat de toolkit niet heeft: het weekrooster en de bewerkbare lijst. */
+:root { --uur: 64px; }
+[hidden] { display: none !important; }
+svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.kop-acties { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-02); }
+.balk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-03) var(--space-06); margin-bottom: var(--space-04); }
+.balk__rechts { display: flex; align-items: center; gap: var(--space-03); margin-left: auto; }
+.balk .nd-field { width: auto; }
+
+/* Exporteerbaar vlak: vaste minimale breedte, zodat de afbeelding er overal hetzelfde uitziet */
+#weekview { overflow-x: auto; }
+.weekrij { display: flex; align-items: stretch; gap: var(--space-04); }
+.plan { flex: 1 1 0; padding: var(--space-08); border-radius: var(--radius-xl); background: var(--norday-white); }
+.plan__kop { margin-bottom: var(--space-06); }
+.plan__titel { margin-top: var(--space-02); }
+.plan__titel:focus-visible { outline-offset: 4px; }
+/* Weken naast elkaar: twee passen op een laptopscherm, vanaf drie scrol je opzij */
+.weken { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(560px, 1fr); }
+.week + .week { margin-left: var(--space-06); padding-left: var(--space-06); border-left: 1px solid var(--color-line-soft); }
+.week__kop { display: flex; align-items: center; gap: var(--space-03); min-height: 32px; margin: 0 0 var(--space-04); }
+.week__kop .nd-icon-button { margin-left: auto; }
+.week-erbij { flex: none; width: 120px; min-height: 240px; border: 0; border-radius: var(--radius-xl); background: transparent; box-shadow: inset 0 0 0 2px var(--color-line-soft); color: var(--color-text-muted); font: var(--type-item); cursor: pointer; }
+.week-erbij:hover { background: var(--color-raised); color: var(--color-text); }
+.week__kop h3 { margin: 0; font: var(--type-title); text-transform: uppercase; letter-spacing: var(--heading-letter-spacing); }
+
+.rooster { display: grid; grid-template-columns: 40px repeat(5, minmax(0, 1fr)); gap: 0 var(--space-03); }
+.dag { padding-bottom: var(--space-03); font: var(--type-item); text-transform: uppercase; letter-spacing: 0.02em; }
+.uren { position: relative; }
+.uren span { position: absolute; right: 0; font: var(--type-meta); color: var(--color-text-muted); transform: translateY(-50%); }
+.kolom {
+  position: relative; height: calc(var(--uur) * 8); border-radius: var(--radius-sm); cursor: copy;
+  background: repeating-linear-gradient(to bottom, var(--color-raised) 0 calc(var(--uur) - 1px), var(--color-line-soft) calc(var(--uur) - 1px) var(--uur));
+}
+.kolom.is-doel { box-shadow: var(--ring-accent); }
+
+.blok {
+  position: absolute; z-index: 1; display: flex; flex-direction: column; gap: 1px; padding: 3px 6px 4px; hyphens: auto;
+  overflow: hidden; overflow-wrap: anywhere; border: 0; border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--norday-white);
+  text-align: left; touch-action: none; user-select: none; cursor: grab;
+}
+/* Krap gezet: het is een planning, geen website. Elk soort regel heeft een eigen vorm. */
+.blok__kop, .blok__meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+.blok__titel { font: 600 13px/1.2 var(--font-text); }
+.blok__tijd { font: 600 11px/1.3 var(--font-text); font-variant-numeric: tabular-nums; opacity: 0.75; }
+.blok__regel { display: flex; align-items: flex-start; gap: 3px; font: 400 11px/1.3 var(--font-text); }
+.blok__regel svg { flex: none; width: 10px; height: 10px; margin-top: 2px; stroke-width: 2.2; }
+.blok__detail { margin-top: 2px; font: italic 400 11px/1.3 var(--font-text); opacity: 0.8; }
+.blok { background: var(--kleur); color: var(--inkt); }
+.blok.is-sleep { z-index: 2; cursor: grabbing; box-shadow: var(--shadow-float); }
+.blok__greep { position: absolute; left: 0; right: 0; height: 10px; cursor: ns-resize; }
+.blok__greep[data-rand="top"] { top: 0; }
+.blok__greep[data-rand="bottom"] { bottom: 0; }
+.blok__greep::after { content: ""; position: absolute; left: 50%; width: 24px; height: 3px; margin-left: -12px; border-radius: var(--radius-pill); background: currentColor; opacity: 0; transition: opacity var(--duration) var(--ease); }
+.blok__greep[data-rand="top"]::after { top: 3px; }
+.blok__greep[data-rand="bottom"]::after { bottom: 3px; }
+.blok:hover .blok__greep::after { opacity: 0.5; }
+.blok__weg { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--norday-white); color: var(--norday-dark); box-shadow: var(--ring); opacity: 0; cursor: pointer; }
+.blok__weg svg { width: 14px; height: 14px; }
+.blok__weg:hover { background: var(--norday-dark); color: var(--norday-white); }
+.blok:hover .blok__weg, .blok:focus-within .blok__weg { opacity: 1; }
+/* Waar een klik een nieuw blok van een uur neerzet */
+.spook { position: absolute; left: 1px; right: 1px; z-index: 0; padding: 2px var(--space-02); border: 2px dashed var(--color-line-subtle); border-radius: var(--radius-sm); background: var(--color-lilac-soft); font: var(--type-meta); font-weight: 600; pointer-events: none; }
+
+.notities { margin: var(--space-03) 0 0; padding-left: var(--space-05); font: var(--type-body); }
+.notities:focus-visible { outline-offset: 4px; }
+.notitie-toevoegen { margin-top: var(--space-02); }
+
+.legenda { display: flex; flex-wrap: wrap; gap: var(--space-02); margin-top: var(--space-06); }
+.legenda { align-items: center; }
+/* Categorie: in de export een gekleurde chip, op het scherm ook kleurknop, naam bewerken en verwijderen */
+.cat { gap: 6px; height: 30px; padding: 0 6px; background: var(--kleur); color: var(--inkt); box-shadow: none; }
+.cat__naam { padding: 0 4px; border-radius: 4px; cursor: text; }
+.cat__naam:hover { box-shadow: inset 0 0 0 1px currentColor; }
+.cat__naam:focus-visible { outline-offset: 2px; }
+.cat__kleur, .cat__weg { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.cat__kleur::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--kleur); box-shadow: 0 0 0 2px currentColor; }
+.cat__weg svg { width: 12px; height: 12px; }
+.cat__weg { opacity: 0.6; }
+.cat__weg:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
+.kleurkeuze { position: fixed; z-index: 20; min-width: 0; }
+.kleurkeuze__palet { display: grid; grid-template-columns: repeat(4, 28px); gap: 6px; }
+.kleurkeuze__palet button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--color-line-soft); cursor: pointer; }
+.kleurkeuze__palet button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--norday-white), 0 0 0 4px var(--norday-dark); }
+.kleurkeuze label { display: flex; align-items: center; justify-content: space-between; gap: var(--space-02); margin-top: var(--space-03); font: var(--type-meta); }
+.kleurkeuze input[type="color"] { width: 40px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
+
+/* Lijst: een kaart per week, per dag een kop, per blok één rij die leest als tekst */
+.lijstdag { padding: var(--space-04) var(--space-02) var(--space-02); }
+.lijstdag + .lijstdag { border-top: 1px solid var(--color-line-soft); }
+.lijstdag__kop { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-02) var(--space-03); margin-bottom: var(--space-02); }
+.lijstdag__kop h3 { margin: 0; font: var(--type-item); text-transform: uppercase; letter-spacing: 0.02em; }
+.lijstdag__kop .nd-action { margin-left: auto; }
+.lijstdag .notities { margin: 0 0 var(--space-03); }
+.lijstdag__nieuw { margin-top: var(--space-02); }
+
+.rij { display: grid; grid-template-columns: 136px 168px minmax(0, 1fr) auto; align-items: center; gap: var(--space-03); padding: 10px var(--space-03); }
+.rij:hover, .rij:focus-within { box-shadow: var(--ring); }
+.rij__tijd { display: flex; align-items: center; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.rij__soort { display: flex; align-items: center; gap: var(--space-02); }
+.rij__soort::before { content: ""; flex: none; width: 10px; height: 10px; margin-left: var(--space-02); border-radius: 50%; background: var(--kleur); box-shadow: inset 0 0 0 1px var(--color-line-soft); }
+.rij__inhoud { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-01); }
+.rij__inhoud input { width: auto; field-sizing: content; min-width: 7ch; max-width: 100%; }
+.rij__acties { display: flex; align-items: center; gap: var(--space-01); opacity: 0; transition: opacity var(--duration) var(--ease); }
+.rij:hover .rij__acties, .rij:focus-within .rij__acties { opacity: 1; }
+
+/* Velden die lezen als tekst; de rand verschijnt pas bij hover of focus */
+.stil { width: 100%; min-height: 32px; padding: 0 var(--space-02); border: 0; border-radius: var(--space-02); background: transparent; color: inherit; font: var(--type-body); }
+.stil:hover { box-shadow: var(--ring); }
+.stil:focus { background: var(--norday-white); box-shadow: var(--ring-strong); outline: none; }
+.stil:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.stil::placeholder { color: var(--color-text-muted); }
+.stil--titel { font: var(--type-item); }
+.stil--klein { font: var(--type-meta); color: var(--color-text-muted); }
+.stil[type="time"] { width: 60px; padding: 0 var(--space-01); color: var(--color-text); text-align: center; }
+.stil[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+select.stil { appearance: none; cursor: pointer; }
+/* Lege optionele velden alleen tonen bij hover of focus op de rij */
+.rij:not(:hover, :focus-within) .stil--klein:placeholder-shown { display: none; }
+</style>
+</head>
+<body>
+<main class="nd-main" style="max-width: none">
+  <div class="nd-page-head">
+    <h1 class="nd-display">Weekplanning</h1>
+    <div class="kop-acties">
+      <button type="button" class="nd-button nd-button--quiet" id="nieuw-plan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Nieuwe planning
+      </button>
+      <button type="button" class="nd-button" id="kopieer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+        Kopieer als afbeelding
+      </button>
+      <button type="button" class="nd-button nd-button--quiet" id="download">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>
+        PNG
+      </button>
+      <button type="button" class="nd-button nd-button--quiet" id="bewaar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6"/></svg>
+        Bewaar bestand
+      </button>
+      <button type="button" class="nd-button nd-button--quiet" id="openknop">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6l2 2h8v11H4z"/></svg>
+        Open bestand
+      </button>
+      <input type="file" id="bestand" accept=".json,application/json" hidden />
+    </div>
+  </div>
+
+  <div class="balk">
+    <div class="nd-filters" role="group" aria-label="Weergave">
+      <button type="button" class="nd-filter" data-view="week" aria-pressed="true">Week</button>
+      <button type="button" class="nd-filter" data-view="lijst" aria-pressed="false">Lijst</button>
+    </div>
+    <label class="nd-meta balk__rechts">Start op maandag <input type="date" class="nd-field" id="start" /></label>
+  </div>
+
+  <section id="weekview">
+    <div class="weekrij">
+    <div class="plan" id="plan">
+      <div class="plan__kop">
+        <p class="nd-eyebrow" id="planlabel"></p>
+        <h2 class="nd-display plan__titel" id="titel" contenteditable="true" role="textbox" aria-label="Titel"></h2>
+      </div>
+      <div class="weken" id="weken"></div>
+      <div class="legenda" id="legenda"></div>
+    </div>
+    <button type="button" class="week-erbij" data-week-erbij>+ Week</button>
+    </div>
+    <p class="nd-meta" style="margin-top: var(--space-03)">Klik in een dag voor een nieuw blok. Sleep een blok om het te verplaatsen, ook naar de andere week, of aan de boven- of onderrand om het korter of langer te maken. Met het toetsenbord: pijltjes verplaatsen per kwartier of dag, Shift met pijltjes verandert de eindtijd.</p>
+  </section>
+
+  <section id="lijstview" hidden></section>
+</main>
+
+<dialog class="nd-dialog" id="dialog" aria-labelledby="dialogtitel">
+  <form method="dialog" id="form" class="nd-dialog__body">
+    <h2 class="nd-title" id="dialogtitel">Blok</h2>
+    <div><label class="nd-label" for="f-type">Soort</label><select class="nd-field" id="f-type" name="type"></select></div>
+    <div><label class="nd-label" for="f-titel">Titel</label><input class="nd-field" id="f-titel" name="titel" required /></div>
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-03)">
+      <div><label class="nd-label" for="f-dag">Dag</label><select class="nd-field" id="f-dag" name="dag"></select></div>
+      <div><label class="nd-label" for="f-van">Van</label><input class="nd-field" id="f-van" name="van" type="time" step="900" required /></div>
+      <div><label class="nd-label" for="f-tot">Tot</label><input class="nd-field" id="f-tot" name="tot" type="time" step="900" required /></div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-03)">
+      <div><label class="nd-label" for="f-wie">Wie <span class="nd-meta">(optioneel)</span></label><input class="nd-field" id="f-wie" name="wie" /></div>
+      <div><label class="nd-label" for="f-locatie">Locatie <span class="nd-meta">(optioneel)</span></label><input class="nd-field" id="f-locatie" name="locatie" /></div>
+    </div>
+    <div><label class="nd-label" for="f-detail">Toelichting <span class="nd-meta">(optioneel)</span></label><textarea class="nd-field" id="f-detail" name="detail" rows="2"></textarea></div>
+    <div class="nd-dialog__foot">
+      <button type="button" class="nd-action" id="verwijder" style="margin-right: auto">Verwijderen</button>
+      <button type="button" class="nd-button nd-button--quiet" id="annuleer">Annuleren</button>
+      <button type="submit" class="nd-button">Opslaan</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="nd-menu kleurkeuze" id="kleurkeuze" role="dialog" aria-label="Kleur kiezen" hidden>
+  <div class="kleurkeuze__palet" id="palet"></div>
+  <label>Eigen kleur <input type="color" id="eigenkleur" /></label>
+</div>
+
+<div class="nd-toast" id="toast" role="status" hidden>
+  <span class="nd-toast__check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span>
+  <span id="toasttekst"></span>
+  <button type="button" class="nd-button" id="toastknop" hidden></button>
+</div>
+
+<script>
+// Categorieën zijn data in de planning: toevoegen, hernoemen, kleur kiezen en verwijderen kan in de legenda.
+const STANDAARD = [
+  { id: "sessie", naam: "Sessie", kleur: "#fff355" },
+  { id: "norday", naam: "Werk Norday", kleur: "#3d1028" },
+  { id: "klant", naam: "Werk klant", kleur: "#ff0d4a" },
+  { id: "voorbereiden", naam: "Voorbereiden", kleur: "#d5b3ff" },
+];
+// Merkkleuren en hun zachte tinten uit de toolkit, plus bijna-zwart.
+const PALET = ["#3d1028", "#ff0d4a", "#fff355", "#d5b3ff", "#ffcad7", "#eee1ff", "#fffabb", "#1b1b1b"];
+const DAGEN = ["Ma", "Di", "Woe", "Do", "Vrij"];
+const cat = (id) => staat.categorieen.find((c) => c.id === id) ?? { id, naam: "Zonder categorie", kleur: "#e5dde6" };
+const label = (id) => cat(id).naam;
+const standaardCat = () => (staat.categorieen.find((c) => c.id === "norday") ?? staat.categorieen[0]).id;
+// Tekst donker op lichte kleuren, wit op donkere.
+function inkt(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? "#3d1028" : "#ffffff";
+}
+const kleurStijl = (id) => `--kleur: ${cat(id).kleur}; --inkt: ${inkt(cat(id).kleur)}`;
+const BEGIN = 9, EIND = 17, UUR = 64, KWARTIER = 0.25;
+const KEY = "weekplanning";
+
+// Dag is een index over de hele planning: 0–4 is week 1, 5–9 week 2.
+let staat = laad();
+
+function laad() {
+  try { return normaliseer(JSON.parse(localStorage.getItem(KEY))); }
+  catch { return legePlanning(); }
+}
+function bewaar() {
+  try { localStorage.setItem(KEY, JSON.stringify(staat)); } catch {}
+}
+
+const uur = (t) => { const [h, m] = (t || "0:0").split(":").map(Number); return h + m / 60; };
+const tijd = (u) => `${String(Math.floor(u)).padStart(2, "0")}:${String(Math.round((u % 1) * 60)).padStart(2, "0")}`;
+const klem = (v, min, max) => Math.min(max, Math.max(min, v));
+const kwartier = (u) => Math.round(u / KWARTIER) * KWARTIER;
+const aantalDagen = () => staat.weken * 5;
+const datum = (i) => { const d = new Date(staat.start); d.setDate(d.getDate() + Math.floor(i / 5) * 7 + (i % 5)); return d; };
+const kortDatum = (d) => d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" }).replace(".", "");
+const dagLabel = (i) => `${DAGEN[i % 5]} ${kortDatum(datum(i))}`;
+const weekNr = (d) => {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+};
+const weekLabel = (w) => `Week ${weekNr(datum(w * 5))}`;
+const notities = (d) => staat.notities[d] ?? [];
+const vind = (id) => staat.blokken.find((b) => b.id === id);
+const opDag = (d) => staat.blokken.filter((b) => b.dag === d).sort((a, b) => uur(a.van) - uur(b.van));
+const wijzig = (id, velden) => { staat.blokken = staat.blokken.map((b) => (b.id === id ? { ...b, ...velden } : b)); bewaar(); };
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const uren = (u) => `${String(u).replace(".", ",")} uur`;
+
+function render() { renderWeek(); renderLijst(); }
+
+// Overlappende blokken krijgen naast elkaar een eigen baan; een blok zonder overlap houdt de hele breedte.
+// Items: { id, begin, eind } in uren, waarbij eind de zichtbare onderkant is.
+// Een overlap van een paar pixels telt niet: dat valt in de ondermarge van het blok.
+const SPELING = 4 / UUR;
+function banen(items) {
+  const baan = new Map(), aantal = new Map();
+  let groep = [], eindes = [], groepEind = 0;
+  const sluit = () => groep.forEach((id) => aantal.set(id, eindes.length));
+  [...items].sort((a, b) => a.begin - b.begin).forEach((it) => {
+    if (it.begin >= groepEind - SPELING) { sluit(); groep = []; eindes = []; }
+    const vrij = eindes.findIndex((e) => e <= it.begin + SPELING);
+    const i = vrij === -1 ? eindes.length : vrij;
+    eindes[i] = it.eind;
+    groepEind = Math.max(groepEind, it.eind);
+    baan.set(it.id, i);
+    groep.push(it.id);
+  });
+  sluit();
+  return { baan, aantal };
+}
+
+// Breedte en baan hangen af van de hoogte en andersom: een paar keer meten tot het stil staat.
+// Geeft de onderkant van het laagste blok terug, in px.
+function verdeelKolom(kolom) {
+  const items = [...kolom.querySelectorAll(".blok")].map((el) => {
+    const b = vind(Number(el.dataset.id));
+    return { el, id: b.id, begin: uur(b.van), tot: uur(b.tot), eind: uur(b.tot) };
+  });
+  let vorige = "";
+  for (let ronde = 0; ronde < 4; ronde++) {
+    const { baan, aantal } = banen(items);
+    const indeling = items.map((it) => `${baan.get(it.id)}/${aantal.get(it.id)}`).join();
+    if (indeling === vorige) break;
+    vorige = indeling;
+    items.forEach((it) => {
+      it.el.style.left = `calc(${(baan.get(it.id) / aantal.get(it.id)) * 100}% + 1px)`;
+      it.el.style.width = `calc(${100 / aantal.get(it.id)}% - 2px)`;
+    });
+    items.forEach((it) => (it.eind = Math.max(it.tot, it.begin + it.el.offsetHeight / UUR)));
+  }
+  return Math.max(0, ...items.map((it) => (it.begin - BEGIN) * UUR + it.el.offsetHeight));
+}
+
+const ICOON = {
+  locatie: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  wie: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+};
+function blokInhoud(b) {
+  return `<span class="blok__kop"><span class="blok__titel">${esc(b.titel)}</span><span class="blok__tijd">${b.van}–${b.tot}</span></span>`
+    + (b.locatie || b.wie ? `<span class="blok__meta">`
+      + (b.locatie ? `<span class="blok__regel">${ICOON.locatie}<span>${esc(b.locatie)}</span></span>` : "")
+      + (b.wie ? `<span class="blok__regel">${ICOON.wie}<span>${esc(b.wie)}</span></span>` : "")
+      + `</span>` : "")
+    + (b.detail ? `<span class="blok__detail">${esc(b.detail)}</span>` : "");
+}
+
+// Een blok is minstens zo hoog als zijn tijd en groeit mee als de tekst meer ruimte nodig heeft.
+function plaats(el, van, tot) {
+  el.style.top = `${(van - BEGIN) * UUR}px`;
+  el.style[el.classList.contains("blok") ? "minHeight" : "height"] = `${Math.max(KWARTIER, tot - van) * UUR}px`;
+}
+
+/* ---------- Toelichting per dag: gedeeld door week en lijst ---------- */
+
+let notitieOpen = null;
+
+function notitieCel(d) {
+  if (!notities(d).length && notitieOpen !== d) {
+    const knop = Object.assign(document.createElement("button"), {
+      type: "button", className: "nd-action notitie-toevoegen alleen-scherm", textContent: "+ Toelichting",
+    });
+    knop.dataset.dag = d;
+    return knop;
+  }
+  const ul = document.createElement("ul");
+  ul.className = "notities";
+  ul.contentEditable = "true";
+  ul.dataset.dag = d;
+  ul.setAttribute("aria-label", `Toelichting ${dagLabel(d)}`);
+  (notities(d).length ? notities(d) : [""]).forEach((n) => ul.append(Object.assign(document.createElement("li"), { textContent: n })));
+  return ul;
+}
+
+document.addEventListener("click", (e) => {
+  const knop = e.target.closest(".notitie-toevoegen");
+  if (!knop) return;
+  const view = knop.closest("section");
+  notitieOpen = Number(knop.dataset.dag);
+  render();
+  view.querySelector(`.notities[data-dag="${notitieOpen}"]`).focus();
+});
+document.addEventListener("input", (e) => {
+  const ul = e.target.closest?.(".notities");
+  if (!ul) return;
+  staat.notities = { ...staat.notities, [ul.dataset.dag]: [...ul.querySelectorAll("li")].map((li) => li.textContent.trim()).filter(Boolean) };
+  bewaar();
+});
+document.addEventListener("focusout", (e) => {
+  const ul = e.target.closest?.(".notities");
+  if (!ul) return;
+  if (!notities(Number(ul.dataset.dag)).length) {
+    notitieOpen = null;
+    return render();
+  }
+  // Alleen de andere weergave bijwerken, zodat een klik in deze weergave niet verloren gaat.
+  ul.closest("#weekview") ? renderLijst() : renderWeek();
+});
+
+/* ---------- Week ---------- */
+
+function renderWeek() {
+  document.documentElement.style.setProperty("--uur", `${UUR}px`);
+  document.getElementById("start").value = staat.start;
+  const laatste = aantalDagen() - 1;
+  const weeknrs = staat.weken > 1 ? `Week ${weekNr(datum(0))}–${weekNr(datum(laatste))}` : `Week ${weekNr(datum(0))}`;
+  document.getElementById("planlabel").textContent = `${weeknrs} · ${kortDatum(datum(0))} – ${kortDatum(datum(laatste))} ${datum(laatste).getFullYear()}`;
+  const titel = document.getElementById("titel");
+  if (document.activeElement !== titel) titel.textContent = staat.titel;
+
+  const weken = document.getElementById("weken");
+  weken.replaceChildren();
+  // Minimaal 560px per week, plus de ruimte tussen de weken en de rand van het vlak.
+  document.getElementById("plan").style.minWidth = `${staat.weken * 560 + (staat.weken - 1) * 48 + 64}px`;
+  for (let w = 0; w < staat.weken; w++) {
+    const sectie = document.createElement("section");
+    sectie.className = "week";
+    sectie.setAttribute("aria-label", weekLabel(w));
+    sectie.innerHTML = `<div class="week__kop"><h3>${weekLabel(w)}</h3><span class="nd-meta">${kortDatum(datum(w * 5))} – ${kortDatum(datum(w * 5 + 4))}</span>${weekWeg(w, "alleen-scherm")}</div>`;
+    const rooster = document.createElement("div");
+    rooster.className = "rooster";
+    const dagen = [0, 1, 2, 3, 4].map((i) => w * 5 + i);
+    rooster.insertAdjacentHTML("beforeend", `<div></div>` + dagen.map((d) => `<div class="dag">${dagLabel(d)}</div>`).join(""));
+
+    const schaal = document.createElement("div");
+    schaal.className = "uren";
+    schaal.setAttribute("aria-hidden", "true");
+    schaal.innerHTML = Array.from({ length: EIND - BEGIN + 1 }, (_, i) => `<span style="top: ${i * UUR}px">${BEGIN + i}:00</span>`).join("");
+    rooster.append(schaal);
+
+    dagen.forEach((d) => {
+      const kolom = document.createElement("div");
+      kolom.className = "kolom";
+      kolom.dataset.dag = d;
+      opDag(d).forEach((b) => {
+        const el = document.createElement("div");
+        el.tabIndex = 0;
+        el.setAttribute("role", "button");
+        el.className = "blok";
+        el.dataset.id = b.id;
+        el.style.cssText = kleurStijl(b.type);
+        el.setAttribute("aria-label", `${label(b.type)}: ${b.titel || "zonder titel"}, ${dagLabel(d)} ${b.van} tot ${b.tot}`);
+        plaats(el, uur(b.van), uur(b.tot));
+        el.innerHTML = `<span class="blok__greep alleen-scherm" data-rand="top"></span>${blokInhoud(b)}<span class="blok__greep alleen-scherm" data-rand="bottom"></span><button type="button" class="blok__weg alleen-scherm" aria-label="Verwijder ${esc(b.titel || label(b.type))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
+        kolom.append(el);
+      });
+      rooster.append(kolom);
+    });
+
+    rooster.append(document.createElement("div"));
+    dagen.forEach((d) => {
+      const cel = document.createElement("div");
+      cel.append(notitieCel(d));
+      rooster.append(cel);
+    });
+    sectie.append(rooster);
+    weken.append(sectie);
+    // Pas meten als de week in de pagina staat. Loopt een blok voorbij 17:00, dan worden alle dagen van de week langer.
+    const kolommen = [...rooster.querySelectorAll(".kolom")];
+    const hoogte = Math.max((EIND - BEGIN) * UUR, ...kolommen.map(verdeelKolom));
+    kolommen.forEach((k) => (k.style.height = `${hoogte}px`));
+  }
+
+  const zichtbaar = staat.blokken.filter((b) => b.dag <= laatste);
+  // Alle categorieën op het scherm, zodat je ze kunt hernoemen; in de export alleen de gebruikte.
+  const legenda = document.getElementById("legenda");
+  if (document.activeElement?.matches("#legenda [contenteditable]")) return; // niet tekenen terwijl je een naam typt
+  legenda.innerHTML = staat.categorieen.map((c) => {
+    const gebruikt = zichtbaar.some((b) => b.type === c.id);
+    return `<span class="nd-chip cat${gebruikt ? "" : " alleen-scherm"}" style="${kleurStijl(c.id)}">
+      <button type="button" class="cat__kleur alleen-scherm" data-kleur="${c.id}" aria-label="Kleur van ${esc(c.naam)} kiezen"></button>
+      <span class="cat__naam" data-cat="${c.id}" contenteditable="true" role="textbox" aria-label="Naam categorie ${esc(c.naam)}">${esc(c.naam)}</span>
+      <button type="button" class="cat__weg alleen-scherm" data-cat-weg="${c.id}" aria-label="Verwijder categorie ${esc(c.naam)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </span>`;
+  }).join("") + `<button type="button" class="nd-action alleen-scherm" data-cat-erbij>+ Categorie</button>`;
+}
+
+const weekview = document.getElementById("weekview");
+
+// Slepen en oprekken per kwartier. De tijd volgt de muis in de kolom eronder, dus ook naar de andere week.
+let sleep = null;
+
+weekview.addEventListener("pointerdown", (e) => {
+  const el = e.target.closest(".blok");
+  if (!el || e.button !== 0 || e.target.closest(".blok__weg")) return;
+  const b = vind(Number(el.dataset.id));
+  sleep = {
+    el, b, kolom: el.parentElement, modus: e.target.closest(".blok__greep")?.dataset.rand ?? "verplaats",
+    x0: e.clientX, y0: e.clientY, grip: e.clientY - el.getBoundingClientRect().top, bewogen: false,
+    nu: { dag: b.dag, van: uur(b.van), tot: uur(b.tot) },
+  };
+});
+
+window.addEventListener("pointermove", (e) => {
+  if (!sleep) return;
+  const { el, b, modus } = sleep;
+  if (!sleep.bewogen && Math.hypot(e.clientX - sleep.x0, e.clientY - sleep.y0) < 4) return;
+  // ponytail: scrollt alleen als de muis beweegt; een timer pas toevoegen als dat stroef voelt.
+  if (e.clientY < 64) window.scrollBy(0, -24);
+  if (e.clientY > innerHeight - 64) window.scrollBy(0, 24);
+  if (!sleep.bewogen) {
+    sleep.bewogen = true;
+    el.classList.add("is-sleep");
+    el.style.left = "1px";
+    el.style.width = "calc(100% - 2px)";
+  }
+  const van = uur(b.van), tot = uur(b.tot), duur = tot - van;
+  const nu = { ...sleep.nu };
+  if (modus === "verplaats") {
+    const kolom = document.elementsFromPoint(e.clientX, e.clientY).find((n) => n.classList?.contains("kolom"));
+    if (kolom && kolom !== sleep.kolom) {
+      sleep.kolom = kolom;
+      kolom.append(el);
+    }
+    nu.dag = Number(sleep.kolom.dataset.dag);
+    document.querySelectorAll(".kolom").forEach((k) => k.classList.toggle("is-doel", k === sleep.kolom));
+  }
+  const y = (e.clientY - sleep.kolom.getBoundingClientRect().top) / UUR + BEGIN;
+  if (modus === "verplaats") {
+    nu.van = klem(kwartier(y - sleep.grip / UUR), BEGIN, EIND - duur);
+    nu.tot = nu.van + duur;
+  }
+  if (modus === "top") nu.van = klem(kwartier(y), BEGIN, tot - KWARTIER);
+  if (modus === "bottom") nu.tot = klem(kwartier(y), van + KWARTIER, EIND);
+  sleep.nu = nu;
+  plaats(el, nu.van, nu.tot);
+  el.querySelector(".blok__tijd").textContent = `${tijd(nu.van)}–${tijd(nu.tot)}`;
+});
+
+window.addEventListener("pointerup", () => {
+  if (!sleep) return;
+  const { b, nu, bewogen, modus } = sleep;
+  sleep = null;
+  if (!bewogen) return modus === "verplaats" && open(b);
+  wijzig(b.id, { dag: nu.dag, van: tijd(nu.van), tot: tijd(nu.tot) });
+  render();
+});
+
+weekview.addEventListener("click", (e) => {
+  const weg = e.target.closest(".blok__weg");
+  if (weg) return verwijderBlok(Number(weg.closest(".blok").dataset.id));
+  if (e.target.closest(".blok")) return;
+  const kolom = e.target.closest(".kolom");
+  if (!kolom) return;
+  const y = e.clientY - kolom.getBoundingClientRect().top;
+  const van = klem(BEGIN + Math.floor(y / (UUR * KWARTIER)) * KWARTIER, BEGIN, EIND - 1);
+  open({ type: standaardCat(), titel: label(standaardCat()), dag: Number(kolom.dataset.dag), van: tijd(van), tot: tijd(van + 1) });
+});
+
+weekview.addEventListener("keydown", (e) => {
+  const el = e.target.closest(".blok");
+  if (!el || e.target !== el) return;
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); return open(vind(Number(el.dataset.id))); }
+  if (e.key === "Delete" || e.key === "Backspace") return verwijderBlok(Number(el.dataset.id));
+  if (!e.key.startsWith("Arrow")) return;
+  e.preventDefault();
+  const b = vind(Number(el.dataset.id));
+  const van = uur(b.van), tot = uur(b.tot), duur = tot - van;
+  const stap = { ArrowUp: -KWARTIER, ArrowDown: KWARTIER }[e.key] ?? 0;
+  const dag = klem(b.dag + ({ ArrowLeft: -1, ArrowRight: 1 }[e.key] ?? 0), 0, aantalDagen() - 1);
+  const nieuwVan = klem(van + stap, BEGIN, EIND - duur);
+  wijzig(b.id, e.shiftKey ? { tot: tijd(klem(tot + stap, van + KWARTIER, EIND)) } : { dag, van: tijd(nieuwVan), tot: tijd(nieuwVan + duur) });
+  render();
+  weekview.querySelector(`.blok[data-id="${b.id}"]`).focus();
+});
+
+document.getElementById("titel").addEventListener("input", (e) => { staat.titel = e.target.textContent.trim(); bewaar(); });
+
+/* ---------- Categorieën beheren ---------- */
+
+const wijzigCat = (id, velden) => { staat.categorieen = staat.categorieen.map((c) => (c.id === id ? { ...c, ...velden } : c)); bewaar(); };
+const vrijeKleur = () => PALET.find((k) => !staat.categorieen.some((c) => c.kleur === k)) ?? PALET[staat.categorieen.length % PALET.length];
+
+function maakCategorie(naam) {
+  const c = { id: `c${Date.now()}`, naam, kleur: vrijeKleur() };
+  staat.categorieen = [...staat.categorieen, c];
+  bewaar();
+  return c;
+}
+// Vanuit een keuzelijst: naam vragen, dan de nieuwe categorie teruggeven (of niets bij annuleren).
+function nieuweCategorieVanuitLijst() {
+  const naam = prompt("Naam van de nieuwe categorie")?.trim();
+  return naam ? maakCategorie(naam) : null;
+}
+const catOpties = (gekozen) => staat.categorieen.map((c) => `<option value="${c.id}"${c.id === gekozen ? " selected" : ""}>${esc(c.naam)}</option>`).join("")
+  + `<option value="__nieuw">+ Nieuwe categorie…</option>`;
+
+const legendaEl = document.getElementById("legenda");
+legendaEl.addEventListener("input", (e) => {
+  const id = e.target.dataset.cat;
+  const naam = e.target.textContent.trim();
+  if (id && naam) wijzigCat(id, { naam });
+});
+legendaEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.dataset.cat) { e.preventDefault(); e.target.blur(); }
+});
+// Na het hernoemen de lijst bijwerken; een lege naam houdt de vorige naam.
+// De week niet opnieuw tekenen, anders gaat een klik op een blok of dag verloren.
+legendaEl.addEventListener("focusout", (e) => {
+  const id = e.target.dataset.cat;
+  if (!id) return;
+  e.target.textContent = label(id);
+  renderLijst();
+});
+legendaEl.addEventListener("click", (e) => {
+  if (e.target.closest("[data-cat-erbij]")) {
+    const c = maakCategorie("Nieuwe categorie");
+    renderWeek(); renderLijst();
+    const naam = legendaEl.querySelector(`[data-cat="${c.id}"]`);
+    naam.focus();
+    getSelection().selectAllChildren(naam);
+    return;
+  }
+  const weg = e.target.closest("[data-cat-weg]");
+  if (weg) return verwijderCategorie(weg.dataset.catWeg);
+  const kleur = e.target.closest("[data-kleur]");
+  if (kleur) openKleurkeuze(kleur);
+});
+
+function verwijderCategorie(id) {
+  const inGebruik = staat.blokken.filter((b) => b.type === id).length;
+  if (inGebruik) return toast(`${label(id)} wordt nog gebruikt door ${inGebruik} ${inGebruik === 1 ? "blok" : "blokken"}. Geef die eerst een andere categorie.`);
+  if (staat.categorieen.length === 1) return toast("Er moet minstens één categorie blijven.");
+  const index = staat.categorieen.findIndex((c) => c.id === id);
+  const weg = staat.categorieen[index];
+  staat.categorieen = staat.categorieen.filter((c) => c.id !== id);
+  bewaar(); render();
+  toast(`${weg.naam} verwijderd`, {
+    label: "Ongedaan maken",
+    doe: () => { staat.categorieen = staat.categorieen.toSpliced(index, 0, weg); bewaar(); render(); },
+  });
+}
+
+// Kleur kiezen: een klein paneel onder de kleurknop, met het palet en een eigen kleur.
+const kleurkeuze = document.getElementById("kleurkeuze");
+const eigenKleur = document.getElementById("eigenkleur");
+let kleurVan = null;
+
+function openKleurkeuze(knop) {
+  kleurVan = knop.dataset.kleur;
+  const huidig = cat(kleurVan).kleur;
+  document.getElementById("palet").innerHTML = PALET.map((k) =>
+    `<button type="button" style="background: ${k}" data-palet="${k}" aria-pressed="${k === huidig}" aria-label="Kleur ${k}"></button>`).join("");
+  eigenKleur.value = huidig;
+  const r = knop.getBoundingClientRect();
+  kleurkeuze.hidden = false;
+  kleurkeuze.style.left = `${klem(r.left, 8, innerWidth - kleurkeuze.offsetWidth - 8)}px`;
+  kleurkeuze.style.top = `${r.top - kleurkeuze.offsetHeight - 8 > 8 ? r.top - kleurkeuze.offsetHeight - 8 : r.bottom + 8}px`;
+  kleurkeuze.querySelector(`[aria-pressed="true"]`)?.focus() ?? kleurkeuze.querySelector("button").focus();
+}
+function sluitKleurkeuze() {
+  if (kleurkeuze.hidden) return;
+  kleurkeuze.hidden = true;
+  legendaEl.querySelector(`[data-kleur="${kleurVan}"]`)?.focus();
+}
+function zetKleur(kleur) {
+  wijzigCat(kleurVan, { kleur });
+  render();
+}
+kleurkeuze.addEventListener("click", (e) => {
+  const k = e.target.closest("[data-palet]");
+  if (!k) return;
+  zetKleur(k.dataset.palet);
+  sluitKleurkeuze();
+});
+eigenKleur.addEventListener("input", () => zetKleur(eigenKleur.value));
+document.addEventListener("pointerdown", (e) => {
+  if (!kleurkeuze.hidden && !kleurkeuze.contains(e.target) && !e.target.closest("[data-kleur]")) sluitKleurkeuze();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") sluitKleurkeuze(); });
+
+// Tijdindicator: laat zien op welk kwartier een klik een nieuw blok neerzet.
+const spook = Object.assign(document.createElement("div"), { className: "spook alleen-scherm" });
+spook.setAttribute("aria-hidden", "true");
+weekview.addEventListener("pointermove", (e) => {
+  const kolom = e.target.closest(".kolom");
+  if (sleep || !kolom || e.target.closest(".blok")) return spook.remove();
+  const y = e.clientY - kolom.getBoundingClientRect().top;
+  const van = klem(BEGIN + Math.floor(y / (UUR * KWARTIER)) * KWARTIER, BEGIN, EIND - 1);
+  if (spook.parentElement !== kolom) kolom.append(spook);
+  plaats(spook, van, van + 1);
+  spook.textContent = `${tijd(van)}–${tijd(van + 1)}`;
+});
+weekview.addEventListener("pointerleave", () => spook.remove());
+document.getElementById("start").addEventListener("change", (e) => { staat.start = e.target.value; bewaar(); render(); });
+/* ---------- Weken toevoegen en verwijderen (week en lijst) ---------- */
+
+function weekWeg(w, klasse = "") {
+  if (staat.weken < 2) return "";
+  return `<button type="button" class="nd-icon-button nd-icon-button--small ${klasse}" data-week-weg="${w}" aria-label="Verwijder ${weekLabel(w)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3"/></svg></button>`;
+}
+
+// Een week eruit: blokken en toelichting erna schuiven vijf dagen op. Zonder de eerste week begint de planning een week later.
+function verwijderWeek(w) {
+  const eerste = w * 5, laatste = w * 5 + 4;
+  const schuif = (d) => (d > laatste ? d - 5 : d);
+  staat.blokken = staat.blokken.filter((b) => b.dag < eerste || b.dag > laatste).map((b) => ({ ...b, dag: schuif(b.dag) }));
+  staat.notities = Object.fromEntries(Object.entries(staat.notities).map(([d, n]) => [Number(d), n])
+    .filter(([d]) => d < eerste || d > laatste).map(([d, n]) => [schuif(d), n]));
+  if (w === 0) staat.start = datum(5).toLocaleDateString("sv-SE"); // maandag van week 2
+  staat.weken -= 1;
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-week-erbij]")) {
+    staat.weken += 1;
+    bewaar(); render();
+    const nieuw = document.querySelector(lijstview.hidden ? ".week:last-child" : "#lijstview .nd-card:last-of-type");
+    nieuw.scrollIntoView({ behavior: "smooth", inline: "end", block: "nearest" });
+    return;
+  }
+  const weg = e.target.closest("[data-week-weg]");
+  if (!weg) return;
+  const w = Number(weg.dataset.weekWeg);
+  const aantal = staat.blokken.filter((b) => Math.floor(b.dag / 5) === w).length;
+  if (aantal && !confirm(`${weekLabel(w)} verwijderen, met ${aantal} ${aantal === 1 ? "blok" : "blokken"}?`)) return;
+  verwijderWeek(w);
+  bewaar(); render();
+});
+
+/* ---------- Dialoog (weekweergave) ---------- */
+
+const dialog = document.getElementById("dialog");
+const form = document.getElementById("form");
+let bewerkId = null;
+function open(b) {
+  bewerkId = b.id ?? null;
+  document.getElementById("f-type").innerHTML = catOpties(b.type);
+  document.getElementById("f-dag").innerHTML = Array.from({ length: aantalDagen() }, (_, i) => `<option value="${i}">${dagLabel(i)}</option>`).join("");
+  document.getElementById("dialogtitel").textContent = bewerkId ? "Blok bewerken" : "Nieuw blok";
+  document.getElementById("verwijder").hidden = !bewerkId;
+  ["type", "titel", "dag", "van", "tot", "wie", "locatie", "detail"].forEach((k) => (form.elements[k].value = b[k] ?? ""));
+  vorigeType = form.elements.type.value;
+  dialog.showModal();
+}
+
+let vorigeType = null;
+form.elements.type.addEventListener("change", (e) => {
+  if (e.target.value !== "__nieuw") return (vorigeType = e.target.value);
+  const c = nieuweCategorieVanuitLijst();
+  e.target.innerHTML = catOpties(c?.id ?? vorigeType);
+  vorigeType = e.target.value;
+  if (c) render();
+});
+
+form.addEventListener("submit", () => {
+  const f = Object.fromEntries(new FormData(form));
+  const van = klem(uur(f.van), BEGIN, EIND - KWARTIER);
+  const blok = { ...f, dag: Number(f.dag), van: tijd(van), tot: tijd(klem(uur(f.tot), van + KWARTIER, EIND)) };
+  if (bewerkId) wijzig(bewerkId, blok);
+  else { staat.blokken = [...staat.blokken, { ...blok, id: Date.now() }]; bewaar(); }
+  render();
+});
+document.getElementById("annuleer").addEventListener("click", () => dialog.close());
+document.getElementById("verwijder").addEventListener("click", () => {
+  dialog.close();
+  verwijderBlok(bewerkId);
+});
+
+function verwijderBlok(id) {
+  const blok = vind(id);
+  staat.blokken = staat.blokken.filter((b) => b.id !== id);
+  bewaar(); render();
+  toast(`${blok.titel || label(blok.type)} verwijderd`, {
+    label: "Ongedaan maken",
+    doe: () => { staat.blokken = [...staat.blokken, blok]; bewaar(); render(); },
+  });
+}
+
+/* ---------- Lijst: per week een kaart, per dag een kop, per blok één rij ---------- */
+
+const lijstview = document.getElementById("lijstview");
+
+function rij(b) {
+  const dagOpties = Array.from({ length: aantalDagen() }, (_, i) => `<option value="${i}"${i === b.dag ? " selected" : ""}>${dagLabel(i)}</option>`).join("");
+  const soortOpties = catOpties(b.type);
+  const naam = esc(b.titel || "blok");
+  return `<li class="nd-row rij" data-id="${b.id}" style="${kleurStijl(b.type)}">
+    <div class="rij__tijd">
+      <input class="stil" name="van" type="time" step="900" value="${b.van}" aria-label="Begintijd ${naam}" />–<input class="stil" name="tot" type="time" step="900" value="${b.tot}" aria-label="Eindtijd ${naam}" />
+    </div>
+    <div class="rij__soort"><select class="stil" name="type" aria-label="Soort ${naam}">${soortOpties}</select></div>
+    <div class="rij__inhoud">
+      <input class="stil stil--titel" name="titel" value="${esc(b.titel)}" placeholder="Titel" aria-label="Titel" />
+      <input class="stil stil--klein" name="wie" value="${esc(b.wie)}" placeholder="+ Wie" aria-label="Wie, ${naam}" />
+      <input class="stil stil--klein" name="locatie" value="${esc(b.locatie)}" placeholder="+ Locatie" aria-label="Locatie, ${naam}" />
+      <input class="stil stil--klein" name="detail" value="${esc(b.detail)}" placeholder="+ Toelichting" aria-label="Toelichting, ${naam}" />
+    </div>
+    <div class="rij__acties">
+      <select class="stil stil--klein" name="dag" aria-label="Verplaats ${naam} naar dag">${dagOpties}</select>
+      <button type="button" class="nd-icon-button nd-icon-button--small" data-weg aria-label="Verwijder ${naam}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6m4-6v6M6 7l1 12h10l1-12M9 7V4h6v3"/></svg></button>
+    </div>
+  </li>`;
+}
+
+function renderLijst() {
+  lijstview.replaceChildren();
+  for (let w = 0; w < staat.weken; w++) {
+    const kaart = document.createElement("section");
+    kaart.className = "nd-card";
+    kaart.innerHTML = `<div class="nd-card__head"><h2 class="nd-title">${weekLabel(w)} <span class="nd-count">${kortDatum(datum(w * 5))} – ${kortDatum(datum(w * 5 + 4))}</span></h2>${weekWeg(w)}</div>`;
+    [0, 1, 2, 3, 4].map((i) => w * 5 + i).forEach((d) => {
+      const vandaag = opDag(d);
+      const totaal = vandaag.reduce((som, b) => som + uur(b.tot) - uur(b.van), 0);
+      const dag = document.createElement("div");
+      dag.className = "lijstdag";
+      dag.innerHTML = `<div class="lijstdag__kop">
+          <h3>${dagLabel(d)}</h3>
+          <span class="nd-meta">${vandaag.length ? `${vandaag.length} ${vandaag.length === 1 ? "blok" : "blokken"} · ${uren(totaal)}` : "Niets gepland"}</span>
+        </div>`;
+      // Toelichting hoort bij de dag (knop in de kop), een nieuw blok komt onder de bestaande blokken.
+      const notitie = notitieCel(d);
+      if (notitie.tagName === "BUTTON") dag.firstElementChild.append(notitie);
+      else dag.append(notitie);
+      if (vandaag.length) dag.insertAdjacentHTML("beforeend", `<ul class="nd-rows">${vandaag.map(rij).join("")}</ul>`);
+      dag.insertAdjacentHTML("beforeend", `<button type="button" class="nd-action lijstdag__nieuw" data-nieuw="${d}">+ Blok</button>`);
+      kaart.append(dag);
+    });
+    lijstview.append(kaart);
+  }
+  lijstview.insertAdjacentHTML("beforeend", `<button type="button" class="nd-button nd-button--quiet" data-week-erbij>+ Week toevoegen</button>`);
+}
+
+lijstview.addEventListener("input", (e) => {
+  const li = e.target.closest(".rij");
+  if (!li || !e.target.name) return;
+  if (e.target.value === "__nieuw") {
+    const c = nieuweCategorieVanuitLijst();
+    if (c) wijzig(Number(li.dataset.id), { type: c.id });
+    return render();
+  }
+  const waarde = e.target.name === "dag" ? Number(e.target.value) : e.target.value;
+  wijzig(Number(li.dataset.id), { [e.target.name]: waarde });
+  if (e.target.name === "type") li.style.cssText = kleurStijl(waarde);
+  renderWeek();
+});
+// Dag of begintijd veranderd: opnieuw sorteren, de focus blijft op hetzelfde veld.
+lijstview.addEventListener("change", (e) => {
+  if (!["dag", "van"].includes(e.target.name)) return;
+  const id = e.target.closest(".rij").dataset.id, naam = e.target.name;
+  renderLijst();
+  lijstview.querySelector(`.rij[data-id="${id}"] [name="${naam}"]`).focus();
+});
+lijstview.addEventListener("click", (e) => {
+  if (e.target.closest("[data-weg]")) return verwijderBlok(Number(e.target.closest(".rij").dataset.id));
+  const nieuw = e.target.closest("[data-nieuw]");
+  if (!nieuw) return;
+  const d = Number(nieuw.dataset.nieuw);
+  const laatst = opDag(d).at(-1);
+  const van = laatst ? klem(uur(laatst.tot), BEGIN, EIND - 1) : BEGIN;
+  const id = Date.now();
+  staat.blokken = [...staat.blokken, { id, type: standaardCat(), titel: "", dag: d, van: tijd(van), tot: tijd(van + 1) }];
+  bewaar(); render();
+  lijstview.querySelector(`.rij[data-id="${id}"] [name="titel"]`).focus();
+});
+
+/* ---------- Weergave ---------- */
+
+document.querySelectorAll("[data-view]").forEach((knop) => knop.addEventListener("click", () => {
+  document.querySelectorAll("[data-view]").forEach((k) => k.setAttribute("aria-pressed", String(k === knop)));
+  weekview.hidden = knop.dataset.view !== "week";
+  lijstview.hidden = knop.dataset.view !== "lijst";
+}));
+
+/* ---------- Export: altijd de weekweergave, op 2x voor Miro en Pitch ---------- */
+
+let toastTimer;
+function toast(tekst, actie) {
+  const el = document.getElementById("toast");
+  const knop = document.getElementById("toastknop");
+  document.getElementById("toasttekst").textContent = tekst;
+  knop.hidden = !actie;
+  knop.textContent = actie?.label ?? "";
+  knop.onclick = () => { el.hidden = true; actie.doe(); };
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (el.hidden = true), actie ? 6000 : 3500);
+}
+
+async function png() {
+  const verborgen = weekview.hidden;
+  weekview.hidden = false;
+  try {
+    return await htmlToImage.toBlob(document.getElementById("plan"), {
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+      filter: (n) => !n.classList?.contains("alleen-scherm"),
+    });
+  } finally {
+    weekview.hidden = verborgen;
+  }
+}
+
+document.getElementById("kopieer").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": png() })]);
+    toast("Gekopieerd. Plak met ⌘V in Miro of Pitch.");
+  } catch {
+    toast("Kopiëren lukt niet in deze browser. Gebruik PNG.");
+  }
+});
+document.getElementById("download").addEventListener("click", async () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(await png());
+  a.download = `weekplanning-week-${weekNr(datum(0))}.png`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("PNG gedownload.");
+});
+
+/* ---------- Bestand: de hele planning als JSON, om later verder te bewerken ---------- */
+
+document.getElementById("bewaar").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(staat, null, 2)], { type: "application/json" }));
+  const naam = (staat.titel || "weekplanning").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  a.download = `${naam}-week-${weekNr(datum(0))}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Bewaard. Open het bestand later om verder te gaan.");
+});
+// Lege planning van één week, vanaf de eerstvolgende maandag.
+function legePlanning() {
+  const d = new Date();
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+  return { titel: "Weekplanning", start: d.toLocaleDateString("sv-SE"), weken: 1, categorieen: structuredClone(STANDAARD), notities: {}, blokken: [] };
+}
+document.getElementById("nieuw-plan").addEventListener("click", () => {
+  if (staat.blokken.length && !confirm("Een nieuwe, lege planning beginnen? Bewaar de huidige eerst als bestand als je die nog nodig hebt.")) return;
+  staat = legePlanning();
+  bewaar(); render();
+});
+document.getElementById("openknop").addEventListener("click", () => document.getElementById("bestand").click());
+
+// Een bestand komt van buiten: eerst de vorm controleren, dan pas de huidige planning vervangen.
+const leesPlanning = (tekst) => normaliseer(JSON.parse(tekst));
+
+// Ook voor wat er in de browser staat: oudere planningen zonder categorieën krijgen de standaard, met hun hernoemde labels.
+function normaliseer(p) {
+  const tijdOk = (t) => typeof t === "string" && /^\d{2}:\d{2}$/.test(t);
+  const catOk = (c) => c && typeof c.id === "string" && typeof c.naam === "string" && /^#[0-9a-f]{6}$/i.test(c.kleur);
+  const categorieen = Array.isArray(p?.categorieen) && p.categorieen.length && p.categorieen.every(catOk)
+    ? p.categorieen.map(({ id, naam, kleur }) => ({ id, naam, kleur }))
+    : STANDAARD.map((c) => ({ ...c, naam: typeof p?.labels?.[c.id] === "string" && p.labels[c.id] ? p.labels[c.id] : c.naam }));
+  const geldig = p && /^\d{4}-\d{2}-\d{2}$/.test(p.start) && Number.isInteger(p.weken) && p.weken > 0 && Array.isArray(p.blokken)
+    && p.blokken.every((b) => b && categorieen.some((c) => c.id === b.type) && Number.isInteger(b.dag) && tijdOk(b.van) && tijdOk(b.tot));
+  if (!geldig) throw new Error("ongeldig");
+  return { titel: String(p.titel ?? ""), start: p.start, weken: p.weken, categorieen, notities: p.notities ?? {}, blokken: p.blokken };
+}
+document.getElementById("bestand").addEventListener("change", async (e) => {
+  const bestand = e.target.files[0];
+  e.target.value = "";
+  if (!bestand) return;
+  try {
+    const nieuw = leesPlanning(await bestand.text());
+    if (staat.blokken.length && !confirm("De huidige planning vervangen door dit bestand?")) return;
+    staat = nieuw;
+    bewaar(); render();
+    toast(`Geopend: ${bestand.name}`);
+  } catch {
+    toast("Dit bestand is geen weekplanning.");
+  }
+});
+
+render();
+// De hoogte van blokken hangt af van het lettertype; opnieuw verdelen zodra de lettertypes geladen zijn.
+document.fonts.ready.then(renderWeek);
+</script>
+</body>
+</html>
