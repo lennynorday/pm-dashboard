@@ -225,6 +225,11 @@
   background: var(--norday-yellow);
 }
 
+.icoon[data-soort="stil-ticket"],
+.icoon[data-soort="timesheet"] {
+  background: var(--color-lilac-soft);
+}
+
 .tekst {
   display: flex;
   flex-direction: column;

@@ -17,8 +17,8 @@ import { TodoDialoog } from "./TodoDialoog";
 import { useToast } from "./Toast";
 import styles from "./Feed.module.css";
 
-/** "koppelen" heeft geen eigen filter en staat alleen onder Alles. */
-type Groep = "budget" | "koppelen" | "support" | "sprint";
+/** "koppelen" en "eigen" hebben geen eigen filter en staan alleen onder Alles. */
+type Groep = "budget" | "koppelen" | "support" | "sprint" | "eigen";
 
 const SOORT: Record<FeedSoort, { label: string; groep: Groep; icoon: string }> =
   {
@@ -48,6 +48,16 @@ const SOORT: Record<FeedSoort, { label: string; groep: Groep; icoon: string }> =
     "sprint-verlopen": {
       label: "Sprint verlopen",
       groep: "sprint",
+      icoon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+    },
+    "stil-ticket": {
+      label: "Ligt stil",
+      groep: "eigen",
+      icoon: "M10 9v6M14 9v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+    },
+    timesheet: {
+      label: "Timesheet",
+      groep: "eigen",
       icoon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
     },
   };

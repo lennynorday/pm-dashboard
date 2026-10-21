@@ -185,6 +185,23 @@ const timesheet = (email: string, van: string): Cachet<Bijregel[]> =>
         (tekst) => parseBij(tekst, van),
       );
 
+/** Mijn regel uit de timesheetstatus (dezelfde aanroep als bij de sprints); null als ik er niet in sta. */
+export function eigenTimesheet(
+  email: string,
+  naam: string,
+  vandaag: string,
+): Cachet<Bijregel | null> {
+  const bij = timesheet(email, dagPlus(maandagVan(vandaag), -7));
+  if (bij.status !== "ok") return bij;
+  return {
+    status: "ok",
+    data:
+      bij.data.find(
+        (regel) => regel.wie.toLowerCase() === naam.toLowerCase(),
+      ) ?? null,
+  };
+}
+
 export type SprintBron = {
   platform: Platform;
   project: Project;

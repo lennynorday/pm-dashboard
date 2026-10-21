@@ -8,13 +8,19 @@ import { Slas } from "@/components/Slas";
 import { Sprints } from "@/components/Sprints";
 import { isSla } from "@/lib/budgetsignaal";
 import { loadDashboard } from "@/lib/dashboard";
-import { bouwFeed } from "@/lib/feed";
+import { bouwFeed, eigenItems } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
-import { fetchAccountJira } from "@/lib/jira/overview";
+import { fetchAccountJira, fetchStilleTickets } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
-import { laadOverige, laadSprints, verrijkBudget } from "@/lib/orbit/sprint";
+import {
+  eigenTimesheet,
+  laadOverige,
+  laadSprints,
+  verrijkBudget,
+} from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
+import { isoDatum, werkdagenTerug } from "@/lib/sprint";
 import styles from "./grid.module.css";
 
 export default async function HomePage() {
@@ -90,8 +96,16 @@ export default async function HomePage() {
     ),
     new Date(),
   );
+  const vandaag = isoDatum(new Date());
+  const stilSinds = werkdagenTerug(vandaag, 5);
+  const eigen = eigenItems(
+    eigenTimesheet(user.email, user.naam, vandaag),
+    await fetchStilleTickets(stilSinds),
+    vandaag,
+    stilSinds,
+  );
   const genegeerd = readGenegeerd(user.email);
-  const feed = bouwFeed(bronnen, dashboard.platforms, new Date());
+  const feed = bouwFeed(bronnen, dashboard.platforms, new Date(), eigen);
   const verborgen = dashboard.platforms
     .flatMap((platform) => platform.projecten)
     .filter((project) => project.zichtbaarheid === "verborgen");
