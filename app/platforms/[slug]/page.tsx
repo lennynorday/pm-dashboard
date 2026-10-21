@@ -147,7 +147,7 @@ export default async function PlatformPage({
             <p className="nd-empty">Geen zichtbare projecten.</p>
           )}
           {heeftSprints && <Sprints lading={sprints} beheer={beheer} />}
-          <Slas rijen={slas} vandaag={vandaag} beheer={beheer} />
+          <Slas rijen={slas} vandaag={vandaag} beheer={beheer} zonderSupport />
           <Overige rijen={overig} beheer={beheer} />
           <HiddenProjects projecten={verborgen} />
 

@@ -75,10 +75,12 @@ function Sla({
   rij: { platform, project, budget, support },
   vandaag,
   beheer,
+  zonderSupport,
 }: {
   rij: SlaRij;
   vandaag: Date;
   beheer?: Beheer;
+  zonderSupport?: boolean;
 }) {
   const start = budget.status === "ok" ? budget.data.start : null;
   const onder = (
@@ -92,7 +94,9 @@ function Sla({
     titel: project.naam,
     href: projectHref(platform, project),
     onder,
-    status: <SupportKnop platform={platform} support={support} />,
+    status: zonderSupport ? undefined : (
+      <SupportKnop platform={platform} support={support} />
+    ),
   };
 
   if (budget.status !== "ok") {
@@ -193,10 +197,13 @@ export function Slas({
   rijen,
   vandaag,
   beheer,
+  zonderSupport,
 }: {
   rijen: SlaRij[];
   vandaag: Date;
   beheer?: Beheer;
+  /** Zonder de knop naar de supporttickets, zoals op de platformpagina met een eigen Tickets-blok. */
+  zonderSupport?: boolean;
 }) {
   if (rijen.length === 0) return null;
   return (
@@ -212,7 +219,12 @@ export function Slas({
       <ul className={styles.rijen}>
         {rijen.map((rij) => (
           <li key={rij.project.number} id={`project-${rij.project.number}`}>
-            <Sla rij={rij} vandaag={vandaag} beheer={beheer} />
+            <Sla
+              rij={rij}
+              vandaag={vandaag}
+              beheer={beheer}
+              zonderSupport={zonderSupport}
+            />
           </li>
         ))}
       </ul>
