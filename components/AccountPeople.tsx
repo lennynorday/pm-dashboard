@@ -1,4 +1,5 @@
 import type { Contactpersoon } from "@/lib/accountgegevens";
+import { initialen } from "@/lib/navigation";
 import styles from "./AccountPeople.module.css";
 
 type Props = {
@@ -8,39 +9,80 @@ type Props = {
   contactpersonen: Contactpersoon[];
 };
 
-/** Klant, PM, AM en contactpersonen, compact onder de naam van het platform. */
+function Persoon({
+  naam,
+  rol,
+  email,
+  klant,
+}: {
+  naam: string;
+  rol?: string;
+  email?: string;
+  klant?: boolean;
+}) {
+  return (
+    <li className={styles.persoon}>
+      <span
+        className="nd-avatar"
+        data-tint={klant ? "yellow" : undefined}
+        aria-hidden="true"
+      >
+        {initialen(naam)}
+      </span>
+      <span>
+        <span className="nd-row__title">
+          {email ? <a href={`mailto:${email}`}>{naam}</a> : naam}
+        </span>
+        {rol && <span className={`nd-meta ${styles.rol}`}>{rol}</span>}
+      </span>
+    </li>
+  );
+}
+
+/** PM, AM en de contactpersonen van de klant, in de zijkolom van de platformpagina. */
 export function AccountPeople({ klant, pms, am, contactpersonen }: Props) {
   return (
-    <dl className={styles.people}>
-      <div>
-        <dt>Klant:</dt>
-        <dd>{klant}</dd>
+    <section className="nd-card" aria-labelledby="mensen">
+      <div className="nd-card__head">
+        <h2 id="mensen" className="nd-title">
+          Mensen
+        </h2>
       </div>
-      <div>
-        <dt>{pms.length > 1 ? "PM's:" : "PM:"}</dt>
-        <dd>{pms.length > 0 ? pms.join(", ") : "Geen open projecten"}</dd>
+      <div className="nd-rows">
+        <div className={`nd-row ${styles.groep}`}>
+          <h3 className="nd-eyebrow">Norday</h3>
+          <ul className={styles.lijst}>
+            {pms.length === 0 && (
+              <li className="nd-meta">Geen PM: geen open projecten</li>
+            )}
+            {pms.map((pm) => (
+              <Persoon key={pm} naam={pm} rol="PM" />
+            ))}
+            {am ? (
+              <Persoon naam={am} rol="Accountmanager" />
+            ) : (
+              <li className="nd-meta">Accountmanager nog niet ingevuld</li>
+            )}
+          </ul>
+        </div>
+        <div className={`nd-row ${styles.groep}`}>
+          <h3 className="nd-eyebrow">{klant}</h3>
+          <ul className={styles.lijst}>
+            {contactpersonen.length === 0 && (
+              <li className="nd-meta">Contactpersonen nog niet ingevuld</li>
+            )}
+            {contactpersonen.map((persoon) => (
+              <Persoon
+                key={persoon.naam}
+                naam={persoon.naam}
+                rol={persoon.rol}
+                email={persoon.email}
+                klant
+              />
+            ))}
+          </ul>
+        </div>
       </div>
-      <div>
-        <dt>Accountmanager:</dt>
-        <dd>{am ?? "Nog niet ingevuld"}</dd>
-      </div>
-      <div>
-        <dt>Contactpersonen:</dt>
-        <dd>
-          {contactpersonen.length === 0 && "Nog niet ingevuld"}
-          {contactpersonen.map((persoon, index) => (
-            <span key={persoon.naam}>
-              {index > 0 && ", "}
-              {persoon.email ? (
-                <a href={`mailto:${persoon.email}`}>{persoon.naam}</a>
-              ) : (
-                persoon.naam
-              )}
-              {persoon.rol && ` (${persoon.rol})`}
-            </span>
-          ))}
-        </dd>
-      </div>
-    </dl>
+    </section>
   );
 }

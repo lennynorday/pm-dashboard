@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { BUDGET_MELDING, regelStatus } from "@/lib/budgetsignaal";
 import type { Platform, Project } from "@/lib/dashboard";
 import { formatUren } from "@/lib/format";
@@ -134,7 +135,10 @@ export function Regel({
   );
 }
 
-function Sprint({ rij }: { rij: SprintRij }) {
+/** Extra knoppen per project in de uitgeklapte rij, zoals Verbergen op de platformpagina. */
+export type Beheer = (project: Project) => ReactNode;
+
+function Sprint({ rij, beheer }: { rij: SprintRij; beheer?: Beheer }) {
   const { project, platform, budget, sprint, mensen } = rij;
   const titel = project.naam;
   const href = projectHref(platform, project);
@@ -148,7 +152,9 @@ function Sprint({ rij }: { rij: SprintRij }) {
             {BUDGET_MELDING[budget.status]}
           </span>
         }
-      />
+      >
+        {beheer && <div className={styles.voet}>{beheer(project)}</div>}
+      </Uitklapper>
     );
   }
   if (!sprint) {
@@ -162,7 +168,9 @@ function Sprint({ rij }: { rij: SprintRij }) {
             Geen sprint in Orbit gevonden bij de planning
           </span>
         }
-      />
+      >
+        {beheer && <div className={styles.voet}>{beheer(project)}</div>}
+      </Uitklapper>
     );
   }
   const { map, hierna, wanneer } = sprint;
@@ -224,6 +232,7 @@ function Sprint({ rij }: { rij: SprintRij }) {
       )}
       <div className={styles.voet}>
         <OrbitLink project={project} />
+        {beheer?.(project)}
       </div>
     </Uitklapper>
   );
@@ -235,7 +244,13 @@ export function projectHref(platform: Platform, project: Project): string {
 }
 
 /** Mijn sprints: de huidige sprint per project met planning vorige, deze of volgende week. */
-export function Sprints({ lading }: { lading: SprintLading }) {
+export function Sprints({
+  lading,
+  beheer,
+}: {
+  lading: SprintLading;
+  beheer?: Beheer;
+}) {
   const { rijen, laden, fout } = lading;
   return (
     <section className={styles.kaart} aria-labelledby="sprints-kop">
@@ -254,8 +269,8 @@ export function Sprints({ lading }: { lading: SprintLading }) {
       )}
       <ul className={styles.rijen}>
         {rijen.map((rij) => (
-          <li key={rij.project.number}>
-            <Sprint rij={rij} />
+          <li key={rij.project.number} id={`project-${rij.project.number}`}>
+            <Sprint rij={rij} beheer={beheer} />
           </li>
         ))}
       </ul>

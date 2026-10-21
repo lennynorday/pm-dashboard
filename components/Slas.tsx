@@ -10,7 +10,7 @@ import type { ProjectBudgetResult, Schrijfregel } from "@/lib/orbit/budget";
 import { Budgetregel } from "./Budgetregel";
 import { AlertIcon, ExternalIcon } from "./icons";
 import { OrbitLink } from "./OrbitLink";
-import { projectHref } from "./Sprints";
+import { type Beheer, projectHref } from "./Sprints";
 import { SupportKnop } from "./SupportKnop";
 import styles from "./Sectie.module.css";
 import { Uitklapper } from "./Uitklapper";
@@ -74,9 +74,11 @@ function Regel({ regel }: { regel: Schrijfregel }) {
 function Sla({
   rij: { platform, project, budget, support },
   vandaag,
+  beheer,
 }: {
   rij: SlaRij;
   vandaag: Date;
+  beheer?: Beheer;
 }) {
   const start = budget.status === "ok" ? budget.data.start : null;
   const onder = (
@@ -102,7 +104,9 @@ function Sla({
             {BUDGET_MELDING[budget.status]}
           </span>
         }
-      />
+      >
+        {beheer && <div className={styles.voet}>{beheer(project)}</div>}
+      </Uitklapper>
     );
   }
 
@@ -123,6 +127,7 @@ function Sla({
           <span className="visually-hidden"> (opent in nieuw tabblad)</span>
         </a>
       )}
+      {beheer?.(project)}
     </div>
   );
 
@@ -184,7 +189,15 @@ function Sla({
 }
 
 /** Mijn SLA's: de jaarpot change-uren tegen de verstreken tijd; zonder SLA's niets. */
-export function Slas({ rijen, vandaag }: { rijen: SlaRij[]; vandaag: Date }) {
+export function Slas({
+  rijen,
+  vandaag,
+  beheer,
+}: {
+  rijen: SlaRij[];
+  vandaag: Date;
+  beheer?: Beheer;
+}) {
   if (rijen.length === 0) return null;
   return (
     <section className={styles.kaart} aria-labelledby="sla-kop">
@@ -198,8 +211,8 @@ export function Slas({ rijen, vandaag }: { rijen: SlaRij[]; vandaag: Date }) {
       </div>
       <ul className={styles.rijen}>
         {rijen.map((rij) => (
-          <li key={rij.project.number}>
-            <Sla rij={rij} vandaag={vandaag} />
+          <li key={rij.project.number} id={`project-${rij.project.number}`}>
+            <Sla rij={rij} vandaag={vandaag} beheer={beheer} />
           </li>
         ))}
       </ul>

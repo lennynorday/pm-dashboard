@@ -6,42 +6,53 @@ import styles from "./AttentionBand.module.css";
 
 type Props = { signalen: Signaal[] };
 
-const SOORT: Record<SignaalType, { label: string; Icon: typeof ClockIcon }> = {
-  koppelen: { label: "Koppelen", Icon: LinkIcon },
-  "sprint-verlopen": { label: "Sprint verlopen", Icon: ClockIcon },
-  "support-wacht": { label: "Support wacht", Icon: MessageIcon },
-  "bron-fout": { label: "Ophalen mislukt", Icon: AlertIcon },
+/** Per soort het icoon en de knop; een mislukte bron heeft geen actie. */
+const SOORT: Record<SignaalType, { actie?: string; Icon: typeof ClockIcon }> = {
+  koppelen: { actie: "Koppelen", Icon: LinkIcon },
+  "sprint-verlopen": { actie: "Openen", Icon: ClockIcon },
+  "support-wacht": { actie: "Openen", Icon: MessageIcon },
+  "bron-fout": { Icon: AlertIcon },
 };
 
-/** Lila kaart met wat nu aandacht vraagt; zonder signalen staat er niets. */
+/** Gele meldingen met wat nu aandacht vraagt; zonder signalen staat er niets. */
 export function AttentionBand({ signalen }: Props) {
   if (signalen.length === 0) return null;
 
   return (
     <section className={styles.band} aria-labelledby="aandacht">
-      <h2 id="aandacht" className={styles.kop}>
-        Vraagt nu aandacht{" "}
-        <span className={styles.aantal}>{signalen.length}</span>
+      <h2 id="aandacht" className="nd-visually-hidden">
+        Vraagt nu aandacht
       </h2>
       <ul className={styles.lijst}>
         {signalen.map((signaal) => {
-          const { label, Icon } = SOORT[signaal.type];
+          const { actie, Icon } = SOORT[signaal.type];
           return (
-            <li key={signaal.titel} className={styles.signaal}>
-              <span className={styles.soort}>
-                <Icon className={styles.icoon} />
-                {label}
+            <li key={signaal.titel} className="nd-alert">
+              <span className="nd-alert__icon">
+                <Icon />
               </span>
-              {signaal.url.startsWith("/") ? (
-                <NextLink href={signaal.url} className={styles.titel}>
-                  {signaal.titel}
-                </NextLink>
-              ) : (
-                <ExternalLink href={signaal.url} className={styles.titel}>
-                  {signaal.titel}
-                </ExternalLink>
-              )}
-              <span className={styles.detail}>{signaal.detail}</span>
+              <p className="nd-alert__text">
+                <strong className={styles.titel}>{signaal.titel}</strong>
+                {signaal.detail}
+              </p>
+              {actie &&
+                (signaal.url.startsWith("/") ? (
+                  <NextLink
+                    href={signaal.url}
+                    className="nd-button nd-button--small"
+                  >
+                    {actie}
+                    <span className="visually-hidden">: {signaal.titel}</span>
+                  </NextLink>
+                ) : (
+                  <ExternalLink
+                    href={signaal.url}
+                    className="nd-button nd-button--small"
+                  >
+                    {actie}
+                    <span className="visually-hidden">: {signaal.titel}</span>
+                  </ExternalLink>
+                ))}
             </li>
           );
         })}

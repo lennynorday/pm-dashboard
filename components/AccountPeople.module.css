@@ -1,21 +1,26 @@
-.people {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 28px;
+.groep {
+  display: grid;
+  gap: var(--space-03);
+}
+
+.lijst {
+  display: grid;
+  gap: var(--space-03);
   margin: 0;
-  font: 400 14px/1.35 var(--font-text);
+  padding: 0;
+  list-style: none;
 }
 
-.people div {
+.persoon {
   display: flex;
-  gap: var(--space-02);
+  align-items: center;
+  gap: var(--space-03);
 }
 
-.people dt {
-  color: var(--color-text-muted);
+.persoon :global(.nd-avatar) {
+  font: var(--type-small);
 }
 
-.people dd {
-  margin: 0;
-  font-weight: 500;
+.rol {
+  display: block;
 }

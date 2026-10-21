@@ -1,6 +1,5 @@
 import { hideProjectAction, showProjectAction } from "@/app/actions";
 import type { Project } from "@/lib/dashboard";
-import styles from "./VisibilityButton.module.css";
 
 type Props = { project: Project };
 
@@ -10,7 +9,10 @@ export function VisibilityButton({ project }: Props) {
   return (
     <form action={hidden ? showProjectAction : hideProjectAction}>
       <input type="hidden" name="projectnummer" value={project.number} />
-      <button type="submit" className={styles.button}>
+      <button
+        type="submit"
+        className="nd-button nd-button--quiet nd-button--small"
+      >
         {hidden ? "Weer tonen" : "Verbergen"}
         <span className="visually-hidden">: {project.naam}</span>
       </button>

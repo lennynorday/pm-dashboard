@@ -42,7 +42,7 @@ export function LinkToevoegen({ action, linktype }: Props) {
       <button
         ref={knop}
         type="button"
-        className={styles.toevoegen}
+        className="nd-chip"
         aria-expanded="false"
         onClick={() => setOpen(true)}
       >
@@ -63,13 +63,13 @@ export function LinkToevoegen({ action, linktype }: Props) {
       noValidate
     >
       {fouten.opslaan && (
-        <p role="alert" className={styles.fout}>
+        <p role="alert" className="nd-error">
           {fouten.opslaan}
         </p>
       )}
       {!linktype && (
         <>
-          <label className={styles.label}>
+          <label className="nd-label">
             Naam
             <input
               ref={eerste}
@@ -79,17 +79,17 @@ export function LinkToevoegen({ action, linktype }: Props) {
               defaultValue={state?.waarden.naam}
               aria-invalid={fouten.naam ? true : undefined}
               aria-describedby={fouten.naam ? `${id}-naam-fout` : undefined}
-              className={styles.input}
+              className={`nd-field ${styles.input}`}
             />
           </label>
           {fouten.naam && (
-            <p id={`${id}-naam-fout`} className={styles.fout}>
+            <p id={`${id}-naam-fout`} className="nd-error">
               {fouten.naam}
             </p>
           )}
         </>
       )}
-      <label className={styles.label}>
+      <label className="nd-label">
         Adres
         <input
           ref={linktype ? eerste : undefined}
@@ -100,19 +100,27 @@ export function LinkToevoegen({ action, linktype }: Props) {
           defaultValue={state?.waarden.url}
           aria-invalid={fouten.url ? true : undefined}
           aria-describedby={fouten.url ? `${id}-url-fout` : undefined}
-          className={styles.input}
+          className={`nd-field ${styles.input}`}
         />
       </label>
       {fouten.url && (
-        <p id={`${id}-url-fout`} className={styles.fout}>
+        <p id={`${id}-url-fout`} className="nd-error">
           {fouten.url}
         </p>
       )}
       <div className={styles.knoppen}>
-        <button type="submit" className={styles.opslaan} disabled={bezig}>
+        <button
+          type="submit"
+          className="nd-button nd-button--small"
+          disabled={bezig}
+        >
           {bezig ? "Bezig met opslaan" : "Opslaan"}
         </button>
-        <button type="button" className={styles.annuleren} onClick={sluit}>
+        <button
+          type="button"
+          className="nd-button nd-button--quiet nd-button--small"
+          onClick={sluit}
+        >
           Annuleren
         </button>
       </div>

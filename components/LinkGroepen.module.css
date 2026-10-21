@@ -1,196 +1,64 @@
 .groepen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-03);
-}
-
-.groep {
-  padding: var(--space-04) var(--space-03) var(--space-03);
-  border-radius: var(--radius-xl);
-  background: var(--color-card);
-}
-
-.kop {
-  margin: 0 var(--space-02) var(--space-03);
-  font: var(--type-label);
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.max {
-  margin-left: var(--space-01);
-  font-weight: 400;
+  gap: var(--space-04);
 }
 
 .lijst {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-02);
-  margin: 0;
+  display: grid;
+  gap: var(--space-01);
+  margin: var(--space-02) 0 0;
   padding: 0;
   list-style: none;
 }
 
-.tegel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-03);
-  padding: var(--space-02) var(--space-03) var(--space-02) var(--space-02);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
-  color: var(--color-text);
-  text-decoration: none;
-  transition: background 0.2s var(--ease);
-}
-
-.tegel:hover {
-  background: var(--norday-white);
-}
-
-.icoon {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--norday-white);
-}
-
-.groep[data-groep="0"] .icoon {
-  background: var(--norday-lilac);
-}
-
-.groep[data-groep="1"] .icoon {
-  background: var(--norday-yellow);
-}
-
-.groep[data-groep="2"] .icoon {
-  background: #ffd6e0;
-}
-
-.svg {
-  width: 18px;
-  height: 18px;
-}
-
-.tekst {
-  min-width: 0;
-}
-
-.tekst strong {
-  display: block;
-  font: var(--type-body-2);
-  font-weight: 600;
-}
-
-.tekst small {
-  display: block;
-  overflow: hidden;
-  font: var(--type-label-small);
-  color: var(--color-text-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.link {
+  margin: 0;
 }
 
 .extern {
-  flex: none;
-  width: 14px;
-  height: 14px;
   margin-left: auto;
-  opacity: 0.6;
+}
+
+.ontbreekt {
+  margin-top: var(--space-02);
+}
+
+.ontbreekt > summary {
+  width: auto;
+  background: var(--color-raised);
 }
 
 .toevoegen {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-02);
-  width: 100%;
-  min-height: 44px;
-  margin-top: var(--space-02);
-  border: 1px dashed var(--color-line-subtle);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text);
-  font: var(--type-label);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.toevoegen:hover {
-  border-style: solid;
-  background: var(--color-raised);
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: var(--space-03);
 }
 
 .plus {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
 }
 
+/* Het formulier neemt de hele breedte, zodat het adres past. */
 .formulier {
   display: grid;
+  flex-basis: 100%;
   gap: var(--space-02);
-  margin-top: var(--space-02);
-  padding: var(--space-03);
+  padding: var(--space-04);
   border-radius: var(--radius-md);
-  background: var(--norday-white);
+  background: var(--color-raised);
 }
 
-.label {
-  display: grid;
-  gap: var(--space-01);
-  font: var(--type-label-small);
-  font-weight: 600;
+.formulier :global(.nd-label) {
+  margin: 0;
 }
 
 .input {
-  min-height: 40px;
-  padding: var(--space-02) var(--space-03);
-  border: 1px solid var(--color-line-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--norday-white);
-  color: var(--color-text);
-  font: var(--type-body-2);
-}
-
-.input[aria-invalid="true"] {
-  border-width: 2px;
-  border-color: var(--color-accent);
-}
-
-.fout {
-  margin: 0;
-  font: var(--type-label-small);
-  font-weight: 600;
-  color: var(--color-text);
+  margin-top: 6px;
 }
 
 .knoppen {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-02);
-}
-
-.opslaan,
-.annuleren {
-  min-height: 36px;
-  padding: 0 var(--space-04);
-  border-radius: var(--radius-pill);
-  font: var(--type-label);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.opslaan {
-  border: 0;
-  background: var(--norday-dark);
-  color: var(--norday-white);
-}
-
-.annuleren {
-  border: 0;
-  background: var(--color-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
-  color: var(--color-text);
 }
