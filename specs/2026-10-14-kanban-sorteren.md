@@ -16,7 +16,7 @@
 
 ## Acceptatiecriteria
 
-1. Nieuwste is de huidige volgorde: nieuwste bovenaan. Prio zet 1 Urgent bovenaan en 4 Laag onderaan, gelijke prio nieuwste eerst.
+1. Nieuwste is de huidige volgorde: nieuwste bovenaan. Prio zet 1 Urgent bovenaan en 4 Laag onderaan, gelijke prio oudste eerst (PM-59).
 2. In Eigen volgorde verplaatst slepen binnen een kolom de kaart naar de plek van de lijn; de volgorde blijft na verversen staan.
 3. Slepen naar een andere kolom werkt in elke sortering en zet de status om. De kaart komt bovenaan die kolom in de eigen volgorde; in Eigen volgorde op de plek van de lijn.
 4. Wisselen van sortering verliest de eigen volgorde niet.

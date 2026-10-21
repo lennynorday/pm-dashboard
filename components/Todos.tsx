@@ -71,10 +71,10 @@ type Patch = Pick<Taak, "id"> &
 /** Klaar is geen kolom maar een afrondzone. */
 const KOLOMMEN = STATUSSEN.filter((status) => status !== "klaar");
 
-/** Sorteer stabiel; de volgorde van de database is nieuwste eerst. Nieuwe kaarten (positie null) staan bovenaan. */
+/** Sorteer stabiel; de volgorde van de database is nieuwste eerst. Op prio staat bij gelijke prio de oudste bovenaan. Nieuwe kaarten (positie null) staan bovenaan. */
 const SORTEERDERS: Record<Sortering, (a: Taak, b: Taak) => number> = {
   nieuwste: () => 0,
-  prio: (a, b) => a.prio - b.prio,
+  prio: (a, b) => a.prio - b.prio || a.id - b.id,
   eigen: (a, b) => (a.positie ?? -1) - (b.positie ?? -1),
 };
 
