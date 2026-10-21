@@ -57,6 +57,16 @@ export function werkdagen(van: string, tot: string): number {
   return aantal;
 }
 
+/** De dag `aantal` werkdagen (ma-vr) vóór `datum`. */
+export function werkdagenTerug(datum: string, aantal: number): string {
+  let dag = datum;
+  for (let over = aantal; over > 0;) {
+    dag = dagPlus(dag, -1);
+    if (weekdag(dag) % 6 !== 0) over--;
+  }
+  return dag;
+}
+
 /** Vrijdag van de vorige week: wie zijn timesheet tot daar heeft vastgezet, is bij (iedereen zet per week vast). */
 export function vrijdagVorigeWeek(datum: string): string {
   return dagPlus(maandagVan(datum), -3);

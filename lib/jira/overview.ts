@@ -251,6 +251,19 @@ function fetchSupportOverzicht(
   });
 }
 
+/** Open tickets op mijn naam, in heel Jira, die sinds `grens` (ISO-datum) niet zijn bijgewerkt. */
+export async function fetchStilleTickets(
+  grens: string,
+): Promise<JiraResult<Telling>> {
+  if (DEMO) return { status: "ok", data: { aantal: 2, url: config.jiraSite } };
+  const email = (await currentUser())?.email ?? "";
+  return toResult(async () => {
+    const jql = `assignee = currentUser() AND statusCategory != Done AND updated < "${grens}"`;
+    const { issues } = await cachedSearch(email, jql);
+    return { aantal: issues.length, url: jqlUrl(jql) };
+  });
+}
+
 export type AccountJira = {
   jira: { key: string; result: JiraResult<JiraOverzicht> }[];
   /** null: geen Organization in SUPP ingesteld. */

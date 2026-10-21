@@ -8,6 +8,7 @@ import {
   ingeplandVanaf,
   initialen,
   vrijdagVorigeWeek,
+  werkdagenTerug,
   metReserveringen,
   parseBij,
   parsePlanning,
@@ -310,4 +311,10 @@ test("een reservering volgende week maakt een sprintproject", () => {
     bepaalSprint(mappen, plan, "2026-10-15")?.map.naam,
     "Fase 2",
   );
+});
+
+test("werkdagenTerug slaat het weekend over", () => {
+  assert.strictEqual(werkdagenTerug("2026-10-21", 5), "2026-10-14");
+  assert.strictEqual(werkdagenTerug("2026-10-19", 1), "2026-10-16");
+  assert.strictEqual(werkdagenTerug("2026-10-25", 5), "2026-10-19");
 });

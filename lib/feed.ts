@@ -1,21 +1,26 @@
 import { ongekoppeld, type Platform, type Project } from "./dashboard";
 import { formatDate, formatUren } from "./format";
-import type { AccountJira } from "./jira/overview";
+import { config } from "@/config/dashboard";
+import type { AccountJira, JiraResult, Telling } from "./jira/overview";
 import { plafond, type ProjectBudgetResult } from "./orbit/budget";
+import type { Cachet } from "./orbit/sprint";
 import { isVerlopen, koppelTitel } from "./signals";
+import { type Bijregel, vrijdagVorigeWeek } from "./sprint";
 
 export type FeedSoort =
   | "boven-offerte"
   | "bijna-op"
   | "koppelen"
   | "eerste-reactie"
-  | "sprint-verlopen";
+  | "sprint-verlopen"
+  | "stil-ticket"
+  | "timesheet";
 
 /** Iets in Mijn feed. Het id verandert als de situatie verandert, zodat een genegeerd item terugkomt. */
 export type FeedItem = {
   id: string;
   soort: FeedSoort;
-  platformSlug: string;
+  /** Het platform, of de bron bij een signaal voor mij persoonlijk. */
   platformNaam: string;
   /** Alleen bij een klant met meer platforms. */
   klantNaam: string | null;
@@ -36,13 +41,14 @@ const VOLGORDE: FeedSoort[] = [
   "koppelen",
   "eerste-reactie",
   "sprint-verlopen",
+  "stil-ticket",
+  "timesheet",
 ];
 
 function waar(
   platform: Platform,
-): Pick<FeedItem, "platformSlug" | "platformNaam" | "klantNaam"> {
+): Pick<FeedItem, "platformNaam" | "klantNaam"> {
   return {
-    platformSlug: platform.slug,
     platformNaam: platform.naam,
     klantNaam: platform.klant.meerPlatforms ? platform.klant.naam : null,
   };
@@ -147,13 +153,64 @@ export function koppelItems(platforms: Platform[]): FeedItem[] {
   });
 }
 
+/** Signalen voor mij persoonlijk, los van een platform. */
+export function eigenItems(
+  timesheet: Cachet<Bijregel | null>,
+  stil: JiraResult<Telling>,
+  vandaag: string,
+  stilSinds: string,
+): FeedItem[] {
+  const grens = vrijdagVorigeWeek(vandaag);
+  const achter =
+    timesheet.status === "ok" &&
+    timesheet.data !== null &&
+    (timesheet.data.bijTm ?? "") < grens;
+  const bijTm = timesheet.status === "ok" ? timesheet.data?.bijTm : null;
+  const aantal = stil.status === "ok" ? stil.data.aantal : 0;
+  return [
+    ...(achter
+      ? [
+          {
+            id: `timesheet:${grens}`,
+            soort: "timesheet" as const,
+            platformNaam: "Orbit",
+            klantNaam: null,
+            titel: "Je timesheet van vorige week is nog niet ingediend",
+            detail: bijTm
+              ? `Ingediend t/m ${formatDate(bijTm)}`
+              : "Nog niets ingediend",
+            url: config.orbitSite,
+          },
+        ]
+      : []),
+    ...(stil.status === "ok" && aantal > 0
+      ? [
+          {
+            id: `stil-ticket:${aantal}`,
+            soort: "stil-ticket" as const,
+            platformNaam: "Jira",
+            klantNaam: null,
+            titel:
+              aantal === 1
+                ? "1 ticket op jouw naam ligt al 5 werkdagen stil"
+                : `${aantal} tickets op jouw naam liggen al 5 werkdagen stil`,
+            detail: `Niet bijgewerkt sinds ${formatDate(stilSinds)}`,
+            url: stil.data.url,
+          },
+        ]
+      : []),
+  ];
+}
+
 /** Alles wat aandacht vraagt, belangrijkste soort eerst. */
 export function bouwFeed(
   bronnen: FeedBron[],
   platforms: Platform[],
   nu: Date,
+  eigen: FeedItem[] = [],
 ): FeedItem[] {
   return [
+    ...eigen,
     ...koppelItems(platforms),
     ...bronnen.flatMap((bron) => [
       ...budgetItems(bron),
