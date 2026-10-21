@@ -9,6 +9,7 @@ import {
 } from "@/lib/links";
 import {
   BoardIcon,
+  ChevronIcon,
   CmsIcon,
   DocIcon,
   ExternalIcon,
@@ -44,7 +45,7 @@ type Props = {
   toevoegenVoor?: string;
 };
 
-function Tegel({
+function LinkRij({
   naam,
   url,
   Icoon,
@@ -57,17 +58,13 @@ function Tegel({
     <li>
       <a
         href={url}
-        className={styles.tegel}
+        className={`nd-action nd-action--main ${styles.link}`}
+        title={new URL(url).host}
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span className={styles.icoon}>
-          <Icoon className={styles.svg} />
-        </span>
-        <span className={styles.tekst}>
-          <strong>{naam}</strong>
-          <small>{new URL(url).host}</small>
-        </span>
+        <Icoon />
+        {naam}
         <ExternalIcon className={styles.extern} />
         <span className="visually-hidden"> (opent in nieuw tabblad)</span>
       </a>
@@ -75,69 +72,90 @@ function Tegel({
   );
 }
 
-/** De links van een platform in vaste groepen; Overig bevat de eigen links. */
+/**
+ * De links van een platform in vaste groepen, plus de eigen links onder Overig.
+ * Alleen ingevulde links staan in de lijst; de lege linktypes staan onder één uitklapper.
+ */
 export function LinkGroepen({ links, eigenLinks, toevoegenVoor }: Props) {
-  // Kun je toevoegen, dan staan alle groepen er, met een knop voor elk leeg linktype.
   const groepen = LINK_GROEPEN.map((groep) => ({
     naam: groep.naam,
     links: links.filter((link) => groep.typen.includes(link.type)),
-    leeg: toevoegenVoor
-      ? groep.typen.filter((type) => !links.some((link) => link.type === type))
-      : [],
-  })).filter((groep) => groep.links.length > 0 || groep.leeg.length > 0);
+  })).filter((groep) => groep.links.length > 0);
+  const leeg = toevoegenVoor
+    ? LINK_GROEPEN.flatMap((groep) => groep.typen).filter(
+        (type) => !links.some((link) => link.type === type),
+      )
+    : [];
+  const eigenToevoegen =
+    toevoegenVoor !== undefined && eigenLinks.length < MAX_EIGEN_LINKS;
 
   return (
-    <div className={styles.groepen}>
-      {groepen.map((groep, index) => (
-        <div key={groep.naam} className={styles.groep} data-groep={index}>
-          <h3 className={styles.kop}>{groep.naam}</h3>
-          {groep.links.length > 0 && (
-            <ul className={styles.lijst}>
-              {groep.links.map((link) => (
-                <Tegel
-                  key={link.type}
-                  naam={LINK_TYPE_LABELS[link.type]}
-                  url={link.url}
-                  Icoon={ICOON[link.type]}
-                />
-              ))}
-            </ul>
+    <section className="nd-card" aria-labelledby="links">
+      <div className="nd-card__head">
+        <h2 id="links" className="nd-title">
+          Links
+        </h2>
+      </div>
+      {groepen.length === 0 && eigenLinks.length === 0 ? (
+        <p className="nd-empty">Nog geen links.</p>
+      ) : (
+        <div className={`nd-row ${styles.groepen}`}>
+          {groepen.map((groep) => (
+            <div key={groep.naam}>
+              <h3 className="nd-eyebrow">{groep.naam}</h3>
+              <ul className={styles.lijst}>
+                {groep.links.map((link) => (
+                  <LinkRij
+                    key={link.type}
+                    naam={LINK_TYPE_LABELS[link.type]}
+                    url={link.url}
+                    Icoon={ICOON[link.type]}
+                  />
+                ))}
+              </ul>
+            </div>
+          ))}
+          {eigenLinks.length > 0 && (
+            <div>
+              <h3 className="nd-eyebrow">Overig</h3>
+              <ul className={styles.lijst}>
+                {eigenLinks.map((link) => (
+                  <LinkRij
+                    key={`${link.naam}-${link.url}`}
+                    naam={link.naam}
+                    url={link.url}
+                    Icoon={LinkIcon}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
-          {toevoegenVoor &&
-            groep.leeg.map((type) => (
+        </div>
+      )}
+      {(leeg.length > 0 || eigenToevoegen) && toevoegenVoor && (
+        <details className={`nd-disclosure ${styles.ontbreekt}`}>
+          <summary>
+            <ChevronIcon />
+            {leeg.length === 0
+              ? "Link toevoegen"
+              : `${leeg.length} ${leeg.length === 1 ? "link ontbreekt" : "links ontbreken"}`}
+          </summary>
+          <div className={styles.toevoegen}>
+            {leeg.map((type) => (
               <LinkToevoegen
                 key={type}
                 action={addLinkAction.bind(null, toevoegenVoor, type)}
                 linktype={LINK_TYPE_LABELS[type]}
               />
             ))}
-        </div>
-      ))}
-      <div className={styles.groep} data-groep="overig">
-        <h3 className={styles.kop}>
-          Overig{" "}
-          <span className={styles.max}>
-            {eigenLinks.length} van {MAX_EIGEN_LINKS}
-          </span>
-        </h3>
-        {eigenLinks.length > 0 && (
-          <ul className={styles.lijst}>
-            {eigenLinks.map((link) => (
-              <Tegel
-                key={`${link.naam}-${link.url}`}
-                naam={link.naam}
-                url={link.url}
-                Icoon={LinkIcon}
+            {eigenToevoegen && (
+              <LinkToevoegen
+                action={addLinkAction.bind(null, toevoegenVoor, "eigen")}
               />
-            ))}
-          </ul>
-        )}
-        {toevoegenVoor && eigenLinks.length < MAX_EIGEN_LINKS && (
-          <LinkToevoegen
-            action={addLinkAction.bind(null, toevoegenVoor, "eigen")}
-          />
-        )}
-      </div>
-    </div>
+            )}
+          </div>
+        </details>
+      )}
+    </section>
   );
 }

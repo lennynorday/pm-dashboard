@@ -6,19 +6,13 @@ import { OrbitStatus } from "@/components/OrbitStatus";
 import { PageHeading } from "@/components/PageHeading";
 import { Slas } from "@/components/Slas";
 import { Sprints } from "@/components/Sprints";
-import { isSla } from "@/lib/budgetsignaal";
 import { loadDashboard } from "@/lib/dashboard";
 import { bouwFeed, eigenItems } from "@/lib/feed";
 import { readGenegeerd } from "@/lib/genegeerde-meldingen";
 import { fetchAccountJira, fetchStilleTickets } from "@/lib/jira/overview";
 import { voortgang } from "@/lib/orbit/achtergrond";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
-import {
-  eigenTimesheet,
-  laadOverige,
-  laadSprints,
-  verrijkBudget,
-} from "@/lib/orbit/sprint";
+import { eigenTimesheet, verdeelProjecten } from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
 import { isoDatum, werkdagenTerug } from "@/lib/sprint";
 import styles from "./grid.module.css";
@@ -64,36 +58,13 @@ export default async function HomePage() {
         };
       }),
   );
-  const slas = bronnen.flatMap(({ platform, jira, projecten }) =>
-    projecten
-      .filter(({ project }) => isSla(project.naam))
-      .map(({ project, budget }) => ({
-        project,
-        budget: verrijkBudget(user.email, project.number, budget, new Date()),
-        platform,
-        support: jira.support,
-      })),
-  );
-  const sprints = laadSprints(
+  const { slas, sprints, overig } = verdeelProjecten(
     user.email,
-    bronnen.flatMap(({ platform, projecten }) =>
-      projecten
-        .filter(({ project }) => !isSla(project.naam))
-        .map((rij) => ({ ...rij, platform })),
-    ),
-    new Date(),
-  );
-  const sprintNummers = sprints.rijen.map(({ project }) => project.number);
-  const overig = laadOverige(
-    user.email,
-    bronnen.flatMap(({ platform, projecten }) =>
-      projecten
-        .filter(
-          ({ project }) =>
-            !isSla(project.naam) && !sprintNummers.includes(project.number),
-        )
-        .map((rij) => ({ ...rij, platform })),
-    ),
+    bronnen.map(({ platform, jira, projecten }) => ({
+      platform,
+      support: jira.support,
+      projecten,
+    })),
     new Date(),
   );
   const vandaag = isoDatum(new Date());

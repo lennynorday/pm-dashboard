@@ -5,13 +5,15 @@ import { dagLabel, somRegels } from "@/lib/sprint";
 import { Budgetregel } from "./Budgetregel";
 import { OrbitLink } from "./OrbitLink";
 import styles from "./Sectie.module.css";
-import { projectHref, Regel, UrenStand } from "./Sprints";
+import { type Beheer, projectHref, Regel, UrenStand } from "./Sprints";
 import { Uitklapper } from "./Uitklapper";
 
 function Overig({
   rij: { platform, project, budget, vanaf, mensen },
+  beheer,
 }: {
   rij: OverigRij;
+  beheer?: Beheer;
 }) {
   if (budget.status !== "ok") {
     return (
@@ -24,7 +26,9 @@ function Overig({
             {BUDGET_MELDING[budget.status]}
           </span>
         }
-      />
+      >
+        {beheer && <div className={styles.voet}>{beheer(project)}</div>}
+      </Uitklapper>
     );
   }
   const alle = budget.data.mappen.flatMap((map) => map.regels);
@@ -86,13 +90,20 @@ function Overig({
       ))}
       <div className={styles.voet}>
         <OrbitLink project={project} />
+        {beheer?.(project)}
       </div>
     </Uitklapper>
   );
 }
 
 /** Projecten zonder SLA en zonder sprint: het hele project tegen het budget. */
-export function Overige({ rijen }: { rijen: OverigRij[] }) {
+export function Overige({
+  rijen,
+  beheer,
+}: {
+  rijen: OverigRij[];
+  beheer?: Beheer;
+}) {
   if (rijen.length === 0) return null;
   return (
     <section className={styles.kaart} aria-labelledby="overig-kop">
@@ -104,8 +115,8 @@ export function Overige({ rijen }: { rijen: OverigRij[] }) {
       </div>
       <ul className={styles.rijen}>
         {rijen.map((rij) => (
-          <li key={rij.project.number}>
-            <Overig rij={rij} />
+          <li key={rij.project.number} id={`project-${rij.project.number}`}>
+            <Overig rij={rij} beheer={beheer} />
           </li>
         ))}
       </ul>

@@ -31,6 +31,8 @@ import {
   demoTimesheet,
   demoUren,
 } from "@/lib/demo";
+import { isSla } from "@/lib/budgetsignaal";
+import type { fetchAccountJira } from "@/lib/jira/overview";
 import { opAchtergrond } from "./achtergrond";
 import type { ProjectBudgetResult } from "./budget";
 import { callOrbitTool } from "./client";
@@ -359,4 +361,43 @@ export function laadOverige(
       ),
     };
   });
+}
+
+export type BudgetBron = {
+  platform: Platform;
+  support: Awaited<ReturnType<typeof fetchAccountJira>>["support"];
+  projecten: { project: Project; budget: ProjectBudgetResult }[];
+};
+
+/**
+ * Verdeelt projecten over SLA's, sprints en de rest, voor het overzicht en de platformpagina.
+ * Een SLA herken je aan de naam; een project zonder sprint in het venster valt onder Overige.
+ */
+export function verdeelProjecten(
+  email: string,
+  bronnen: BudgetBron[],
+  vandaag: Date,
+) {
+  const alle = bronnen.flatMap(({ platform, support, projecten }) =>
+    projecten.map((rij) => ({ ...rij, platform, support })),
+  );
+  const slas = alle
+    .filter(({ project }) => isSla(project.naam))
+    .map(({ project, budget, platform, support }) => ({
+      project,
+      budget: verrijkBudget(email, project.number, budget, vandaag),
+      platform,
+      support,
+    }));
+  const rest = alle
+    .filter(({ project }) => !isSla(project.naam))
+    .map(({ project, budget, platform }) => ({ project, budget, platform }));
+  const sprints = laadSprints(email, rest, vandaag);
+  const sprintNummers = sprints.rijen.map(({ project }) => project.number);
+  const overig = laadOverige(
+    email,
+    rest.filter(({ project }) => !sprintNummers.includes(project.number)),
+    vandaag,
+  );
+  return { slas, sprints, overig };
 }

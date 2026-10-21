@@ -8,16 +8,20 @@ import { HiddenProjects } from "@/components/HiddenProjects";
 import { LinkGroepen } from "@/components/LinkGroepen";
 import { Melding } from "@/components/Melding";
 import { OrbitStatus } from "@/components/OrbitStatus";
-import { PencilIcon } from "@/components/icons";
-import { ProjectLijst } from "@/components/MijnProjecten";
+import { Overige } from "@/components/Overige";
+import { PencilIcon, PlusIcon } from "@/components/icons";
 import { PageHeading } from "@/components/PageHeading";
+import { Slas } from "@/components/Slas";
+import { Sprints } from "@/components/Sprints";
 import { TicketKaarten } from "@/components/TicketKaarten";
-import { loadDashboard } from "@/lib/dashboard";
+import { VisibilityButton } from "@/components/VisibilityButton";
+import { loadDashboard, type Project } from "@/lib/dashboard";
 import { fetchAccountJira } from "@/lib/jira/overview";
 import { fetchProjectBudget } from "@/lib/orbit/budget";
+import { verdeelProjecten } from "@/lib/orbit/sprint";
 import { currentUser } from "@/lib/session";
 import { platformSignalen } from "@/lib/signals";
-import styles from "../../grid.module.css";
+import styles from "./page.module.css";
 
 const HOME = { label: "Overzicht", href: "/" };
 
@@ -54,7 +58,44 @@ export default async function PlatformPage({
       ),
     ),
   ]);
-  const signalen = platformSignalen(platform, data, new Date());
+  const vandaag = new Date();
+  const signalen = platformSignalen(platform, data, vandaag);
+  const { slas, sprints, overig } = verdeelProjecten(
+    user.email,
+    [
+      {
+        platform,
+        support: data.support,
+        projecten: zichtbaar.map((project, index) => ({
+          project,
+          budget: budgetten[index],
+        })),
+      },
+    ],
+    vandaag,
+  );
+  const ontkoppel = platform.klant.meerPlatforms
+    ? ontkoppelProjectAction.bind(null, platform.slug)
+    : undefined;
+  const beheer = (project: Project) => (
+    <>
+      {ontkoppel && (
+        <form action={ontkoppel}>
+          <input type="hidden" name="projectnummer" value={project.number} />
+          <button
+            type="submit"
+            className="nd-button nd-button--quiet nd-button--small"
+          >
+            Ontkoppelen
+            <span className="visually-hidden">: {project.naam}</span>
+          </button>
+        </form>
+      )}
+      <VisibilityButton project={project} />
+    </>
+  );
+  const heeftSprints =
+    sprints.rijen.length > 0 || sprints.laden > 0 || sprints.fout > 0;
 
   return (
     <>
@@ -65,33 +106,24 @@ export default async function PlatformPage({
           <>
             <NextLink
               href={`/platforms/${platform.slug}/bewerken`}
-              className={styles.rondeKnop}
+              className="nd-icon-button"
               aria-label="Gegevens bewerken"
               title="Gegevens bewerken"
             >
-              <PencilIcon className={styles.rondIcoon} />
+              <PencilIcon />
             </NextLink>
             <NextLink
               href={`/platforms/${platform.slug}/nieuw`}
-              className={styles.bewerken}
+              className="nd-icon-button"
+              aria-label={`Platform toevoegen aan ${platform.klant.naam}`}
+              title="Platform toevoegen"
             >
-              Platform toevoegen
-              <span className="visually-hidden">
-                {" "}
-                aan {platform.klant.naam}
-              </span>
+              <PlusIcon />
             </NextLink>
           </>
         }
         aside={<OrbitStatus dashboard={dashboard} />}
-      >
-        <AccountPeople
-          klant={platform.klant.naam}
-          pms={platform.pms}
-          am={platform.klant.am}
-          contactpersonen={platform.contactpersonen}
-        />
-      </PageHeading>
+      />
       {dashboard.gegevensFout && (
         <div className={styles.melding}>
           <Melding
@@ -109,52 +141,44 @@ export default async function PlatformPage({
       )}
       <AttentionBand signalen={signalen} />
 
-      <section className={styles.section} aria-labelledby="links">
-        <h2 id="links" className={styles.sectionTitle}>
-          Links
-        </h2>
-        <LinkGroepen
-          links={platform.links}
-          eigenLinks={platform.eigenLinks}
-          toevoegenVoor={
-            platform.klant.orbitId && !dashboard.gegevensFout
-              ? platform.slug
-              : undefined
-          }
-        />
-      </section>
+      <div className={styles.werkblad}>
+        <div className={styles.hoofdkolom}>
+          {zichtbaar.length === 0 && (
+            <p className="nd-empty">Geen zichtbare projecten.</p>
+          )}
+          {heeftSprints && <Sprints lading={sprints} beheer={beheer} />}
+          <Slas rijen={slas} vandaag={vandaag} beheer={beheer} zonderSupport />
+          <Overige rijen={overig} beheer={beheer} />
+          <HiddenProjects projecten={verborgen} />
 
-      <section
-        className={`${styles.section} ${styles.kaart}`}
-        aria-labelledby="projecten"
-      >
-        <h2 id="projecten" className={styles.sectionTitle}>
-          Projecten
-        </h2>
-        {zichtbaar.length === 0 ? (
-          <p className={styles.muted}>Geen zichtbare projecten.</p>
-        ) : (
-          <ProjectLijst
-            rijen={zichtbaar.map((project, index) => ({
-              project,
-              budget: budgetten[index],
-            }))}
-            feiten={{
-              ontkoppel: platform.klant.meerPlatforms
-                ? ontkoppelProjectAction.bind(null, platform.slug)
-                : undefined,
-            }}
+          <section className="nd-card" aria-labelledby="tickets">
+            <div className="nd-card__head">
+              <h2 id="tickets" className="nd-title">
+                Tickets
+              </h2>
+            </div>
+            <TicketKaarten data={data} />
+          </section>
+        </div>
+
+        <aside className={styles.zijkolom} aria-label="Mensen en links">
+          <AccountPeople
+            klant={platform.klant.naam}
+            pms={platform.pms}
+            am={platform.klant.am}
+            contactpersonen={platform.contactpersonen}
           />
-        )}
-        <HiddenProjects projecten={verborgen} />
-      </section>
-
-      <section className={styles.section} aria-labelledby="tickets">
-        <h2 id="tickets" className={styles.sectionTitle}>
-          Tickets
-        </h2>
-        <TicketKaarten data={data} />
-      </section>
+          <LinkGroepen
+            links={platform.links}
+            eigenLinks={platform.eigenLinks}
+            toevoegenVoor={
+              platform.klant.orbitId && !dashboard.gegevensFout
+                ? platform.slug
+                : undefined
+            }
+          />
+        </aside>
+      </div>
     </>
   );
 }

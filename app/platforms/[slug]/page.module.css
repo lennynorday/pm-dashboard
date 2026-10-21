@@ -1,0 +1,52 @@
+.melding {
+  margin-bottom: var(--space-06);
+}
+
+/* Werkblad: Sprints, SLA's, Overige en Tickets links, Mensen en Links in een vaste zijkolom. */
+.werkblad {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: var(--space-06);
+}
+
+.hoofdkolom {
+  display: grid;
+  gap: var(--space-06);
+  min-width: 0;
+}
+
+/* Hoger dan het scherm, bijvoorbeeld met een open linkformulier: dan scrollt de zijkolom zelf. */
+.zijkolom {
+  position: sticky;
+  top: var(--space-06);
+  display: grid;
+  gap: var(--space-06);
+  max-height: calc(100dvh - 2 * var(--space-06));
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+/* De blokken staan in een grid met gap; hun eigen marge valt weg. */
+.werkblad :global(.nd-card),
+.werkblad > * > section {
+  margin: 0;
+}
+
+@media (max-width: 1080px) {
+  .werkblad {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zijkolom {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* Smaller budgetvlak dan op het overzicht, zodat de projectnaam naast de zijkolom ruimte houdt. */
+.hoofdkolom > section {
+  --kolommen: minmax(0, 1fr) auto minmax(240px, 280px);
+}
