@@ -23,7 +23,7 @@ test("het laatste bericht per gesprek bepaalt wie er aan de beurt is", () => {
     dms,
     (b) => b.user === "ik",
   );
-  assert.deepStrictEqual(wachtOpJou, [dms[0]]);
+  assert.deepStrictEqual(wachtOpJou, [[dms[0]]]);
   assert.deepStrictEqual(beantwoord, ["D2"]);
 });
 
@@ -37,8 +37,19 @@ test("een gesprek met een emoji-reactie of van een app is afgehandeld", () => {
     dms,
     (b) => b.user === "app" || b.ts === "3",
   );
-  assert.deepStrictEqual(wachtOpJou, [dms[2]]);
+  assert.deepStrictEqual(wachtOpJou, [[dms[2]]]);
   assert.deepStrictEqual(beantwoord, ["D1", "D2"]);
+});
+
+test("losse berichten na je laatste reactie komen samen binnen", () => {
+  const dms = [
+    bericht("D1", "andere", "5"),
+    bericht("D1", "andere", "4"),
+    bericht("D1", "ik", "3"),
+    bericht("D1", "andere", "2"),
+  ];
+  const { wachtOpJou } = deelGesprekkenIn(dms, (b) => b.user === "ik");
+  assert.deepStrictEqual(wachtOpJou, [[dms[0], dms[1]]]);
 });
 
 test("alleen DM's en groeps-DM's zijn een gesprek", () => {

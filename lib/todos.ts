@@ -128,15 +128,11 @@ type Reactie = {
  * Een nieuwere reactie in een gesprek dat op To-do's staat: werk tekst, afzender,
  * tijd en link bij en markeer hem als update. Titel, status en prio blijven.
  */
-function meldReacties(
-  email: string,
-  bron: "slack" | "gmail",
-  reacties: Reactie[],
-): void {
+function meldReacties(email: string, reacties: Reactie[]): void {
   const update = database().prepare(
     `UPDATE taken SET bericht = ?, auteur = ?, afzender = COALESCE(?, afzender),
        tijd = ?, url = ?, reactie = ?
-     WHERE email = ? AND bron = ? AND bron_id = ?
+     WHERE email = ? AND bron = 'gmail' AND bron_id = ?
        AND lijst = 'todo' AND status != 'klaar' AND tijd < ?`,
   );
   for (const r of reacties) {
@@ -148,7 +144,6 @@ function meldReacties(
       r.url,
       r.tijd,
       email,
-      bron,
       r.bronId,
       r.tijd,
     );
@@ -175,7 +170,8 @@ export function tellingen(email: string): { inbox: number; open: number } {
 /**
  * Zet nieuwe Slack-berichten in de inbox; wat al bekend is, blijft zoals het is.
  * Een DM-gesprek is één item (bron_id dm:<kanaal>): een nieuwer bericht werkt het
- * bij en haalt het terug uit genegeerd, op To-do's wordt het een update. Een
+ * bij en haalt het terug uit genegeerd. Op To-do's is het losgekoppeld (zie
+ * naarTodo), dus een nieuw bericht wordt een nieuw inbox-item. Een
  * item zonder tekst (app-berichten van voor de blocks-ondersteuning) wordt ook bijgewerkt.
  */
 export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
@@ -204,20 +200,6 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
       Date.now(),
     );
   }
-  meldReacties(
-    email,
-    "slack",
-    berichten
-      .filter((bericht) => bericht.gesprek)
-      .map((bericht) => ({
-        bronId: `dm:${bericht.gesprek}`,
-        bericht: bericht.text,
-        auteur: bericht.auteur,
-        afzender: null,
-        tijd: bericht.tijd,
-        url: bericht.permalink,
-      })),
-  );
 }
 
 /** Haalt beantwoorde inbox-items uit de inbox, op bron_id (dm:<kanaal> of permalink). */
@@ -238,10 +220,17 @@ export function nieuweTaak(email: string, titel: string, status: Status): void {
     .run(email, titel, status, Date.now());
 }
 
+/** Terug naar de inbox koppelt een DM-gesprek weer aan (zie naarTodo). */
 export function verplaats(email: string, id: number, lijst: Lijst): void {
   database()
-    .prepare("UPDATE taken SET lijst = ? WHERE email = ? AND id = ?")
-    .run(lijst, email, id);
+    .prepare(
+      `UPDATE OR IGNORE taken SET lijst = ?,
+         bron_id = CASE WHEN ? = 'inbox' AND bron = 'slack' AND bron_id LIKE 'dm:%:%'
+           THEN 'dm:' || substr(bron_id, 4, instr(substr(bron_id, 4), ':') - 1)
+           ELSE bron_id END
+       WHERE email = ? AND id = ?`,
+    )
+    .run(lijst, lijst, email, id);
 }
 
 export function zetStatus(email: string, id: number, status: Status): void {
@@ -272,7 +261,11 @@ export function zetPrio(email: string, id: number, prio: Prio): void {
     .run(prio, email, id);
 }
 
-/** Een inbox-item wordt een taak, met de titel die de gebruiker zelf schreef. */
+/**
+ * Een inbox-item wordt een taak, met de titel die de gebruiker zelf schreef. Een
+ * DM-gesprek wordt losgekoppeld (bron_id dm:<kanaal>:<tijd>): een volgend bericht
+ * gaat vaak over iets anders en komt als nieuw item in de inbox.
+ */
 export function naarTodo(
   email: string,
   id: number,
@@ -281,9 +274,27 @@ export function naarTodo(
 ): void {
   database()
     .prepare(
-      "UPDATE taken SET lijst = 'todo', titel = ?, prio = ? WHERE email = ? AND id = ?",
+      `UPDATE taken SET lijst = 'todo', titel = ?, prio = ?,
+         bron_id = CASE WHEN bron = 'slack' AND bron_id LIKE 'dm:%'
+           THEN bron_id || ':' || tijd ELSE bron_id END
+       WHERE email = ? AND id = ?`,
     )
     .run(titel, prio, email, id);
+}
+
+/** Per DM-gesprek tot wanneer het op To-do's staat: oudere berichten horen daarbij. */
+export function gesprekkenOpTodo(email: string): Map<string, number> {
+  const rijen = database()
+    .prepare(
+      `SELECT bron_id, tijd FROM taken
+       WHERE email = ? AND bron = 'slack' AND lijst = 'todo' AND bron_id LIKE 'dm:%:%'`,
+    )
+    .all(email);
+  return rijen.reduce((tot, rij) => {
+    const kanaal = String(rij.bron_id).split(":")[1];
+    const tijd = Number(rij.tijd);
+    return tijd > (tot.get(kanaal) ?? 0) ? tot.set(kanaal, tijd) : tot;
+  }, new Map<string, number>());
 }
 
 export function hernoem(email: string, id: number, titel: string): void {
@@ -363,7 +374,6 @@ export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
   }
   meldReacties(
     email,
-    "gmail",
     gesprekken.map((gesprek) => ({
       bronId: gesprek.id,
       bericht: gesprek.tekst,

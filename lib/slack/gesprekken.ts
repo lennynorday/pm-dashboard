@@ -13,28 +13,32 @@ export function isGesprek(bericht: Bericht): boolean {
 }
 
 /**
- * Deelt DM-berichten (nieuwste eerst) in per gesprek, op het laatste bericht:
- * `wachtOpJou` zijn die laatste berichten die nog niet `afgehandeld` zijn,
- * `beantwoord` de kanaal-id's waarvan het laatste bericht dat wel is.
+ * Deelt DM-berichten (nieuwste eerst) in per gesprek. `wachtOpJou` zijn per
+ * gesprek de berichten na het laatste `afgehandelde` (nieuwste eerst), zodat
+ * een verhaal in losse berichten samen binnenkomt; `beantwoord` de kanaal-id's
+ * waarvan het laatste bericht afgehandeld is.
  */
 export function deelGesprekkenIn(
   dms: Bericht[],
   afgehandeld: (bericht: Bericht) => boolean,
-): { wachtOpJou: Bericht[]; beantwoord: string[] } {
-  const laatsteVanGesprek = new Map<string, Bericht>();
+): { wachtOpJou: Bericht[][]; beantwoord: string[] } {
+  const perGesprek = new Map<string, Bericht[]>();
   for (const bericht of dms) {
     const id = kanaal(bericht).id;
-    if (typeof id === "string" && !laatsteVanGesprek.has(id)) {
-      laatsteVanGesprek.set(id, bericht);
+    if (typeof id === "string") {
+      perGesprek.set(id, [...(perGesprek.get(id) ?? []), bericht]);
     }
   }
-  const laatste = [...laatsteVanGesprek];
+  const open = [...perGesprek].map(([id, berichten]) => {
+    const eind = berichten.findIndex(afgehandeld);
+    return [id, eind === -1 ? berichten : berichten.slice(0, eind)] as const;
+  });
   return {
-    wachtOpJou: laatste
-      .filter(([, bericht]) => !afgehandeld(bericht))
-      .map(([, bericht]) => bericht),
-    beantwoord: laatste
-      .filter(([, bericht]) => afgehandeld(bericht))
+    wachtOpJou: open
+      .filter(([, berichten]) => berichten.length > 0)
+      .map(([, berichten]) => berichten),
+    beantwoord: open
+      .filter(([, berichten]) => berichten.length === 0)
       .map(([id]) => id),
   };
 }

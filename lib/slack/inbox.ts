@@ -1,4 +1,5 @@
 import { database } from "@/lib/db";
+import { gesprekkenOpTodo } from "@/lib/todos";
 import {
   parseBericht,
   record,
@@ -50,7 +51,7 @@ function datumVanaf(sinds: number): string {
 /**
  * Wat om aandacht vraagt sinds de eerste synchronisatie: vermeldingen, en
  * DM-gesprekken waarvan het laatste bericht nog op jou wacht. Per gesprek één
- * item. `beantwoord` zijn de bron-id's van wat weg mag: gesprekken waarin jij
+ * item met alle berichten sinds je laatste reactie. `beantwoord` zijn de bron-id's van wat weg mag: gesprekken waarin jij
  * als laatste reageerde (ook met een emoji) of waarvan het laatste bericht van
  * een app komt, en vermeldingen waarop je met een emoji of in de thread reageerde.
  * De eerste keer haalt dit niets op, het zet alleen het startmoment: wat er
@@ -90,6 +91,7 @@ export async function fetchSlackInbox(
   const vermeldingBeantwoord = (match: Record<string, unknown>) =>
     metEmoji(match) || inThread(match);
 
+  const opTodo = gesprekkenOpTodo(email);
   // Nieuwste eerst, dus het eerste bericht per gesprek is het laatste.
   const { wachtOpJou, beantwoord } = deelGesprekkenIn(
     dms,
@@ -107,12 +109,21 @@ export async function fetchSlackInbox(
           !isGesprek(match),
       )
       .map((match) => parseBericht(match, "Vermelding", namen)),
-    ...wachtOpJou.map((match) => {
-      const bericht = parseBericht(match, "Direct bericht", namen);
-      const gesprek = record(match.channel).id;
-      return bericht && typeof gesprek === "string"
-        ? { ...bericht, gesprek }
-        : null;
+    ...wachtOpJou.map((berichten) => {
+      const gesprek = record(berichten[0].channel).id;
+      if (typeof gesprek !== "string") return null;
+      // Alleen wat binnenkwam nadat je er een to-do van maakte.
+      const vanaf = opTodo.get(gesprek) ?? 0;
+      const nieuwe = berichten
+        .filter((match) => Number(match.ts) > vanaf)
+        .map((match) => parseBericht(match, "Direct bericht", namen))
+        .filter((bericht): bericht is SlackTodo => bericht !== null);
+      if (nieuwe.length === 0) return null;
+      const text = nieuwe
+        .map((bericht) => bericht.text)
+        .reverse()
+        .join("\n\n");
+      return { ...nieuwe[0], text, gesprek };
     }),
   ].filter((bericht): bericht is SlackTodo => bericht !== null);
 
