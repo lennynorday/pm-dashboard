@@ -17,7 +17,8 @@ const FILE = path.join(
 
 function open(): DatabaseSync {
   mkdirSync(path.dirname(FILE), { recursive: true });
-  const db = new DatabaseSync(FILE);
+  // Wacht even als de MCP-server en de app tegelijk schrijven, in plaats van "database is locked".
+  const db = new DatabaseSync(FILE, { timeout: 5000 });
   db.exec(`
     CREATE TABLE IF NOT EXISTS gebruikers (
       email TEXT PRIMARY KEY,
