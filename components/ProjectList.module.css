@@ -36,7 +36,7 @@
   flex-wrap: wrap;
   gap: var(--space-01) var(--space-03);
   margin: var(--space-01) 0 0;
-  font: var(--type-label-small);
+  font: var(--type-meta);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }

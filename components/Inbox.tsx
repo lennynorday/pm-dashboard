@@ -148,7 +148,7 @@ export function Inbox({ taken, genegeerd }: Props) {
   return (
     <>
       <section className={styles.paneel} aria-label="Inbox">
-        {open.length === 0 && <p className={styles.leeg}>Inbox leeg.</p>}
+        {open.length === 0 && <p className="nd-empty">Inbox leeg.</p>}
         <ul className={styles.lijst}>
           {taken.map((taak) => {
             const gmail = taak.bron === "gmail";
@@ -160,11 +160,12 @@ export function Inbox({ taken, genegeerd }: Props) {
                 inert={weg.has(taak.id)}
               >
                 <div className={styles.klap}>
-                  <div className={styles.item}>
+                  <div className={`nd-row ${styles.item}`}>
                     <div className={styles.body}>
-                      <p className={styles.meta}>
+                      <p className={`nd-meta ${styles.meta}`}>
                         <span
-                          className={`${styles.bron} ${gmail ? styles.gmail : ""}`}
+                          className="nd-chip"
+                          data-tint={gmail ? "pink" : "lilac"}
                         >
                           {BRON_LABELS[taak.bron]}
                         </span>
@@ -189,23 +190,23 @@ export function Inbox({ taken, genegeerd }: Props) {
                         <p className={styles.snippet}>{taak.bericht}</p>
                       )}
                     </div>
-                    <div className={styles.acties}>
+                    <div className={`nd-actions ${styles.acties}`}>
                       <button
                         type="button"
-                        className={`${styles.actie} ${styles.hoofd}`}
+                        className="nd-action nd-action--main"
                         onClick={() => setKiezen(taak)}
                       >
                         <PlusIcon className={styles.icoon} />
                         Naar to-do
                       </button>
                       {taak.url && (
-                        <ExternalLink href={taak.url} className={styles.actie}>
+                        <ExternalLink href={taak.url} className="nd-action">
                           Openen in {BRON_LABELS[taak.bron]}
                         </ExternalLink>
                       )}
                       <button
                         type="button"
-                        className={styles.actie}
+                        className="nd-action"
                         onClick={() => negeer(taak)}
                       >
                         <CloseIcon className={styles.icoon} />
@@ -220,7 +221,7 @@ export function Inbox({ taken, genegeerd }: Props) {
                             type="button"
                             id={`meer-${taak.id}`}
                             data-menu={taak.id}
-                            className={styles.actie}
+                            className="nd-action"
                             aria-haspopup="menu"
                             aria-expanded={menu === taak.id}
                             aria-controls={`menu-${taak.id}`}
@@ -281,11 +282,12 @@ export function Inbox({ taken, genegeerd }: Props) {
           </p>
           <ul className={`${styles.lijst} ${styles.stil}`}>
             {stil.map((taak) => (
-              <li key={taak.id} className={styles.item}>
+              <li key={taak.id} className={`nd-row ${styles.item}`}>
                 <div className={styles.body}>
-                  <p className={styles.meta}>
+                  <p className={`nd-meta ${styles.meta}`}>
                     <span
-                      className={`${styles.bron} ${taak.bron === "gmail" ? styles.gmail : ""}`}
+                      className="nd-chip"
+                      data-tint={taak.bron === "gmail" ? "pink" : "lilac"}
                     >
                       {BRON_LABELS[taak.bron]}
                     </span>
@@ -295,10 +297,10 @@ export function Inbox({ taken, genegeerd }: Props) {
                   </p>
                   <p className={styles.snippet}>{berichtTekst(taak)}</p>
                 </div>
-                <div className={styles.acties}>
+                <div className={`nd-actions ${styles.acties}`}>
                   <button
                     type="button"
-                    className={`${styles.actie} ${styles.hoofd}`}
+                    className="nd-action nd-action--main"
                     onClick={() => haalTerug(taak)}
                   >
                     <InboxIcon className={styles.icoon} />
@@ -308,7 +310,7 @@ export function Inbox({ taken, genegeerd }: Props) {
                     </span>
                   </button>
                   {taak.url && (
-                    <ExternalLink href={taak.url} className={styles.actie}>
+                    <ExternalLink href={taak.url} className="nd-action">
                       Openen in {BRON_LABELS[taak.bron]}
                     </ExternalLink>
                   )}

@@ -4,7 +4,7 @@
   gap: var(--space-02);
   margin: var(--space-02) var(--space-02) var(--space-03);
   color: var(--color-text-muted);
-  font: 400 14px/1.35 var(--font-text);
+  font: var(--type-body);
 }
 
 .icoon {

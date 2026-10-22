@@ -10,7 +10,8 @@
   border-radius: 8px;
   background: transparent;
   color: var(--color-text-muted);
-  font: 400 14px/1 var(--font-text);
+  font: var(--type-body);
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.2s var(--ease);

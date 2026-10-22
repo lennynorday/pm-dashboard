@@ -56,7 +56,7 @@ async function InboxInhoud() {
         <Melding
           titel="Slack is niet verbonden"
           actie={
-            <VerbindLink href="/api/slack/login" className={styles.melding}>
+            <VerbindLink href="/api/slack/login" className="nd-button">
               Verbinden met Slack
             </VerbindLink>
           }
