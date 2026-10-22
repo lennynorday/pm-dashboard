@@ -18,7 +18,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font: var(--type-label);
+  font: var(--type-body);
   color: var(--color-text-muted);
 }
 
@@ -38,7 +38,7 @@
 
 .title {
   margin: 0;
-  font: 700 clamp(40px, 4.4vw, 64px) / 0.95 var(--font-heading);
+  font: var(--type-display);
   text-transform: uppercase;
   letter-spacing: var(--heading-letter-spacing);
   overflow-wrap: anywhere;

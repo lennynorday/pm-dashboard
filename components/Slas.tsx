@@ -207,12 +207,12 @@ export function Slas({
 }) {
   if (rijen.length === 0) return null;
   return (
-    <section className={styles.kaart} aria-labelledby="sla-kop">
-      <div className={styles.kaartKop}>
-        <h2 id="sla-kop" className={styles.kaartTitel}>
+    <section className={`nd-card ${styles.kaart}`} aria-labelledby="sla-kop">
+      <div className="nd-card__head">
+        <h2 id="sla-kop" className="nd-title">
           SLA&apos;s
         </h2>
-        <span className={styles.kopUitleg}>
+        <span className="nd-meta">
           Uren tegen de verstreken tijd van de pot
         </span>
       </div>
