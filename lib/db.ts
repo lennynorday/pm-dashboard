@@ -164,6 +164,10 @@ function open(): DatabaseSync {
     const kanaal = String(rij.bron_id).split("/archives/")[1]?.split("/")[0];
     if (kanaal) omzetten.run(`dm:${kanaal}`, Number(rij.id));
   }
+  // DM-to-do's zijn losgekoppeld van het gesprek (bron_id dm:<kanaal>:<tijd>).
+  db.exec(`UPDATE OR IGNORE taken SET bron_id = bron_id || ':' || tijd
+    WHERE bron = 'slack' AND lijst = 'todo'
+      AND bron_id LIKE 'dm:%' AND bron_id NOT LIKE 'dm:%:%'`);
   // De link naar het Gmail-concept dat Akkoord klaarzette.
   const opdrachtKolommen = db.prepare("PRAGMA table_info(opdrachten)").all();
   if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_url")) {
