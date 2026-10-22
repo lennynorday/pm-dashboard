@@ -260,7 +260,7 @@ export function Sidebar({
             <li>
               <NextLink
                 href="/weekplanner"
-                className={styles.item}
+                className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/weekplanner" ? "page" : undefined}
               >
                 <CalendarIcon />
