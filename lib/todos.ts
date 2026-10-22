@@ -67,6 +67,20 @@ export function leesTaken(email: string, lijst: Lijst): Taak[] {
     .filter((taak): taak is Taak => taak !== null);
 }
 
+const DERTIG_DAGEN = 30 * 24 * 60 * 60;
+
+/** Genegeerde inbox-items van de afgelopen 30 dagen, nieuwste bericht eerst. */
+export function leesGenegeerd(email: string): Taak[] {
+  return database()
+    .prepare(
+      `SELECT * FROM taken WHERE email = ? AND lijst = 'genegeerd' AND tijd > ?
+       ORDER BY tijd DESC, id DESC`,
+    )
+    .all(email, Date.now() / 1000 - DERTIG_DAGEN)
+    .map(parseTaak)
+    .filter((taak): taak is Taak => taak !== null);
+}
+
 /** Eén taak van deze gebruiker, met het id uit de bron (Gmail-thread, Slack-link). */
 export function leesTaak(
   email: string,

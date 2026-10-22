@@ -244,6 +244,67 @@
   }
 }
 
+/* Genegeerd, inklapbaar onder de Inbox */
+.genegeerd {
+  margin-top: var(--space-04);
+}
+
+.genegeerd summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-02);
+  padding: var(--space-02) 14px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font: 500 15px/1.2 var(--font-text);
+  list-style: none;
+  cursor: pointer;
+}
+
+.genegeerd summary::-webkit-details-marker {
+  display: none;
+}
+
+.genegeerd summary:hover {
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.genegeerd summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.genegeerd summary svg {
+  transform: rotate(-90deg);
+  transition: transform 0.2s var(--ease);
+}
+
+.genegeerd[open] summary svg {
+  transform: none;
+}
+
+.hint {
+  margin: var(--space-01) 0 var(--space-03) 14px;
+  font: 400 13px/1.35 var(--font-text);
+  color: var(--color-text-muted);
+}
+
+.stil {
+  padding: var(--space-02);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+}
+
+.stil .item {
+  margin-bottom: var(--space-01);
+  padding-block: 10px;
+}
+
+.stil .item:last-child {
+  margin-bottom: 0;
+}
+
 /* Updates op to-do's, onder de Inbox */
 .updates {
   margin-top: var(--space-10);
