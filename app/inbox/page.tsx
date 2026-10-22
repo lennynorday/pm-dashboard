@@ -10,7 +10,7 @@ import { currentUser } from "@/lib/session";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
 import { bronAan } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
-import { leesTaken, leesUpdates } from "@/lib/todos";
+import { leesGenegeerd, leesTaken, leesUpdates } from "@/lib/todos";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
 import { VerbindLink } from "@/components/VerbindLink";
@@ -47,6 +47,7 @@ async function InboxInhoud() {
     bronAan(user.email, "gmail") ? synchroniseerGmail(user.email) : null,
   ]);
   const taken = leesTaken(user.email, "inbox");
+  const genegeerd = leesGenegeerd(user.email);
   const updates = leesUpdates(user.email);
 
   return (
@@ -75,7 +76,7 @@ async function InboxInhoud() {
         </Melding>
       )}
 
-      <Inbox taken={taken} />
+      <Inbox taken={taken} genegeerd={genegeerd} />
       <TodoUpdates taken={updates} />
     </>
   );

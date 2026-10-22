@@ -9,7 +9,14 @@ import {
 } from "@/app/actions";
 import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
-import { BlockIcon, CloseIcon, PlusIcon, StarIcon } from "./icons";
+import {
+  BlockIcon,
+  ChevronIcon,
+  CloseIcon,
+  InboxIcon,
+  PlusIcon,
+  StarIcon,
+} from "./icons";
 import styles from "./Inbox.module.css";
 import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
 import { useToast } from "./Toast";
@@ -40,11 +47,15 @@ function dialoogBron(taak: Taak): DialoogBron {
   };
 }
 
-export function Inbox({ taken }: { taken: Taak[] }) {
+type Props = { taken: Taak[]; genegeerd: Taak[] };
+
+export function Inbox({ taken, genegeerd }: Props) {
   // Weggehaald is lokaal bijgehouden, zodat een item niet terugspringt voor de server klaar is.
   const [weg, setWeg] = useState<ReadonlySet<number>>(new Set());
   const [kiezen, setKiezen] = useState<Taak | null>(null);
   const [menu, setMenu] = useState<number | null>(null);
+  // Teruggezet uit genegeerd, tot de server de lijsten ververst.
+  const [terug, setTerug] = useState<ReadonlySet<number>>(new Set());
   const { toon, element } = useToast();
 
   useEffect(() => {
@@ -96,6 +107,22 @@ export function Inbox({ taken }: { taken: Taak[] }) {
     toon("Genegeerd", { ongedaan: () => zetTerug(taak.id) });
   }
 
+  function haalTerug(taak: Taak) {
+    zetTerug(taak.id);
+    setTerug((huidig) => new Set(huidig).add(taak.id));
+    void verplaatsTaakAction(taak.id, "inbox");
+    toon("Terug in je Inbox", {
+      ongedaan: () => {
+        setTerug((huidig) => {
+          const nieuw = new Set(huidig);
+          nieuw.delete(taak.id);
+          return nieuw;
+        });
+        void verplaatsTaakAction(taak.id, "genegeerd");
+      },
+    });
+  }
+
   function sluitUit(taak: Taak, soort: "afzender" | "domein") {
     if (!taak.afzender) return;
     const waarde =
@@ -116,6 +143,7 @@ export function Inbox({ taken }: { taken: Taak[] }) {
   }
 
   const open = taken.filter((taak) => !weg.has(taak.id));
+  const stil = genegeerd.filter((taak) => !terug.has(taak.id));
 
   return (
     <>
@@ -240,6 +268,56 @@ export function Inbox({ taken }: { taken: Taak[] }) {
           })}
         </ul>
       </section>
+
+      {stil.length > 0 && (
+        <details className={styles.genegeerd}>
+          <summary>
+            <ChevronIcon className={styles.icoon} aria-hidden="true" />
+            {stil.length} genegeerd
+          </summary>
+          <p className={styles.hint}>
+            Afgelopen 30 dagen, nieuwste eerst. Komt er een nieuw bericht in het
+            gesprek, dan staat het vanzelf weer in je Inbox.
+          </p>
+          <ul className={`${styles.lijst} ${styles.stil}`}>
+            {stil.map((taak) => (
+              <li key={taak.id} className={styles.item}>
+                <div className={styles.body}>
+                  <p className={styles.meta}>
+                    <span
+                      className={`${styles.bron} ${taak.bron === "gmail" ? styles.gmail : ""}`}
+                    >
+                      {BRON_LABELS[taak.bron]}
+                    </span>
+                    {taak.auteur && <span>{taak.auteur}</span>}
+                    {taak.plek && <span>{taak.plek}</span>}
+                    {taak.tijd !== null && <span>{tijdTekst(taak)}</span>}
+                  </p>
+                  <p className={styles.snippet}>{berichtTekst(taak)}</p>
+                </div>
+                <div className={styles.acties}>
+                  <button
+                    type="button"
+                    className={`${styles.actie} ${styles.hoofd}`}
+                    onClick={() => haalTerug(taak)}
+                  >
+                    <InboxIcon className={styles.icoon} />
+                    Terug naar inbox
+                    <span className="visually-hidden">
+                      : {berichtTekst(taak)}
+                    </span>
+                  </button>
+                  {taak.url && (
+                    <ExternalLink href={taak.url} className={styles.actie}>
+                      Openen in {BRON_LABELS[taak.bron]}
+                    </ExternalLink>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {kiezen && (
         <TodoDialoog
