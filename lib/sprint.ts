@@ -1,4 +1,4 @@
-import type { BudgetMap } from "./orbit/budget-tekst.ts";
+import type { BudgetMap, Schrijfregel } from "./orbit/budget-tekst.ts";
 import { formatUren } from "./format.ts";
 
 /** Een ingeplande dag van iemand op een taak. */
@@ -172,38 +172,36 @@ export function parseReserveringen(tekst: string): Reservering[] {
 /** Een reservering met de budgetregel waar ze bij hoort; zonder regelId past de taaknaam nergens. */
 export type Toewijzing = Reservering & { regelId?: string };
 
+/** Regels waarvan de taaknaam vaker voorkomt; daarvan komen de reserveringen per taak uit Orbit. */
+export function dubbeleRegels(mappen: BudgetMap[]): Schrijfregel[] {
+  const regels = mappen.flatMap((map) => map.regels);
+  return regels.filter(
+    ({ naam }) => regels.filter((regel) => regel.naam === naam).length > 1,
+  );
+}
+
 /**
- * Wijst elke reservering (op `van`) toe aan de eerste regel met haar taaknaam waar nog ruimte is
- * (budget min geschreven, gepland en al toegewezen), anders aan de laatste.
- * ponytail: Orbit geeft bij een reservering alleen de taaknaam; aanname: sprints staan in Orbit in tijdsvolgorde. Een reservering wordt niet over regels verdeeld.
+ * Koppelt reserveringen aan hun regel. Orbit geeft per project alleen de taaknaam, dus
+ * bij een dubbele naam tellen alleen die van de aanroep per taak (`perTaak`, op regel-id).
  */
 export function wijsToe(
   mappen: BudgetMap[],
   reserveringen: Reservering[],
+  perTaak: Record<string, Reservering[]> = {},
 ): Toewijzing[] {
   const regels = mappen.flatMap((map) => map.regels);
-  const toegewezen = new Map<string, number>();
-  return [...reserveringen]
-    .sort((a, b) => a.van.localeCompare(b.van))
-    .map((reservering) => {
-      const kandidaten = regels.filter(({ naam }) => naam === reservering.taak);
-      const ruimte = (regel: (typeof regels)[number]) =>
-        regel.beschikbaar -
-        regel.geschreven -
-        regel.gepland -
-        (toegewezen.get(regel.id) ?? 0);
-      // Eerst waar hij helemaal past, dan waar nog iets ruimte is, anders de laatste.
-      const doel =
-        kandidaten.find((regel) => ruimte(regel) >= reservering.minutenOver) ??
-        kandidaten.find((regel) => ruimte(regel) > 0) ??
-        kandidaten.at(-1);
-      if (!doel) return reservering;
-      toegewezen.set(
-        doel.id,
-        (toegewezen.get(doel.id) ?? 0) + reservering.minutenOver,
-      );
-      return { ...reservering, regelId: doel.id };
-    });
+  const dubbel = new Set(dubbeleRegels(mappen).map(({ naam }) => naam));
+  return [
+    ...reserveringen
+      .filter(({ taak }) => !dubbel.has(taak))
+      .map((reservering) => {
+        const regel = regels.find(({ naam }) => naam === reservering.taak);
+        return regel ? { ...reservering, regelId: regel.id } : reservering;
+      }),
+    ...Object.entries(perTaak).flatMap(([regelId, lijst]) =>
+      lijst.map((reservering) => ({ ...reservering, regelId })),
+    ),
+  ];
 }
 
 /** Per werkdag waarop een reservering het venster overlapt een planregel, zodat ze meetellen als planning. */
