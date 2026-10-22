@@ -4,6 +4,7 @@ import {
   bepaalMensen,
   bepaalSprint,
   dagPlus,
+  dubbeleRegels,
   ingeplandVanaf,
   isoDatum,
   maandagVan,
@@ -101,6 +102,12 @@ const planning = (
   );
 };
 
+const reserveringArgs = (vandaag: string) => ({
+  user: "*",
+  dateFrom: venster(vandaag).van,
+  dateTo: dagPlus(vandaag, 365),
+});
+
 // ponytail: ook maximaal 100 regels per aanroep; een project met meer reserveringen mist de latere.
 const reserveringen = (
   email: string,
@@ -113,12 +120,23 @@ const reserveringen = (
         email,
         `reserveringen:v1:${email}:${number}:${venster(vandaag).van}`,
         "ListReservations",
-        {
-          projectId: number,
-          user: "*",
-          dateFrom: venster(vandaag).van,
-          dateTo: dagPlus(vandaag, 365),
-        },
+        { projectId: number, ...reserveringArgs(vandaag) },
+        parseReserveringen,
+      );
+
+/** Reserveringen van één taak; de demo heeft geen dubbele taaknamen. */
+const taakReserveringen = (
+  email: string,
+  taskId: string,
+  vandaag: string,
+): Cachet<Reservering[]> =>
+  DEMO
+    ? { status: "ok", data: [] }
+    : viaCache(
+        email,
+        `reserveringen:taak:v1:${email}:${taskId}:${venster(vandaag).van}`,
+        "ListReservations",
+        { taskId, ...reserveringArgs(vandaag) },
         parseReserveringen,
       );
 
@@ -137,9 +155,40 @@ const metOpenReserveringen = (
       }
     : budget;
 
-/** De reserveringen toegewezen aan de regels van het budget; zonder budget nergens. */
-const toegewezen = (budget: ProjectBudgetResult, gegevens: Reservering[]) =>
-  wijsToe(budget.status === "ok" ? budget.data.mappen : [], gegevens);
+/**
+ * De reserveringen gekoppeld aan de regels van het budget; zonder budget nergens.
+ * Kosten per 15 minuten: 1 aanroep per project plus 1 per taak met een dubbele naam.
+ */
+const toewijzingen = (
+  email: string,
+  number: string,
+  budget: ProjectBudgetResult,
+  vandaag: string,
+): Cachet<Toewijzing[]> => {
+  const res = reserveringen(email, number, vandaag);
+  if (res.status !== "ok") return res;
+  const mappen = budget.status === "ok" ? budget.data.mappen : [];
+  const perTaak = dubbeleRegels(mappen).map(
+    ({ id }) => [id, taakReserveringen(email, id, vandaag)] as const,
+  );
+  const open = perTaak
+    .map(([, cachet]) => cachet)
+    .find((cachet) => cachet.status !== "ok");
+  if (open) return open;
+  return {
+    status: "ok",
+    data: wijsToe(
+      mappen,
+      res.data,
+      Object.fromEntries(
+        perTaak.map(([id, cachet]) => [
+          id,
+          cachet.status === "ok" ? cachet.data : [],
+        ]),
+      ),
+    ),
+  };
+};
 
 /** Voor SLA's: het budget met reserveringen als gepland; zolang die laden ongewijzigd. */
 export function verrijkBudget(
@@ -148,10 +197,8 @@ export function verrijkBudget(
   budget: ProjectBudgetResult,
   vandaag: Date,
 ): ProjectBudgetResult {
-  const res = reserveringen(email, number, isoDatum(vandaag));
-  return res.status === "ok"
-    ? metOpenReserveringen(budget, toegewezen(budget, res.data))
-    : budget;
+  const toe = toewijzingen(email, number, budget, isoDatum(vandaag));
+  return toe.status === "ok" ? metOpenReserveringen(budget, toe.data) : budget;
 }
 
 const uren = (
@@ -262,13 +309,13 @@ export function laadSprints(
   const lading: SprintLading = { rijen: [], laden: 0, fout: 0 };
   for (const bron of bronnen) {
     const plan = planning(email, bron.project.number, vandaag);
-    const res = reserveringen(email, bron.project.number, vandaag);
+    const res = toewijzingen(email, bron.project.number, bron.budget, vandaag);
     const open = plan.status !== "ok" ? plan : res;
     if (open.status === "laden") lading.laden++;
     if (open.status === "fout") lading.fout++;
     if (plan.status !== "ok" || res.status !== "ok") continue;
     // Verder vooruit kijken is voor Overige projecten; een sprint zoekt alleen binnen het venster.
-    const toe = toegewezen(bron.budget, res.data);
+    const toe = res.data;
     const binnenVenster = [
       ...plan.data.filter(({ datum }) => datum <= tot),
       ...reserveringPlanning(toe, vandaag),
@@ -330,10 +377,10 @@ export function laadOverige(
       return { ...bron, vanaf: laden, mensen: laden };
     }
     const plan = planning(email, bron.project.number, vandaag);
-    const res = reserveringen(email, bron.project.number, vandaag);
+    const res = toewijzingen(email, bron.project.number, bron.budget, vandaag);
     if (plan.status !== "ok") return { ...bron, vanaf: plan, mensen: plan };
     if (res.status !== "ok") return { ...bron, vanaf: res, mensen: res };
-    const toe = toegewezen(bron.budget, res.data);
+    const toe = res.data;
     // Reserveringen na het venster tellen met hun startdatum mee voor "Ingepland vanaf".
     const komend: Planregel[] = [
       ...plan.data,

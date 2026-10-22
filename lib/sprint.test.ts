@@ -4,6 +4,7 @@ import {
   achterTekst,
   bepaalMensen,
   bepaalSprint,
+  dagPlus,
   dagLabel,
   ingeplandVanaf,
   initialen,
@@ -258,45 +259,45 @@ test("het open deel van reserveringen telt op bij gepland", () => {
   assert.strictEqual(mappen[1].regels[0].gepland, 120);
 });
 
-test("reserveringen verdelen zich over dezelfde taaknaam in meerdere mappen", () => {
+test("bij een dubbele taaknaam tellen alleen de reserveringen per taak", () => {
   const taak = "Sprint (nog te verdelen)";
   const ihc: BudgetMap[] = [
     {
       id: "a",
       naam: "Toegankelijkheid",
-      regels: [{ ...regel(taak, 5400, 5160), id: "a1" }],
+      regels: [{ ...regel(taak, 5400, 975), id: "a1" }],
     },
     {
       id: "b",
-      naam: "Doorontwikkeling",
-      regels: [{ ...regel(taak, 6000, 0), id: "b1" }],
+      naam: "Verhalen en Organisaties",
+      regels: [{ ...regel(taak, 8580, 0), id: "b1" }],
     },
+    { id: "c", naam: "Overig", regels: [{ ...regel("PM", 600, 0), id: "c1" }] },
   ];
-  const res = [
-    {
-      van: "2026-11-02",
-      tot: "2026-11-27",
-      wie: "Mark",
-      taak,
-      minutenOver: 4200,
-    },
-    {
-      van: "2026-10-12",
-      tot: "2026-10-16",
-      wie: "Mark",
-      taak,
-      minutenOver: 240,
-    },
+  const res = (van: string, wie: string, minutenOver: number) => ({
+    van,
+    tot: dagPlus(van, 11),
+    wie,
+    taak,
+    minutenOver,
+  });
+  const perProject = [
+    res("2026-10-13", "Ivo", 120),
+    res("2026-10-26", "Jos", 240),
+    res("2026-11-02", "Mark", 4200),
+    { ...res("2026-10-13", "Lenny", 60), taak: "PM" },
   ];
-  const toe = wijsToe(ihc, res);
-  const metRes = metReserveringen(ihc, toe);
+  const toe = wijsToe(ihc, perProject, {
+    a1: [res("2026-10-13", "Ivo", 120), res("2026-11-02", "Mark", 4200)],
+    b1: [res("2026-10-26", "Jos", 240)],
+  });
   assert.deepStrictEqual(
-    metRes.map((map) => map.regels[0].gepland),
-    [240, 4200],
+    metReserveringen(ihc, toe).map((map) => map.regels[0].gepland),
+    [4320, 240, 60],
   );
   const plan = reserveringPlanning(toe, "2026-10-15");
   assert.strictEqual(
-    bepaalSprint(metRes, plan, "2026-10-15")?.map.naam,
+    bepaalSprint(metReserveringen(ihc, toe), plan, "2026-10-15")?.map.naam,
     "Toegankelijkheid",
   );
 });
