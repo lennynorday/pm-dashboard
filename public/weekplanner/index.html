@@ -397,7 +397,11 @@ function renderWeek() {
   const weken = document.getElementById("weken");
   weken.replaceChildren();
   // Minimaal 560px per week, plus de ruimte tussen de weken en de rand van het vlak.
-  document.getElementById("plan").style.minWidth = `${staat.weken * 560 + (staat.weken - 1) * 48 + 64}px`;
+  // Bij het exporteren een vaste breedte, anders minimaal 560px per week plus de ruimte ertussen.
+  const plan = document.getElementById("plan");
+  plan.style.minWidth = exportBreedte ? `${exportBreedte}px` : `${staat.weken * 560 + (staat.weken - 1) * 48 + 64}px`;
+  plan.style.width = exportBreedte ? `${exportBreedte}px` : "";
+  plan.style.flex = exportBreedte ? "none" : "";
   for (let w = 0; w < staat.weken; w++) {
     const sectie = document.createElement("section");
     sectie.className = "week";
@@ -863,16 +867,45 @@ function toast(tekst, actie) {
   toastTimer = setTimeout(() => (el.hidden = true), actie ? 6000 : 3500);
 }
 
+// De export heeft een vaste maat, los van het venster: per week 1920 × 1080 (16:9), naast elkaar.
+const EXPORT = { breedte: 1920, hoogte: 1080 };
+let exportBreedte = null;
+
 async function png() {
   const verborgen = weekview.hidden;
   weekview.hidden = false;
+  const plan = document.getElementById("plan");
+  const verhouding = (staat.weken * EXPORT.breedte) / EXPORT.hoogte;
   try {
-    return await htmlToImage.toBlob(document.getElementById("plan"), {
-      pixelRatio: 2,
+    // De breedte zoeken waarbij de planning precies 16:9 per week vult; daarna schalen naar de vaste maat.
+    // Smaller opmaken vergroot alles in de afbeelding, maar nooit smaller dan de minimale breedte per week.
+    // De hoogte hangt een beetje af van de breedte (blokken groeien mee), dus een paar keer meten.
+    const minimaal = staat.weken * 560 + (staat.weken - 1) * 48 + 64;
+    exportBreedte = staat.weken * EXPORT.breedte;
+    for (let ronde = 0; ronde < 4; ronde++) {
+      renderWeek();
+      const passend = Math.max(minimaal, Math.ceil(plan.offsetHeight * verhouding));
+      if (Math.abs(passend - exportBreedte) < 8) break;
+      exportBreedte = passend;
+    }
+    renderWeek();
+    // Na de laatste opmaak moet alles binnen het vlak passen: zo nodig breder, met witruimte onderaan.
+    exportBreedte = Math.max(exportBreedte, Math.ceil(plan.offsetHeight * verhouding));
+    renderWeek();
+    const uit = { breedte: staat.weken * EXPORT.breedte, hoogte: EXPORT.hoogte };
+    return await htmlToImage.toBlob(plan, {
+      width: exportBreedte,
+      height: Math.round(exportBreedte / verhouding),
+      canvasWidth: uit.breedte,
+      canvasHeight: uit.hoogte,
+      // Scherp, maar binnen de maximale canvasbreedte van browsers (16384px).
+      pixelRatio: Math.min(2, 16384 / uit.breedte),
       backgroundColor: "#ffffff",
       filter: (n) => !n.classList?.contains("alleen-scherm"),
     });
   } finally {
+    exportBreedte = null;
+    renderWeek();
     weekview.hidden = verborgen;
   }
 }
