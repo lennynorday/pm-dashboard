@@ -100,6 +100,18 @@ export function Sidebar({
 
   const ingeklapt = stand === "ingeklapt";
 
+  // Ingeklapt staan tooltips vast in het venster; zet ze naast het item waar je op staat.
+  function plaatsTooltip(event: React.SyntheticEvent) {
+    if (!ingeklapt || !(event.target instanceof Element)) return;
+    const item = event.target.closest<HTMLElement>(
+      `:has(> .${CSS.escape(styles.tooltip)})`,
+    );
+    if (!item) return;
+    const { right, top, height } = item.getBoundingClientRect();
+    item.style.setProperty("--tip-x", `${right + 12}px`);
+    item.style.setProperty("--tip-y", `${top + height / 2}px`);
+  }
+
   return (
     <div
       className={styles.sidebar}
@@ -141,6 +153,8 @@ export function Sidebar({
         id="zijmenu"
         className={styles.panel}
         onClick={closeOnLinkClick}
+        onPointerOver={plaatsTooltip}
+        onFocus={plaatsTooltip}
       >
         <div className={styles.panelHeader}>
           <NextLink href="/" className={styles.brandPanel}>
@@ -267,7 +281,10 @@ export function Sidebar({
           </ul>
         </nav>
 
-        <nav aria-label="Platforms" className={styles.section}>
+        <nav
+          aria-label="Platforms"
+          className={`${styles.section} ${styles.platforms}`}
+        >
           <h2 className={`nd-nav__title ${styles.sectionTitle}`}>
             Mijn platforms
           </h2>
