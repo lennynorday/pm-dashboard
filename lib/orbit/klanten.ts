@@ -5,6 +5,7 @@ import { callOrbitTool } from "./client";
 
 /**
  * Het id bij een klantnaam uit de tabel die ListClients teruggeeft:
+ * | Company | Type | City | VAT | ...
  * | Centraal Museum Utrecht | BOTH | ...
  * api_ids: CL4KKKRQSAXN7GK
  * Alleen een exacte naam telt; anders null.
@@ -12,7 +13,9 @@ import { callOrbitTool } from "./client";
 export function parseKlantId(text: string, naam: string): string | null {
   // Oudere antwoorden hadden een link als naam: [Naam](jump:CLIENT:1385240).
   const namen = [
-    ...text.matchAll(/^\| \[?(.+?)(?:\]\(jump:CLIENT:\d+\))? \| [A-Z]+ \|/gm),
+    ...text.matchAll(
+      /^\| \[?([^|]+?)(?:\]\(jump:CLIENT:\d+\))? \| [A-Z]+ \|/gm,
+    ),
   ].map((match) => match[1].toLowerCase());
   const ids = /^api_ids: (.+)$/m.exec(text)?.[1].split(/,\s*/) ?? [];
   const index = namen.indexOf(naam.toLowerCase());
@@ -22,7 +25,7 @@ export function parseKlantId(text: string, naam: string): string | null {
 // Een naam die Orbit niet (exact) kent, proberen we pas na een dag opnieuw.
 const ONBEKEND_MS = 24 * 60 * 60 * 1000;
 
-const sleutelVan = (naam: string) => `klant-id:v2:${naam}`;
+const sleutelVan = (naam: string) => `klant-id:v3:${naam}`;
 
 /**
  * ListProjects geeft "klant | klantentiteit" als klantnaam, met / in plaats
