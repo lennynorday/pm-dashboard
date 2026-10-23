@@ -106,12 +106,12 @@ export function Overige({
 }) {
   if (rijen.length === 0) return null;
   return (
-    <section className={styles.kaart} aria-labelledby="overig-kop">
-      <div className={styles.kaartKop}>
-        <h2 id="overig-kop" className={styles.kaartTitel}>
+    <section className={`nd-card ${styles.kaart}`} aria-labelledby="overig-kop">
+      <div className="nd-card__head">
+        <h2 id="overig-kop" className="nd-title">
           Overige projecten
         </h2>
-        <span className={styles.kopUitleg}>Uren tegen het budget</span>
+        <span className="nd-meta">Uren tegen het budget</span>
       </div>
       <ul className={styles.rijen}>
         {rijen.map((rij) => (

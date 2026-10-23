@@ -45,7 +45,7 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
     const { klaar, totaal } = voortgang;
     return (
       <span
-        className={`${styles.knop} ${styles.voortgang}`}
+        className={`nd-button nd-button--small ${styles.voortgang}`}
         role="progressbar"
         aria-label="Gegevens uit Orbit ophalen"
         aria-valuemin={0}
@@ -54,7 +54,7 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
         aria-valuetext={`${klaar} van ${totaal}`}
         title="Nog even geduld, we halen alles voor je op uit Orbit"
       >
-        <RefreshIcon className={`${styles.icoon} ${styles.draait}`} />
+        <RefreshIcon className={styles.draait} />
         {klaar} van {totaal}
         <span
           className={styles.balk}
@@ -68,8 +68,13 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
 
   if (pending) {
     return (
-      <button className={styles.knop} type="submit" disabled aria-busy="true">
-        <RefreshIcon className={`${styles.icoon} ${styles.draait}`} />
+      <button
+        className="nd-button nd-button--small"
+        type="submit"
+        disabled
+        aria-busy="true"
+      >
+        <RefreshIcon className={styles.draait} />
         Ophalen…
       </button>
     );
@@ -77,7 +82,7 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
 
   return (
     <button
-      className={styles.knop}
+      className="nd-button nd-button--small"
       type="submit"
       disabled={rust}
       title={
@@ -86,7 +91,7 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
           : "Orbit, Jira en Superhuman opnieuw ophalen"
       }
     >
-      <RefreshIcon className={styles.icoon} />
+      <RefreshIcon />
       Verversen
       <span className="visually-hidden">
         {rust

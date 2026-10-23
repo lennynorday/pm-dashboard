@@ -1,118 +1,9 @@
-/* Eén kaart met tabs als filter in de kop. */
-.feed {
-  margin-bottom: var(--space-10);
-  padding: var(--space-05) var(--space-03) var(--space-03);
-  border-radius: var(--radius-xl);
-  background: var(--color-card);
-}
-
-.kop {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-03) var(--space-05);
-  padding: 0 var(--space-02) var(--space-04);
-}
-
-.titel {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-  font: 700 28px/0.95 var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: var(--heading-letter-spacing);
-}
-
-.aantal {
-  font: 400 15px/1 var(--font-text);
-  color: var(--color-text-muted);
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-/* Rustige knoppen zoals de acties in Inbox; de actieve krijgt het rijvlak. */
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-}
-
-.filter {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-02);
-  height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--space-02);
-  background: none;
-  color: var(--color-text-muted);
-  font: 400 14px/1 var(--font-text);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.filter:hover,
-.filter[aria-pressed="true"] {
-  background: var(--color-raised);
-  color: var(--color-text);
-}
-
-.filter[aria-pressed="true"] {
-  font-weight: 600;
-}
-
-.filter:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.punt {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.punt[data-groep="budget"] {
-  background: var(--color-pink-soft);
-}
-
-.punt[data-groep="support"] {
-  background: var(--norday-lilac);
-}
-
-.punt[data-groep="sprint"] {
-  background: var(--norday-yellow);
-}
-
-.filterAantal {
-  color: var(--color-text-muted);
-}
-
-.leeg {
-  margin: 0;
-  padding: var(--space-06);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
-  font: var(--type-label);
-}
-
+/* Kaart, kop, filters, rijen en acties komen uit de toolkit; hier alleen wat bij de feed hoort. */
 .scroll {
   max-height: 420px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgb(61 16 40 / 0.3) transparent;
-}
-
-.lijst {
-  display: grid;
-  gap: var(--space-02);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .item {
@@ -121,8 +12,6 @@
   align-items: center;
   column-gap: var(--space-05);
   padding: 14px var(--space-02) 14px var(--space-05);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
   max-height: 400px;
   overflow: hidden;
   transition:
@@ -144,90 +33,18 @@
   pointer-events: none;
 }
 
-/* Zelfde rustige actielijst als in Inbox. */
 .acties {
   align-self: stretch;
-  display: flex;
-  flex-direction: column;
   justify-content: center;
-  padding-left: var(--space-04);
-  border-left: 1px solid var(--color-line-soft);
-}
-
-.actie {
-  display: flex;
-  align-items: center;
-  gap: var(--space-02);
-  height: 30px;
-  padding: 0 var(--space-02);
-  margin-left: calc(-1 * var(--space-02));
-  border: 0;
-  border-radius: var(--space-02);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: 400 14px/1 var(--font-text);
-  text-align: left;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.actie:hover {
-  background: var(--color-card);
-  color: var(--color-text);
-}
-
-.actie:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.hoofd {
-  color: var(--color-text);
-  font-weight: 600;
 }
 
 /* ExternalLink zet het icoon achter de tekst; hier staat het ervoor, zoals bij de andere acties. */
-.actie svg:last-of-type {
+.acties svg:last-of-type {
   order: -1;
 }
 
-.actie svg,
-.actieIcoon {
-  width: 16px;
-  height: 16px;
+.acties svg {
   margin: 0;
-}
-
-.icoon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-}
-
-.icoon[data-soort="boven-offerte"],
-.icoon[data-soort="bijna-op"] {
-  background: var(--color-pink-soft);
-  color: #b5002f;
-}
-
-.icoon[data-soort="koppelen"] {
-  background: var(--color-lilac-soft);
-}
-
-.icoon[data-soort="eerste-reactie"] {
-  background: var(--norday-lilac);
-}
-
-.icoon[data-soort="sprint-verlopen"] {
-  background: var(--norday-yellow);
-}
-
-.icoon[data-soort="stil-ticket"],
-.icoon[data-soort="timesheet"] {
-  background: var(--color-lilac-soft);
 }
 
 .tekst {
@@ -243,26 +60,20 @@
   align-items: center;
   gap: var(--space-01) 10px;
   margin: 0 0 var(--space-01);
-  font: 400 13px/1.35 var(--font-text);
-  color: var(--color-text-muted);
 }
 
 .itemTitel {
-  margin: 0;
-  font: 600 16px/1.3 var(--font-text);
   text-wrap: balance;
 }
 
 .detail {
   margin: 2px 0 0;
-  font: 400 15px/1.4 var(--font-text);
+  font: var(--type-body);
   color: var(--color-text-muted);
 }
 
 .herstel {
   margin: var(--space-03) var(--space-02) 0;
-  font: var(--type-label-small);
-  color: var(--color-text-muted);
 }
 
 .herstelKnop {
@@ -271,7 +82,7 @@
   border: 0;
   background: transparent;
   color: var(--color-text);
-  font: var(--type-label-small);
+  font: inherit;
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;

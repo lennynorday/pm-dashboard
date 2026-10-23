@@ -71,7 +71,7 @@
 
 .naam {
   justify-self: start;
-  font: 600 16px/1.3 var(--font-text);
+  font: var(--type-item);
   text-decoration: none;
   text-wrap: balance;
 }

@@ -7,7 +7,7 @@
   align-items: baseline;
   gap: var(--space-03);
   margin: 0 0 14px;
-  font: 700 28px/0.95 var(--font-heading);
+  font: var(--type-title);
   text-transform: uppercase;
   letter-spacing: var(--heading-letter-spacing);
 }

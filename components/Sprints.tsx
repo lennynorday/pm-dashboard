@@ -253,12 +253,15 @@ export function Sprints({
 }) {
   const { rijen, laden, fout } = lading;
   return (
-    <section className={styles.kaart} aria-labelledby="sprints-kop">
-      <div className={styles.kaartKop}>
-        <h2 id="sprints-kop" className={styles.kaartTitel}>
+    <section
+      className={`nd-card ${styles.kaart}`}
+      aria-labelledby="sprints-kop"
+    >
+      <div className="nd-card__head">
+        <h2 id="sprints-kop" className="nd-title">
           Sprints
         </h2>
-        <span className={styles.kopUitleg}>
+        <span className="nd-meta">
           Sprints met planning vorige, deze of volgende week
         </span>
       </div>
