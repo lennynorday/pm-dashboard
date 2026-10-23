@@ -13,7 +13,7 @@ import {
 import { readHiddenProjects } from "./hidden-projects";
 import { EigenLink, Link, toLinks } from "./links";
 import { CULTURE_FOLDER_ID } from "./orbit/config";
-import { fetchKlantIds } from "./orbit/klanten";
+import { fetchKlantIds, zonderEntiteit } from "./orbit/klanten";
 import { fetchProjects, OrbitProject, ProjectState } from "./orbit/projects";
 import { currentUser } from "./session";
 
@@ -113,7 +113,7 @@ export function slugify(value: string): string {
 
 /** Maakt van een Orbit-klantnaam een leesbare accountnaam. */
 export function displayName(client: string): string {
-  const trimmed = client.trim();
+  const trimmed = zonderEntiteit(client).trim();
   const cased =
     trimmed === trimmed.toUpperCase()
       ? trimmed

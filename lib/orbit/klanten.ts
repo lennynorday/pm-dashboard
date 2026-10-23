@@ -22,18 +22,30 @@ export function parseKlantId(text: string, naam: string): string | null {
 // Een naam die Orbit niet (exact) kent, proberen we pas na een dag opnieuw.
 const ONBEKEND_MS = 24 * 60 * 60 * 1000;
 
-const sleutelVan = (naam: string) => `klant-id:v1:${naam}`;
+const sleutelVan = (naam: string) => `klant-id:v2:${naam}`;
+
+/**
+ * ListProjects geeft "klant | klantentiteit" als klantnaam, met / in plaats
+ * van |; de klant zelf is het deel ervoor.
+ */
+export function zonderEntiteit(naam: string): string {
+  return naam.split(" / ")[0];
+}
 
 /** Een id verandert niet, dus eenmaal gevonden blijft het bewaard; een onbekende naam een dag. */
 async function fetchKlantId(email: string, naam: string): Promise<void> {
   const result = await callOrbitTool(
     email,
     "ListClients",
-    { text: naam, pageSize: 50 },
+    { text: zonderEntiteit(naam), pageSize: 50 },
     true,
   );
   if (result.status !== "ok") return;
-  bewaar(sleutelVan(naam), parseKlantId(result.text, naam));
+  bewaar(
+    sleutelVan(naam),
+    parseKlantId(result.text, naam) ??
+      parseKlantId(result.text, zonderEntiteit(naam)),
+  );
 }
 
 /**
