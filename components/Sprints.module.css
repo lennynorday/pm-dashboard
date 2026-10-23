@@ -96,7 +96,7 @@
   color: var(--color-text-muted);
 }
 
-@container (max-width: 680px) {
+@container (max-width: 800px) {
   .mensen {
     grid-template-columns: 24px minmax(0, 1fr) 40px;
   }
