@@ -421,14 +421,38 @@ export function Todos({
     tint?: string,
   ) => {
     if (!taak.url) return null;
-    const extern = /^https?:/.test(taak.url);
-    const label = `${openTekst(taak)}: ${berichtTekst(taak)}${extern ? " (opent in nieuw tabblad)" : ""}`;
-    return extern ? (
+    const label = `${openTekst(taak)}: ${berichtTekst(taak)}`;
+    // slack:// opent de app zelf; geen tabblad nodig.
+    if (taak.url.startsWith("slack:"))
+      return (
+        <a
+          href={taak.url}
+          className={klasse}
+          data-tint={tint}
+          aria-label={label}
+        >
+          {inhoud}
+        </a>
+      );
+    // Alle mails openen in hetzelfde Gmail-tabblad; met noopener maakt de browser toch elke keer een nieuw.
+    if (taak.bron === "gmail")
+      return (
+        <a
+          href={taak.url}
+          className={klasse}
+          data-tint={tint}
+          aria-label={`${label} (opent in het Gmail-tabblad)`}
+          target="gmail"
+        >
+          {inhoud}
+        </a>
+      );
+    return /^https?:/.test(taak.url) ? (
       <a
         href={taak.url}
         className={klasse}
         data-tint={tint}
-        aria-label={label}
+        aria-label={`${label} (opent in nieuw tabblad)`}
         target="_blank"
         rel="noopener noreferrer"
       >

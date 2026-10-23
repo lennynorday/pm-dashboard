@@ -219,7 +219,7 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
       bericht.auteur,
       bericht.kanaal,
       bericht.tijd,
-      bericht.permalink,
+      bericht.url,
       bericht.soort,
       Date.now(),
     );
