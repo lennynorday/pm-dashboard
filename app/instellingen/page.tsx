@@ -157,7 +157,9 @@ export default async function InstellingenPage() {
                           className="nd-button nd-button--quiet nd-button--small"
                         >
                           Ontkoppelen
-                          <span className="visually-hidden">: {info.naam}</span>
+                          <span className="nd-visually-hidden">
+                            : {info.naam}
+                          </span>
                         </button>
                       </form>
                     ) : (
@@ -240,7 +242,7 @@ export default async function InstellingenPage() {
                         <input type="hidden" name="waarde" value={waarde} />
                         <button type="submit" className={styles.chipKnop}>
                           <CloseIcon aria-hidden="true" />
-                          <span className="visually-hidden">
+                          <span className="nd-visually-hidden">
                             {waarde} weer toestaan
                           </span>
                         </button>

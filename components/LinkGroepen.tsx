@@ -66,7 +66,7 @@ function LinkRij({
         <Icoon />
         {naam}
         <ExternalIcon className={styles.extern} />
-        <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+        <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
       </a>
     </li>
   );

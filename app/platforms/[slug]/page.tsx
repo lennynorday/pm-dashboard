@@ -87,7 +87,7 @@ export default async function PlatformPage({
             className="nd-button nd-button--quiet nd-button--small"
           >
             Ontkoppelen
-            <span className="visually-hidden">: {project.naam}</span>
+            <span className="nd-visually-hidden">: {project.naam}</span>
           </button>
         </form>
       )}

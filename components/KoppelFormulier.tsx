@@ -58,7 +58,7 @@ export function KoppelFormulier({
         const huidig = huidigeWaarde(project);
         return (
           <fieldset key={project.number} className={eigen.groep}>
-            <legend className="visually-hidden">{project.naam}</legend>
+            <legend className="nd-visually-hidden">{project.naam}</legend>
             <div className={eigen.project}>
               <div>
                 <p className={eigen.naam} aria-hidden="true">

@@ -45,7 +45,7 @@ export function SupportKnop({
       <span className={styles.aantal}>{open.aantal}</span>
       {open.aantal === 1 ? "open supportticket" : "open supporttickets"}
       <ExternalIcon className={styles.icoon} />
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+      <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
     </a>
   );
 }

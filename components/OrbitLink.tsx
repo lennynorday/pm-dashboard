@@ -13,7 +13,7 @@ export function OrbitLink({ project }: { project: Project }) {
     >
       <ExternalIcon className={styles.voetIcoon} />
       Meer in Teamleader Orbit
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+      <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
     </a>
   );
 }

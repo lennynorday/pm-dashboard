@@ -54,7 +54,7 @@ export function OrbitStatus({ dashboard }: Props) {
       <p className={styles.tijd} title={zin}>
         <span className={styles.punt} aria-hidden="true" />
         <span aria-hidden="true">Bijgewerkt {tijd}</span>
-        <span className="visually-hidden">
+        <span className="nd-visually-hidden">
           Projecten uit Orbit opgehaald om{" "}
           <time dateTime={dashboard.fetchedAt.toISOString()}>{tijd}</time>
         </span>

@@ -42,7 +42,9 @@ export function AttentionBand({ signalen }: Props) {
                     className="nd-button nd-button--small"
                   >
                     {actie}
-                    <span className="visually-hidden">: {signaal.titel}</span>
+                    <span className="nd-visually-hidden">
+                      : {signaal.titel}
+                    </span>
                   </NextLink>
                 ) : (
                   <ExternalLink
@@ -50,7 +52,9 @@ export function AttentionBand({ signalen }: Props) {
                     className="nd-button nd-button--small"
                   >
                     {actie}
-                    <span className="visually-hidden">: {signaal.titel}</span>
+                    <span className="nd-visually-hidden">
+                      : {signaal.titel}
+                    </span>
                   </ExternalLink>
                 ))}
             </li>

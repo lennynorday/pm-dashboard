@@ -156,7 +156,7 @@ export function Sidebar({
             onClick={toggleStand}
           >
             <ChevronIcon />
-            <span className="visually-hidden">
+            <span className="nd-visually-hidden">
               {ingeklapt ? "Menu uitklappen" : "Menu inklappen"}
             </span>
             <span className={styles.tooltip} aria-hidden="true">
@@ -169,7 +169,7 @@ export function Sidebar({
             onClick={closeMobile}
           >
             <CloseIcon />
-            <span className="visually-hidden">Menu sluiten</span>
+            <span className="nd-visually-hidden">Menu sluiten</span>
           </button>
         </div>
 
@@ -199,7 +199,7 @@ export function Sidebar({
               Welkom terug, {user.voornaam}!
             </span>
             <span className={styles.email}>{user.email}</span>
-            <span className="visually-hidden">, naar instellingen</span>
+            <span className="nd-visually-hidden">, naar instellingen</span>
           </span>
           <span className={styles.tooltip} aria-hidden="true">
             {user.naam}, instellingen

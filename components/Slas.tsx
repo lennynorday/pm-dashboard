@@ -128,7 +128,7 @@ function Sla({
         >
           <ExternalIcon className={styles.voetIcoon} />
           Beheer &amp; Support in Jira
-          <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+          <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
         </a>
       )}
       {beheer?.(project)}

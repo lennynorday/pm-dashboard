@@ -48,7 +48,7 @@ export function LinkToevoegen({ action, linktype }: Props) {
       >
         <PlusIcon className={styles.plus} />
         {linktype ?? "Link toevoegen"}
-        {linktype && <span className="visually-hidden"> toevoegen</span>}
+        {linktype && <span className="nd-visually-hidden"> toevoegen</span>}
       </button>
     );
   }

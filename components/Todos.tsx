@@ -271,7 +271,7 @@ export function Todos({
           className="nd-button nd-button--small"
           onClick={() => zetGezien(taak)}
         >
-          Gezien<span className="visually-hidden">: {taak.titel}</span>
+          Gezien<span className="nd-visually-hidden">: {taak.titel}</span>
         </button>
       </div>
     );
@@ -538,7 +538,7 @@ export function Todos({
               }
             >
               Opnieuw proberen
-              <span className="visually-hidden">: {taak.titel}</span>
+              <span className="nd-visually-hidden">: {taak.titel}</span>
             </button>
           )}
           <button
@@ -546,7 +546,7 @@ export function Todos({
             className="nd-button nd-button--small"
             onClick={() => setBekijk(opdracht.id)}
           >
-            Bekijken<span className="visually-hidden">: {taak.titel}</span>
+            Bekijken<span className="nd-visually-hidden">: {taak.titel}</span>
           </button>
         </div>
       );
@@ -566,14 +566,14 @@ export function Todos({
             }
           >
             Opnieuw proberen
-            <span className="visually-hidden">: {taak.titel}</span>
+            <span className="nd-visually-hidden">: {taak.titel}</span>
           </button>
           <button
             type="button"
             className="nd-button nd-button--small nd-button--quiet"
             onClick={() => wijsAf(opdracht)}
           >
-            Weghalen<span className="visually-hidden">: {taak.titel}</span>
+            Weghalen<span className="nd-visually-hidden">: {taak.titel}</span>
           </button>
         </div>
       );
@@ -588,7 +588,7 @@ export function Todos({
         {opdracht.conceptUrl && (
           <ExternalLink href={opdracht.conceptUrl} className="nd-meta">
             Openen in Gmail
-            <span className="visually-hidden">: {taak.titel}</span>
+            <span className="nd-visually-hidden">: {taak.titel}</span>
           </ExternalLink>
         )}
       </div>
@@ -634,7 +634,7 @@ export function Todos({
             onClick={() => zetGezien(taak)}
           >
             <CheckIcon aria-hidden="true" />
-            Gezien<span className="visually-hidden">: {taak.titel}</span>
+            Gezien<span className="nd-visually-hidden">: {taak.titel}</span>
           </button>
         )}
         {link}
@@ -650,7 +650,7 @@ export function Todos({
           >
             <InboxIcon aria-hidden="true" />
             Terug naar de inbox
-            <span className="visually-hidden">: {taak.titel}</span>
+            <span className="nd-visually-hidden">: {taak.titel}</span>
           </button>
         )}
       </div>
@@ -921,7 +921,7 @@ export function Todos({
           </div>
         )}
         <div className={styles.zoek}>
-          <label className="visually-hidden" htmlFor="todos-zoek">
+          <label className="nd-visually-hidden" htmlFor="todos-zoek">
             Zoek in to-do&apos;s
           </label>
           <input
@@ -947,7 +947,7 @@ export function Todos({
 
       {nieuw && (
         <form className={styles.nieuw} onSubmit={voegToe}>
-          <label className="visually-hidden" htmlFor="todos-nieuw">
+          <label className="nd-visually-hidden" htmlFor="todos-nieuw">
             Nieuwe taak
           </label>
           <input

@@ -234,7 +234,7 @@ export function Feed({ items, genegeerd }: Props) {
                   </span>
                   <div className={styles.tekst}>
                     <p className={`nd-meta ${styles.meta}`}>
-                      <span className="visually-hidden">{label}: </span>
+                      <span className="nd-visually-hidden">{label}: </span>
                       <span>{item.platformNaam}</span>
                       {item.klantNaam && <span>{item.klantNaam}</span>}
                     </p>
@@ -251,18 +251,22 @@ export function Feed({ items, genegeerd }: Props) {
                     >
                       <PlusIcon />
                       Naar to-do
-                      <span className="visually-hidden">: {item.titel}</span>
+                      <span className="nd-visually-hidden">: {item.titel}</span>
                     </button>
                     {extern ? (
                       <ExternalLink href={item.url} className="nd-action">
                         {openTekst(item.url)}
-                        <span className="visually-hidden">: {item.titel}</span>
+                        <span className="nd-visually-hidden">
+                          : {item.titel}
+                        </span>
                       </ExternalLink>
                     ) : (
                       <NextLink href={item.url} className="nd-action">
                         <LinkIcon />
                         {openTekst(item.url)}
-                        <span className="visually-hidden">: {item.titel}</span>
+                        <span className="nd-visually-hidden">
+                          : {item.titel}
+                        </span>
                       </NextLink>
                     )}
                     <button
@@ -272,7 +276,7 @@ export function Feed({ items, genegeerd }: Props) {
                     >
                       <CloseIcon />
                       Negeren
-                      <span className="visually-hidden">: {item.titel}</span>
+                      <span className="nd-visually-hidden">: {item.titel}</span>
                     </button>
                   </div>
                 </li>

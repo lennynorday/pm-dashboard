@@ -93,7 +93,7 @@ export function VerversKnop({ opgehaald, voortgang }: Props) {
     >
       <RefreshIcon />
       Verversen
-      <span className="visually-hidden">
+      <span className="nd-visually-hidden">
         {rust
           ? `: kan weer om ${weer}`
           : ": Orbit, Jira en Superhuman opnieuw ophalen"}

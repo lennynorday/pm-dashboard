@@ -14,7 +14,7 @@ export function VisibilityButton({ project }: Props) {
         className="nd-button nd-button--quiet nd-button--small"
       >
         {hidden ? "Weer tonen" : "Verbergen"}
-        <span className="visually-hidden">: {project.naam}</span>
+        <span className="nd-visually-hidden">: {project.naam}</span>
       </button>
     </form>
   );
