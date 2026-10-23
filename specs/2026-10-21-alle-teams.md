@@ -27,21 +27,16 @@
    - Culture → Anisha → projecten
    - Public & services → Pien → projecten
 4. Domeinen en verantwoordelijken zijn standaard dicht; de sidebar onthoudt wat open staat, zoals nu bij "Overige Culture-platforms".
-5. Elk project krijgt het klant-id uit Orbit zelf (via het project, niet de naam), ook als de klantnaam " / " bevat of twee klanten dezelfde naam hebben.
-6. Projecten van een klant met meer platforms (zoals Gemeente Rotterdam) koppel je handmatig aan een platform, net als bij WO2Net.
-7. Een project zonder klant staat onder een herkenbaar account (bijvoorbeeld "Intern") met een werkende link.
-8. Een open project met een verstreken einddatum toont het signaal "einddatum verstreken", zodat de PM het in Orbit sluit of verlengt.
-9. Een Overzicht voor een PM met ruim 50 projecten laadt zonder Orbit-foutmelding; een koude start mag langer duren, met zichtbare voortgang.
-
-## Open vragen
-
-- **Zoeken.** Met ruim 270 projecten in de sidebar is uitklappen niet genoeg. Voorstel: een zoekveld bovenaan de sidebar dat eigen en overige projecten filtert op projectnaam, projectnummer, klant en verantwoordelijke, en de treffers openklapt. Nog te beslissen:
-  - Alleen de sidebar filteren, of ook een aparte zoekpagina met resultaten?
-  - Zoeken op `/` als sneltoets?
-  - Ook gesloten projecten vinden, of alleen open?
+5. Bovenaan de sidebar staat een zoekveld dat eigen en overige open projecten filtert op projectnaam, projectnummer, klant en verantwoordelijke. Groepen met een treffer klappen open; de rest verdwijnt zolang er een zoekterm staat. Er komt geen aparte zoekpagina.
+6. Elk project krijgt het klant-id uit Orbit zelf (via het project, niet de naam), ook als de klantnaam " / " bevat of twee klanten dezelfde naam hebben.
+7. Projecten van een klant met meer platforms (zoals Gemeente Rotterdam) koppel je handmatig aan een platform, net als bij WO2Net.
+8. Een project zonder klant staat onder een herkenbaar account (bijvoorbeeld "Intern") met een werkende link.
+9. Een open project met een verstreken einddatum toont het signaal "einddatum verstreken", zodat de PM het in Orbit sluit of verlengt.
+10. Een Overzicht voor een PM met ruim 50 projecten laadt zonder Orbit-foutmelding; een koude start mag langer duren, met zichtbare voortgang.
 
 ## Gerelateerd
 
 - Projecttype (regulier, SLA, strippenkaart) en de groep Onderhoud: zie [PM-62](https://in10-rotterdam.atlassian.net/browse/PM-62).
 - Eigenaar in Orbit bepaalt wat een PM in de sidebar ziet; alle projecten van een platform en account komen op de platformpagina ([PM-61](https://in10-rotterdam.atlassian.net/browse/PM-61)).
+- Zoeken op de configuratiepagina met alle platforms (bovenaan, op klant, platform of projectnummer) valt onder [PM-60](https://in10-rotterdam.atlassian.net/browse/PM-60).
 - Organisaties met meerdere Orbit-klanten koppel je via [PM-60](https://in10-rotterdam.atlassian.net/browse/PM-60); dubbele klanten in Orbit (twee keer Gemeente Rotterdam) schoont finance op.
