@@ -207,11 +207,11 @@ export function Sidebar({
         </NextLink>
 
         <nav aria-label="Hoofdmenu" className={styles.section}>
-          <ul className={styles.list}>
+          <ul className="nd-nav__section">
             <li>
               <NextLink
                 href="/"
-                className={styles.item}
+                className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/" ? "page" : undefined}
               >
                 <HomeIcon />
@@ -224,13 +224,15 @@ export function Sidebar({
             <li>
               <NextLink
                 href="/inbox"
-                className={styles.item}
+                className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/inbox" ? "page" : undefined}
               >
                 <InboxIcon />
                 <span className={styles.label}>Inbox</span>
                 {telling.inbox > 0 && (
-                  <span className={styles.count}>{telling.inbox}</span>
+                  <span className={`nd-badge ${styles.count}`}>
+                    {telling.inbox}
+                  </span>
                 )}
                 <span className={styles.tooltip} aria-hidden="true">
                   Inbox
@@ -240,13 +242,15 @@ export function Sidebar({
             <li>
               <NextLink
                 href="/todos"
-                className={styles.item}
+                className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/todos" ? "page" : undefined}
               >
                 <TodoIcon />
                 <span className={styles.label}>To-do&apos;s</span>
                 {telling.open > 0 && (
-                  <span className={styles.count}>{telling.open}</span>
+                  <span className={`nd-badge ${styles.count}`}>
+                    {telling.open}
+                  </span>
                 )}
                 <span className={styles.tooltip} aria-hidden="true">
                   To-do&apos;s
@@ -256,7 +260,7 @@ export function Sidebar({
             <li>
               <NextLink
                 href="/weekplanner"
-                className={styles.item}
+                className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/weekplanner" ? "page" : undefined}
               >
                 <CalendarIcon />
@@ -270,7 +274,9 @@ export function Sidebar({
         </nav>
 
         <nav aria-label="Platforms" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Mijn platforms</h2>
+          <h2 className={`nd-nav__title ${styles.sectionTitle}`}>
+            Mijn platforms
+          </h2>
           {mijn.length === 0 && (
             <p className={styles.empty}>Geen platforms uit Orbit geladen.</p>
           )}
