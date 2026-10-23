@@ -36,7 +36,7 @@
 .item {
   margin-bottom: var(--space-02);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 188px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   align-items: center;
   gap: var(--space-05);
   padding: 14px var(--space-02) 14px var(--space-05);
@@ -93,7 +93,20 @@
 .acties {
   position: relative;
   align-self: stretch;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 0 var(--space-04);
+}
+
+/* Links verder met het bericht, rechts ervan af */
+.kolom {
+  display: flex;
+  flex-direction: column;
+}
+
+.gedaan {
+  color: var(--color-text);
 }
 
 /* ExternalLink zet het icoon achter de tekst; hier staat het ervoor, zoals bij de andere acties. */
@@ -159,10 +172,6 @@
   }
 
   .acties {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 0 var(--space-04);
     padding: var(--space-02) 0 0 var(--space-02);
     border-top: 1px solid var(--color-line-soft);
     border-left: 0;

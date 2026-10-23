@@ -485,6 +485,16 @@ export async function naarTodoAction(
     await bijTaken((email) => naarTodo(email, id, schoon, nieuw));
 }
 
+/** Al afgehandeld vanuit de inbox: meteen een to-do in Klaar, met de titel en prio die er al zijn. */
+export async function gedaanAction(id: number): Promise<void> {
+  await bijTaken((email) => {
+    const taak = leesTaak(email, id)?.taak;
+    if (taak?.lijst !== "inbox") return;
+    naarTodo(email, id, taak.titel, taak.prio);
+    zetStatus(email, id, "klaar");
+  });
+}
+
 export async function hernoemTaakAction(
   id: number,
   titel: string,

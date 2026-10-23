@@ -25,8 +25,8 @@ export default async function InboxPage() {
       <PageHeading title="Inbox" crumbs={[HOME]} />
       <div className={styles.intro}>
         <p className={grid.muted}>
-          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je: nu
-          reageren, naar je to-do&apos;s, of negeren.
+          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je:
+          direct afhandelen, een to-do maken, of negeren.
         </p>
         <InboxVerversen />
       </div>
