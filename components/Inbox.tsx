@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import {
+  gedaanAction,
   naarTodoAction,
   sluitUitAction,
   staToeAction,
   verplaatsTaakAction,
+  zetStatusAction,
 } from "@/app/actions";
 import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
 import {
   BlockIcon,
+  CheckIcon,
   ChevronIcon,
   CloseIcon,
   InboxIcon,
@@ -98,6 +101,18 @@ export function Inbox({ taken, genegeerd }: Props) {
     toon("Toegevoegd aan je to-do's", {
       link: { label: "Bekijken", href: "/todos" },
       ongedaan: () => zetTerug(taak.id),
+    });
+  }
+
+  function gedaan(taak: Taak) {
+    haalWeg(taak.id);
+    void gedaanAction(taak.id);
+    toon("Gedaan, staat in Klaar", {
+      link: { label: "Bekijken", href: "/todos" },
+      ongedaan: () => {
+        zetTerug(taak.id);
+        void zetStatusAction(taak.id, "niet-gestart");
+      },
     });
   }
 
@@ -191,76 +206,94 @@ export function Inbox({ taken, genegeerd }: Props) {
                       )}
                     </div>
                     <div className={`nd-actions ${styles.acties}`}>
-                      <button
-                        type="button"
-                        className="nd-action nd-action--main"
-                        onClick={() => setKiezen(taak)}
-                      >
-                        <PlusIcon className={styles.icoon} />
-                        Naar to-do
-                      </button>
-                      {taak.url && (
-                        <ExternalLink href={taak.url} className="nd-action">
-                          Openen in {BRON_LABELS[taak.bron]}
-                        </ExternalLink>
-                      )}
-                      <button
-                        type="button"
-                        className="nd-action"
-                        onClick={() => negeer(taak)}
-                      >
-                        <CloseIcon className={styles.icoon} />
-                        Negeren
-                        <span className="nd-visually-hidden">
-                          : {berichtTekst(taak)}
-                        </span>
-                      </button>
-                      {gmail && taak.afzender && (
-                        <>
-                          <button
-                            type="button"
-                            id={`meer-${taak.id}`}
-                            data-menu={taak.id}
-                            className="nd-action"
-                            aria-haspopup="menu"
-                            aria-expanded={menu === taak.id}
-                            aria-controls={`menu-${taak.id}`}
-                            onClick={() =>
-                              setMenu(menu === taak.id ? null : taak.id)
-                            }
-                          >
-                            <BlockIcon className={styles.icoon} />
-                            Afzender negeren…
-                            <span className="nd-visually-hidden">
-                              : {berichtTekst(taak)}
-                            </span>
-                          </button>
-                          <div
-                            id={`menu-${taak.id}`}
-                            data-menu={taak.id}
-                            role="menu"
-                            className={styles.menu}
-                            hidden={menu !== taak.id}
-                          >
+                      <div className={styles.kolom}>
+                        {taak.url && (
+                          <ExternalLink href={taak.url} className="nd-action">
+                            Open in {BRON_LABELS[taak.bron]}
+                          </ExternalLink>
+                        )}
+                        <button
+                          type="button"
+                          className="nd-action nd-action--main"
+                          onClick={() => setKiezen(taak)}
+                        >
+                          <PlusIcon className={styles.icoon} />
+                          Maak to-do aan
+                          <span className="nd-visually-hidden">
+                            : {berichtTekst(taak)}
+                          </span>
+                        </button>
+                      </div>
+                      <div className={styles.kolom}>
+                        <button
+                          type="button"
+                          className={`nd-action ${styles.gedaan}`}
+                          onClick={() => gedaan(taak)}
+                        >
+                          <CheckIcon className={styles.icoon} />
+                          Gedaan
+                          <span className="nd-visually-hidden">
+                            : {berichtTekst(taak)}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="nd-action"
+                          onClick={() => negeer(taak)}
+                        >
+                          <CloseIcon className={styles.icoon} />
+                          Negeer
+                          <span className="nd-visually-hidden">
+                            : {berichtTekst(taak)}
+                          </span>
+                        </button>
+                        {gmail && taak.afzender && (
+                          <>
                             <button
                               type="button"
-                              role="menuitem"
-                              onClick={() => sluitUit(taak, "afzender")}
+                              id={`meer-${taak.id}`}
+                              data-menu={taak.id}
+                              className="nd-action"
+                              aria-haspopup="menu"
+                              aria-expanded={menu === taak.id}
+                              aria-controls={`menu-${taak.id}`}
+                              onClick={() =>
+                                setMenu(menu === taak.id ? null : taak.id)
+                              }
                             >
-                              Nooit meer van {taak.auteur ?? taak.afzender}
-                              <small>{taak.afzender}</small>
+                              <BlockIcon className={styles.icoon} />
+                              Demp
+                              <span className="nd-visually-hidden">
+                                : {berichtTekst(taak)}
+                              </span>
                             </button>
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={() => sluitUit(taak, "domein")}
+                            <div
+                              id={`menu-${taak.id}`}
+                              data-menu={taak.id}
+                              role="menu"
+                              className={styles.menu}
+                              hidden={menu !== taak.id}
                             >
-                              Nooit meer van {domeinVan(taak.afzender)}
-                              <small>Alle afzenders op dit domein</small>
-                            </button>
-                          </div>
-                        </>
-                      )}
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => sluitUit(taak, "afzender")}
+                              >
+                                Demp {taak.auteur ?? taak.afzender}
+                                <small>{taak.afzender}</small>
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => sluitUit(taak, "domein")}
+                              >
+                                Demp {domeinVan(taak.afzender)}
+                                <small>Alle afzenders op dit domein</small>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -304,14 +337,14 @@ export function Inbox({ taken, genegeerd }: Props) {
                     onClick={() => haalTerug(taak)}
                   >
                     <InboxIcon className={styles.icoon} />
-                    Terug naar inbox
+                    Zet terug
                     <span className="nd-visually-hidden">
                       : {berichtTekst(taak)}
                     </span>
                   </button>
                   {taak.url && (
                     <ExternalLink href={taak.url} className="nd-action">
-                      Openen in {BRON_LABELS[taak.bron]}
+                      Open in {BRON_LABELS[taak.bron]}
                     </ExternalLink>
                   )}
                 </div>
