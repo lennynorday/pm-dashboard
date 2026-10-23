@@ -9,6 +9,8 @@ export type SlackTodo = {
   /** Unix-seconden. */
   tijd: number;
   permalink: string;
+  /** Opent het bericht direct in de Slack-app; de permalink als dat niet lukt. */
+  url: string;
   /** Waarom het in de inbox komt: "Bewaard", "Vermelding" of "Direct bericht". */
   soort: string;
   /** Kanaal-id van het DM-gesprek; dat gesprek is dan één inbox-item. Anders null. */
@@ -106,6 +108,22 @@ function blokTekst(match: Record<string, unknown>): string {
     .replace(/\*/g, "");
 }
 
+/** Een slack://-link slaat de doorklikpagina van slack.com over en opent geen tabblad. */
+function appLink(match: Record<string, unknown>, permalink: string): string {
+  const kanaal = record(match.channel).id;
+  if (typeof match.team !== "string" || typeof kanaal !== "string") {
+    return permalink;
+  }
+  const thread = new URL(permalink).searchParams.get("thread_ts");
+  const params = new URLSearchParams({
+    team: match.team,
+    id: kanaal,
+    message: String(match.ts),
+    ...(thread ? { thread_ts: thread } : {}),
+  });
+  return `slack://channel?${params}`;
+}
+
 export function parseBericht(
   match: Record<string, unknown>,
   soort: string,
@@ -126,6 +144,7 @@ export function parseBericht(
     kanaal: kanaalNaam(match.channel),
     tijd,
     permalink: match.permalink,
+    url: appLink(match, match.permalink),
     soort,
     gesprek: null,
   };
