@@ -38,7 +38,7 @@ export function PlatformNav({ platforms, currentPlatform }: Props) {
               {platform.naam}
               {platform.klant && (
                 <span className={styles.klant}>
-                  <span className="visually-hidden">, </span>
+                  <span className="nd-visually-hidden">, </span>
                   {platform.klant}
                 </span>
               )}

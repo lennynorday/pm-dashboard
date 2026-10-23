@@ -97,7 +97,7 @@ export function TodoUpdates({ taken }: { taken: Taak[] }) {
                     >
                       <CheckIcon className={styles.icoon} aria-hidden="true" />
                       Gezien
-                      <span className="visually-hidden">: {taak.titel}</span>
+                      <span className="nd-visually-hidden">: {taak.titel}</span>
                     </button>
                     {taak.url && (
                       <ExternalLink href={taak.url} className="nd-action">

@@ -211,7 +211,7 @@ export function Inbox({ taken, genegeerd }: Props) {
                       >
                         <CloseIcon className={styles.icoon} />
                         Negeren
-                        <span className="visually-hidden">
+                        <span className="nd-visually-hidden">
                           : {berichtTekst(taak)}
                         </span>
                       </button>
@@ -231,7 +231,7 @@ export function Inbox({ taken, genegeerd }: Props) {
                           >
                             <BlockIcon className={styles.icoon} />
                             Afzender negeren…
-                            <span className="visually-hidden">
+                            <span className="nd-visually-hidden">
                               : {berichtTekst(taak)}
                             </span>
                           </button>
@@ -305,7 +305,7 @@ export function Inbox({ taken, genegeerd }: Props) {
                   >
                     <InboxIcon className={styles.icoon} />
                     Terug naar inbox
-                    <span className="visually-hidden">
+                    <span className="nd-visually-hidden">
                       : {berichtTekst(taak)}
                     </span>
                   </button>

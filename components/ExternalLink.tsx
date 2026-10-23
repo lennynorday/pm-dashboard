@@ -18,7 +18,7 @@ export function ExternalLink({ href, className, children }: Props) {
     >
       {children}
       <ExternalIcon className={styles.icoon} />
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+      <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
     </a>
   );
 }

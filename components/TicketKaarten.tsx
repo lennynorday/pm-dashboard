@@ -21,7 +21,7 @@ function Aantal({
       <a href={telling.url} target="_blank" rel="noopener noreferrer">
         <span>{label}</span>
         <strong>{telling.aantal}</strong>
-        <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+        <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
       </a>
     </li>
   );
@@ -37,7 +37,7 @@ function Sublink({ href, children }: { href: string; children: string }) {
     >
       {children}
       <ExternalIcon className={styles.extern} />
-      <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+      <span className="nd-visually-hidden"> (opent in nieuw tabblad)</span>
     </a>
   );
 }
@@ -62,7 +62,10 @@ function LopendeSprint({ overzicht }: { overzicht: JiraOverzicht }) {
               rel="noopener noreferrer"
             >
               {sprint.naam}
-              <span className="visually-hidden"> (opent in nieuw tabblad)</span>
+              <span className="nd-visually-hidden">
+                {" "}
+                (opent in nieuw tabblad)
+              </span>
             </a>
             {" · "}
             {isVerlopen(sprint, nu) ? (
