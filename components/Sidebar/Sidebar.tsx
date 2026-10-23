@@ -9,11 +9,10 @@ import {
   CloseIcon,
   HomeIcon,
   InboxIcon,
-  LogoutIcon,
   MenuIcon,
+  SettingsIcon,
   TodoIcon,
 } from "@/components/icons";
-import { logoutAction } from "@/app/actions";
 import { initialen, NavPlatform } from "@/lib/navigation";
 import {
   GroepStand,
@@ -173,11 +172,8 @@ export function Sidebar({
           </button>
         </div>
 
-        <NextLink
-          href="/instellingen"
-          className={styles.user}
-          aria-current={pathname === "/instellingen" ? "page" : undefined}
-        >
+        {/* Alleen ter begroeting; Instellingen staat onderaan. */}
+        <div className={styles.user}>
           {user.foto ? (
             // Een kleine profielfoto van Google; next/image voegt hier niets toe.
             // eslint-disable-next-line @next/next/no-img-element
@@ -198,13 +194,11 @@ export function Sidebar({
             <span className={styles.welkom}>
               Welkom terug, {user.voornaam}!
             </span>
-            <span className={styles.email}>{user.email}</span>
-            <span className="nd-visually-hidden">, naar instellingen</span>
           </span>
           <span className={styles.tooltip} aria-hidden="true">
-            {user.naam}, instellingen
+            {user.naam}
           </span>
-        </NextLink>
+        </div>
 
         <nav aria-label="Hoofdmenu" className={styles.section}>
           <ul className="nd-nav__section">
@@ -309,15 +303,17 @@ export function Sidebar({
         </nav>
 
         <div className={styles.footer}>
-          <form action={logoutAction}>
-            <button type="submit" className={styles.logout}>
-              <LogoutIcon />
-              <span className={styles.label}>Uitloggen</span>
-              <span className={styles.tooltip} aria-hidden="true">
-                Uitloggen
-              </span>
-            </button>
-          </form>
+          <NextLink
+            href="/instellingen"
+            className={`nd-nav__item ${styles.item}`}
+            aria-current={pathname === "/instellingen" ? "page" : undefined}
+          >
+            <SettingsIcon />
+            <span className={styles.label}>Instellingen</span>
+            <span className={styles.tooltip} aria-hidden="true">
+              Instellingen
+            </span>
+          </NextLink>
         </div>
       </div>
     </div>
