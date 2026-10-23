@@ -1,5 +1,7 @@
 /* Zelfde vorm als de feed: een kaart met rijen erin. */
 .kaart {
+  /* Rijen stapelen op de breedte van de kaart, niet van het venster: op een platformpagina staat hij in een smalle kolom. */
+  container-type: inline-size;
   /* Project, status, budgetvlak: gedeeld door de rij en de regels in de uitklap. */
   --kolommen: minmax(0, 1fr) auto minmax(300px, 380px);
   /* Het budget en de uitklap staan op een net iets andere tint dan de rij. */
@@ -175,7 +177,7 @@
   color: var(--color-text-muted);
 }
 
-@media (max-width: 900px) {
+@container (max-width: 680px) {
   .sub {
     grid-template-columns: minmax(0, 1fr);
   }

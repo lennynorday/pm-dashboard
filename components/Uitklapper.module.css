@@ -108,7 +108,7 @@
   background: var(--color-uitklap);
 }
 
-@media (max-width: 900px) {
+@container (max-width: 680px) {
   .kop {
     grid-template-columns: minmax(0, 1fr);
   }
