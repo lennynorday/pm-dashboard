@@ -131,22 +131,6 @@
   padding: 10px;
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--norday-white) 7%, transparent);
-  color: inherit;
-  text-decoration: none;
-  transition: background 0.2s var(--ease);
-}
-
-.user:hover {
-  background: color-mix(in srgb, var(--norday-white) 12%, transparent);
-}
-
-.user[aria-current="page"] {
-  background: var(--norday-lilac);
-  color: var(--norday-dark);
-}
-
-.user[aria-current="page"] .email {
-  color: inherit;
 }
 
 .avatar {
@@ -181,26 +165,6 @@
   color: var(--color-on-dark-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.logout {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-03);
-  width: 100%;
-  min-height: 42px;
-  padding: var(--space-02) 10px;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
-  color: var(--color-on-dark-muted);
-  font: var(--type-nav);
-  cursor: pointer;
-}
-
-.logout:hover {
-  background: var(--color-hover-on-dark);
 }
 
 .section {
@@ -398,7 +362,6 @@
   }
 
   .sidebar[data-stand="ingeklapt"] .item,
-  .sidebar[data-stand="ingeklapt"] .logout,
   .sidebar[data-stand="ingeklapt"] .user,
   .sidebar[data-stand="ingeklapt"] .groupToggle {
     justify-content: center;
@@ -425,9 +388,6 @@
   .sidebar[data-stand="ingeklapt"] .collapse:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .collapse:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .user:hover .tooltip,
-  .sidebar[data-stand="ingeklapt"] .user:focus-visible .tooltip,
-  .sidebar[data-stand="ingeklapt"] .logout:hover .tooltip,
-  .sidebar[data-stand="ingeklapt"] .logout:focus-visible .tooltip,
   .sidebar[data-stand="ingeklapt"] .groupToggle:hover .tooltip,
   .sidebar[data-stand="ingeklapt"] .groupToggle:focus-visible .tooltip {
     display: block;
