@@ -194,7 +194,6 @@ export function Sidebar({
             <span className={styles.welkom}>
               Welkom terug, {user.voornaam}!
             </span>
-            <span className={styles.email}>{user.email}</span>
           </span>
           <span className={styles.tooltip} aria-hidden="true">
             {user.naam}

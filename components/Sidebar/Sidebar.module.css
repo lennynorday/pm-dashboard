@@ -159,14 +159,6 @@
   font-weight: 600;
 }
 
-.email {
-  overflow: hidden;
-  font: var(--type-meta);
-  color: var(--color-on-dark-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .section {
   display: flex;
   flex-direction: column;
