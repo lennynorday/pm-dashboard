@@ -78,9 +78,30 @@
     transparent;
 }
 
-/* Is er meer inhoud dan ruimte, dan scrolt het paneel; de blokken krimpen niet. */
+/* De blokken krimpen niet; alleen de platformlijst scrolt, zodat boven en onder blijven staan. */
 .panel > * {
   flex-shrink: 0;
+}
+
+.panel > .platforms {
+  flex: 0 1 auto;
+  min-height: 0;
+  /* Ruimte voor de focusring, die anders aan de rand van het scrollvlak wordt afgeknipt. */
+  margin-inline: calc(-1 * var(--space-02));
+  padding: var(--space-01) var(--space-02);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--norday-white) 25%, transparent)
+    transparent;
+}
+
+/* Op een heel laag scherm is er geen ruimte voor een eigen scrollvlak: dan scrolt alles samen. */
+@media (max-height: 560px) {
+  .panel > .platforms {
+    flex-shrink: 0;
+    overflow: visible;
+  }
 }
 
 .panel :focus-visible {
@@ -360,10 +381,11 @@
     padding-inline: 0;
   }
 
+  /* Vast in het venster, zodat het scrollvlak de tooltip niet afknipt; Sidebar.tsx zet de plek. */
   .sidebar[data-stand="ingeklapt"] .tooltip {
-    position: absolute;
-    left: calc(100% + var(--space-03));
-    top: 50%;
+    position: fixed;
+    left: var(--tip-x);
+    top: var(--tip-y);
     z-index: 20;
     transform: translateY(-50%);
     padding: var(--space-01) var(--space-03);
