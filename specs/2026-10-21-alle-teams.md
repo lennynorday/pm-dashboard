@@ -16,20 +16,27 @@
 - **Wel:** iedereen ziet de eigen projecten (eigenaar in Orbit) in de mappen van Norday B.V.: Culture, Public & services, Health en Intern.
 - **Wel:** klant-id's via het project ophalen in plaats van op klantnaam.
 - **Wel:** projecten zonder klant netjes tonen.
+- **Wel:** de projecten van collega's in de sidebar, ingedeeld per domein en per verantwoordelijke.
 - **Niet:** projecten van de andere rechtspersonen (Boldly-XR, Hear The Youth, On Your Marks, Tech to Market, TwentySeven, Unlock).
 
 ## Acceptatiecriteria
 
 1. Het dashboard haalt per Norday-map `ListProjects` op met `mine=true` en `folderId`; projecten buiten die mappen verschijnen niet.
-2. De sidebargroep "Overige Culture-platforms" is weg.
-3. Elk project krijgt het klant-id uit Orbit zelf (via het project, niet de naam), ook als de klantnaam " / " bevat of twee klanten dezelfde naam hebben.
-4. Projecten van een klant met meer platforms (zoals Gemeente Rotterdam) koppel je handmatig aan een platform, net als bij WO2Net.
-5. Een project zonder klant staat onder een herkenbaar account (bijvoorbeeld "Intern") met een werkende link.
-6. Een open project met een verstreken einddatum toont het signaal "einddatum verstreken", zodat de PM het in Orbit sluit of verlengt.
-7. Een Overzicht voor een PM met ruim 50 projecten laadt zonder Orbit-foutmelding; een koude start mag langer duren, met zichtbare voortgang.
+2. De sidebargroep "Overige Culture-platforms" heet voortaan "Alle overige projecten" en bevat de open projecten van collega's uit alle vier de Norday-mappen (per map `ListProjects` met alleen `folderId`).
+3. Die groep is ingedeeld in drie niveaus: domein (Orbit-map), daaronder verantwoordelijke (eigenaar in Orbit), daaronder diens projectenlijst. Bijvoorbeeld:
+   - Culture → Anisha → projecten
+   - Public & services → Pien → projecten
+4. Domeinen en verantwoordelijken zijn standaard dicht; de sidebar onthoudt wat open staat, zoals nu bij "Overige Culture-platforms".
+5. Bovenaan de sidebar staat een zoekveld dat eigen en overige open projecten filtert op projectnaam, projectnummer, klant en verantwoordelijke. Groepen met een treffer klappen open; de rest verdwijnt zolang er een zoekterm staat. Er komt geen aparte zoekpagina.
+6. Elk project krijgt het klant-id uit Orbit zelf (via het project, niet de naam), ook als de klantnaam " / " bevat of twee klanten dezelfde naam hebben.
+7. Projecten van een klant met meer platforms (zoals Gemeente Rotterdam) koppel je handmatig aan een platform, net als bij WO2Net.
+8. Een project zonder klant staat onder een herkenbaar account (bijvoorbeeld "Intern") met een werkende link.
+9. Een open project met een verstreken einddatum toont het signaal "einddatum verstreken", zodat de PM het in Orbit sluit of verlengt.
+10. Een Overzicht voor een PM met ruim 50 projecten laadt zonder Orbit-foutmelding; een koude start mag langer duren, met zichtbare voortgang.
 
 ## Gerelateerd
 
 - Projecttype (regulier, SLA, strippenkaart) en de groep Onderhoud: zie [PM-62](https://in10-rotterdam.atlassian.net/browse/PM-62).
 - Eigenaar in Orbit bepaalt wat een PM in de sidebar ziet; alle projecten van een platform en account komen op de platformpagina ([PM-61](https://in10-rotterdam.atlassian.net/browse/PM-61)).
+- Zoeken op de configuratiepagina met alle platforms (bovenaan, op klant, platform of projectnummer) valt onder [PM-60](https://in10-rotterdam.atlassian.net/browse/PM-60).
 - Organisaties met meerdere Orbit-klanten koppel je via [PM-60](https://in10-rotterdam.atlassian.net/browse/PM-60); dubbele klanten in Orbit (twee keer Gemeente Rotterdam) schoont finance op.
