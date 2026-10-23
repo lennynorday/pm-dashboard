@@ -12,7 +12,7 @@ export function InboxLaden() {
       </p>
       <ul className={inbox.lijst} aria-hidden="true">
         {[0, 1, 2].map((nummer) => (
-          <li key={nummer} className={`${inbox.item} ${styles.leeg}`}>
+          <li key={nummer} className={`nd-row ${inbox.item} ${styles.leeg}`}>
             <span className={styles.regel} />
             <span className={styles.regel} />
             <span className={styles.regel} />

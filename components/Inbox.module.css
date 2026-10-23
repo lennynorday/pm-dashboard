@@ -4,14 +4,6 @@
   background: var(--color-card);
 }
 
-.leeg {
-  margin: 0;
-  padding: var(--space-06);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
-  font: var(--type-label);
-}
-
 .lijst {
   margin: 0;
   padding: 0;
@@ -40,6 +32,7 @@
   overflow: hidden;
 }
 
+/* Rij uit de toolkit (nd-row); hier het grid met de acties rechts. */
 .item {
   margin-bottom: var(--space-02);
   display: grid;
@@ -47,8 +40,6 @@
   align-items: center;
   gap: var(--space-05);
   padding: 14px var(--space-02) 14px var(--space-05);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
 }
 
 .body {
@@ -61,23 +52,6 @@
   align-items: center;
   gap: var(--space-01) 10px;
   margin: 0 0 var(--space-01);
-  font: 400 13px/1.35 var(--font-text);
-  color: var(--color-text-muted);
-}
-
-.bron {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--radius-pill);
-  background: var(--norday-lilac);
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.gmail {
-  background: var(--color-pink-soft);
 }
 
 .ster {
@@ -99,7 +73,7 @@
   margin: 2px 0 0;
   overflow: hidden;
   overflow-wrap: anywhere;
-  font: 400 15px/1.4 var(--font-text);
+  font: var(--type-body);
   color: var(--color-text-muted);
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -111,7 +85,7 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   white-space: pre-line;
-  font: 600 16px/1.3 var(--font-text);
+  font: var(--type-item);
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
 }
@@ -119,43 +93,11 @@
 .acties {
   position: relative;
   align-self: stretch;
-  display: flex;
-  flex-direction: column;
   justify-content: center;
-  padding-left: var(--space-04);
-  border-left: 1px solid var(--color-line-soft);
-}
-
-.actie {
-  display: flex;
-  align-items: center;
-  gap: var(--space-02);
-  height: 30px;
-  padding: 0 var(--space-02);
-  margin-left: calc(-1 * var(--space-02));
-  border: 0;
-  border-radius: var(--space-02);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: 400 14px/1 var(--font-text);
-  text-align: left;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.actie:hover {
-  background: var(--color-card);
-  color: var(--color-text);
-}
-
-.hoofd {
-  color: var(--color-text);
-  font-weight: 600;
 }
 
 /* ExternalLink zet het icoon achter de tekst; hier staat het ervoor, zoals bij de andere acties. */
-.actie svg:last-of-type {
+.acties a svg:last-of-type {
   order: -1;
   width: 16px;
   height: 16px;
@@ -173,7 +115,7 @@
   background: var(--norday-white);
   box-shadow:
     0 0 0 1px var(--color-line-soft),
-    0 8px 24px rgb(61 16 40 / 0.14);
+    var(--shadow-float);
 }
 
 .menu[hidden] {
@@ -190,7 +132,8 @@
   border-radius: 12px;
   background: transparent;
   color: var(--color-text);
-  font: 500 14px/1.3 var(--font-text);
+  font: var(--type-body);
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
 }
@@ -201,19 +144,13 @@
 }
 
 .menu small {
-  font: 400 13px/1.35 var(--font-text);
+  font: var(--type-meta);
   color: var(--color-text-muted);
 }
 
 .icoon {
   width: 16px;
   height: 16px;
-}
-
-.actie:focus-visible,
-.menu button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
 }
 
 @media (max-width: 640px) {
@@ -256,7 +193,8 @@
   padding: var(--space-02) 14px;
   border-radius: var(--radius-pill);
   color: var(--color-text-muted);
-  font: 500 15px/1.2 var(--font-text);
+  font: var(--type-body);
+  font-weight: 500;
   list-style: none;
   cursor: pointer;
 }
@@ -270,14 +208,9 @@
   color: var(--color-text);
 }
 
-.genegeerd summary:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
 .genegeerd summary svg {
   transform: rotate(-90deg);
-  transition: transform 0.2s var(--ease);
+  transition: transform var(--duration) var(--ease);
 }
 
 .genegeerd[open] summary svg {
@@ -286,7 +219,7 @@
 
 .hint {
   margin: var(--space-01) 0 var(--space-03) 14px;
-  font: 400 13px/1.35 var(--font-text);
+  font: var(--type-meta);
   color: var(--color-text-muted);
 }
 
@@ -312,15 +245,4 @@
 
 .update {
   box-shadow: inset 4px 0 0 var(--norday-pink);
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: var(--radius-pill);
-  background: var(--norday-yellow);
-  color: var(--color-text);
-  font-weight: 600;
 }
