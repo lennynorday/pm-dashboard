@@ -4,6 +4,7 @@ import {
   beantwoordInThread,
   deelGesprekkenIn,
   isGesprek,
+  voegBewaardSamen,
 } from "./gesprekken.ts";
 
 const bericht = (id: string, user: string, ts: string) => ({
@@ -75,4 +76,30 @@ test("een vermelding is beantwoord als je daarna in dezelfde thread schreef", ()
   );
   assert.ok(!beantwoord(inThread("25", "10")), "jouw antwoord was eerder");
   assert.ok(!beantwoord(inThread("5")), "los bericht in het kanaal telt niet");
+});
+
+test("een bewaard bericht uit een open DM-gesprek wordt dat gesprek", () => {
+  const todo = (kanaal: string, gesprek: string | null, soort: string) => ({
+    text: "",
+    auteur: "",
+    kanaal: "",
+    tijd: 1,
+    permalink: `https://x.slack.com/archives/${kanaal}/p1`,
+    url: "",
+    soort,
+    gesprek,
+  });
+  const { bewaard, items } = voegBewaardSamen(
+    [todo("D1", null, "Bewaard"), todo("D2", null, "Bewaard")],
+    [todo("D1", "D1", "Direct bericht"), todo("D3", "D3", "Direct bericht")],
+  );
+  assert.deepStrictEqual(
+    bewaard.map((t) => t.permalink),
+    ["https://x.slack.com/archives/D2/p1"],
+    "zonder open gesprek blijft het los",
+  );
+  assert.deepStrictEqual(
+    items.map((t) => t.soort),
+    ["Bewaard", "Direct bericht"],
+  );
 });

@@ -175,6 +175,14 @@ function open(): DatabaseSync {
   db.exec(`DELETE FROM taken WHERE lijst = 'inbox' AND ${metQuery}`);
   db.exec(`UPDATE OR IGNORE taken SET bron_id = substr(bron_id, 1, instr(bron_id, '?') - 1)
     WHERE ${metQuery}`);
+  // Een bewaard DM-bericht stond los naast zijn gesprek; nu valt het onder het gesprek.
+  db.exec(`DELETE FROM taken AS los WHERE lijst = 'inbox' AND bron = 'slack'
+    AND bron_id LIKE 'https://%/archives/%' AND EXISTS (
+      SELECT 1 FROM taken AS gesprek
+      WHERE gesprek.email = los.email AND gesprek.lijst = 'inbox'
+        AND gesprek.bron_id = 'dm:' || substr(
+          substr(los.bron_id, instr(los.bron_id, '/archives/') + 10), 1,
+          instr(substr(los.bron_id, instr(los.bron_id, '/archives/') + 10), '/') - 1))`);
   // De link naar het Gmail-concept dat Akkoord klaarzette.
   const opdrachtKolommen = db.prepare("PRAGMA table_info(opdrachten)").all();
   if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_url")) {
