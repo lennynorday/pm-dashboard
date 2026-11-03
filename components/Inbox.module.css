@@ -54,14 +54,14 @@
   margin: 0 0 var(--space-01);
 }
 
-.ster {
+.markering {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   color: var(--color-text);
 }
 
-.sterIcoon {
+.markeerIcoon {
   width: 14px;
   height: 14px;
   fill: var(--norday-yellow);

@@ -8,6 +8,7 @@ export type SlackTodo = {
   kanaal: string;
   /** Unix-seconden. */
   tijd: number;
+  /** Zonder ?thread_ts, die Slack toevoegt zodra er een thread onder komt. */
   permalink: string;
   /** Opent het bericht direct in de Slack-app; de permalink als dat niet lukt. */
   url: string;
@@ -124,6 +125,11 @@ function appLink(match: Record<string, unknown>, permalink: string): string {
   return `slack://channel?${params}`;
 }
 
+/** De permalink zonder query, zodat een bericht na een nieuwe thread hetzelfde item blijft. */
+export function vasteLink(permalink: string): string {
+  return permalink.split("?")[0];
+}
+
 export function parseBericht(
   match: Record<string, unknown>,
   soort: string,
@@ -143,7 +149,7 @@ export function parseBericht(
     auteur: auteurNaam(match, namen),
     kanaal: kanaalNaam(match.channel),
     tijd,
-    permalink: match.permalink,
+    permalink: vasteLink(match.permalink),
     url: appLink(match, match.permalink),
     soort,
     gesprek: null,

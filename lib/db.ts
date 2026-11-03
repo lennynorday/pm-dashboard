@@ -169,6 +169,12 @@ function open(): DatabaseSync {
   db.exec(`UPDATE OR IGNORE taken SET bron_id = bron_id || ':' || tijd
     WHERE bron = 'slack' AND lijst = 'todo'
       AND bron_id LIKE 'dm:%' AND bron_id NOT LIKE 'dm:%:%'`);
+  // Slack-links met ?thread_ts gaven dubbele items; de sleutel is nu de link zonder query.
+  // Inbox-items maakt de sync opnieuw aan, de rest krijgt de nieuwe sleutel.
+  const metQuery = `bron = 'slack' AND bron_id LIKE 'https://%?%'`;
+  db.exec(`DELETE FROM taken WHERE lijst = 'inbox' AND ${metQuery}`);
+  db.exec(`UPDATE OR IGNORE taken SET bron_id = substr(bron_id, 1, instr(bron_id, '?') - 1)
+    WHERE ${metQuery}`);
   // De link naar het Gmail-concept dat Akkoord klaarzette.
   const opdrachtKolommen = db.prepare("PRAGMA table_info(opdrachten)").all();
   if (!opdrachtKolommen.some((kolom) => kolom.name === "concept_url")) {

@@ -2,6 +2,7 @@ import { database } from "@/lib/db";
 import { gesprekkenOpTodo } from "@/lib/todos";
 import {
   parseBericht,
+  vasteLink,
   record,
   slackPost,
   type SlackTodo,
@@ -134,7 +135,8 @@ export async function fetchSlackInbox(
       ...vermeldingen
         .filter(vermeldingBeantwoord)
         .map((match) => match.permalink)
-        .filter((link): link is string => typeof link === "string"),
+        .filter((link): link is string => typeof link === "string")
+        .map(vasteLink),
     ],
   };
 }
