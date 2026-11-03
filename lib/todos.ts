@@ -210,7 +210,13 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
      WHERE taken.lijst != 'todo'
        AND (excluded.tijd > taken.tijd OR COALESCE(taken.bericht, '') = '')`,
   );
+  // Zelf bewaren is een bewuste keuze; dat label wint van Vermelding.
+  const bewaard = database().prepare(
+    `UPDATE taken SET soort = 'Bewaard'
+     WHERE email = ? AND bron = 'slack' AND bron_id = ?`,
+  );
   for (const bericht of berichten) {
+    if (bericht.soort === "Bewaard") bewaard.run(email, bericht.permalink);
     insert.run(
       email,
       bericht.gesprek ? `dm:${bericht.gesprek}` : bericht.permalink,

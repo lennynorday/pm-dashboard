@@ -13,6 +13,7 @@ import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
 import {
   BlockIcon,
+  BookmarkIcon,
   CheckIcon,
   ChevronIcon,
   CloseIcon,
@@ -167,6 +168,12 @@ export function Inbox({ taken, genegeerd }: Props) {
         <ul className={styles.lijst}>
           {taken.map((taak) => {
             const gmail = taak.bron === "gmail";
+            const Markering =
+              taak.soort === "Ster"
+                ? StarIcon
+                : taak.soort === "Bewaard"
+                  ? BookmarkIcon
+                  : null;
             return (
               <li
                 key={taak.id}
@@ -184,19 +191,21 @@ export function Inbox({ taken, genegeerd }: Props) {
                         >
                           {BRON_LABELS[taak.bron]}
                         </span>
-                        {gmail && taak.soort === "Ster" && (
-                          <span className={styles.ster}>
-                            <StarIcon className={styles.sterIcoon} />
-                            Ster
+                        {Markering && (
+                          <span className={styles.markering}>
+                            <Markering className={styles.markeerIcoon} />
+                            {taak.soort}
                           </span>
                         )}
                         {taak.auteur && <span>{taak.auteur}</span>}
                         {taak.plek && <span>{taak.plek}</span>}
-                        {gmail && taak.soort !== "Ster" && taak.soort && (
+                        {gmail && !Markering && taak.soort && (
                           <span>{taak.soort}</span>
                         )}
                         {taak.tijd !== null && <span>{tijdTekst(taak)}</span>}
-                        {!gmail && taak.soort && <span>{taak.soort}</span>}
+                        {!gmail && !Markering && taak.soort && (
+                          <span>{taak.soort}</span>
+                        )}
                       </p>
                       <p className={gmail ? styles.titel : styles.snippet}>
                         {berichtTekst(taak)}
