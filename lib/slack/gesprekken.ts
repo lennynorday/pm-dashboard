@@ -1,3 +1,5 @@
+import type { SlackTodo } from "./api";
+
 type Bericht = Record<string, unknown>;
 
 function kanaal(bericht: Bericht): Bericht {
@@ -68,4 +70,26 @@ export function beantwoordInThread(
   }
   return (bericht) =>
     (laatste.get(threadVan(bericht)) ?? 0) > Number(bericht.ts);
+}
+
+/**
+ * Een bewaard bericht uit een DM-gesprek dat al in de inbox staat, wordt dat
+ * gesprek (met label Bewaard) in plaats van een los item ernaast.
+ */
+export function voegBewaardSamen(
+  bewaard: SlackTodo[],
+  items: SlackTodo[],
+): { bewaard: SlackTodo[]; items: SlackTodo[] } {
+  const kanaalVan = (todo: SlackTodo) =>
+    todo.permalink.split("/archives/")[1]?.split("/")[0];
+  const gesprekken = new Set(items.map((item) => item.gesprek));
+  const bewaardIn = new Set(bewaard.map(kanaalVan));
+  return {
+    bewaard: bewaard.filter((todo) => !gesprekken.has(kanaalVan(todo) ?? "")),
+    items: items.map((item) =>
+      item.gesprek && bewaardIn.has(item.gesprek)
+        ? { ...item, soort: "Bewaard" }
+        : item,
+    ),
+  };
 }

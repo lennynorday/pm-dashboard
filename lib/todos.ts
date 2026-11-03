@@ -216,10 +216,13 @@ export function voegSlackToe(email: string, berichten: SlackTodo[]): void {
      WHERE email = ? AND bron = 'slack' AND bron_id = ?`,
   );
   for (const bericht of berichten) {
-    if (bericht.soort === "Bewaard") bewaard.run(email, bericht.permalink);
+    const bronId = bericht.gesprek
+      ? `dm:${bericht.gesprek}`
+      : bericht.permalink;
+    if (bericht.soort === "Bewaard") bewaard.run(email, bronId);
     insert.run(
       email,
-      bericht.gesprek ? `dm:${bericht.gesprek}` : bericht.permalink,
+      bronId,
       bericht.text,
       bericht.text,
       bericht.auteur,
