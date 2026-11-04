@@ -247,11 +247,7 @@
   margin-bottom: 0;
 }
 
-/* Updates op to-do's, onder de Inbox */
-.updates {
-  margin-top: var(--space-10);
-}
-
+/* Update op een to-do, tussen de berichten */
 .update {
   box-shadow: inset 4px 0 0 var(--norday-pink);
 }

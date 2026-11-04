@@ -7,9 +7,16 @@ import {
   sluitUitAction,
   staToeAction,
   verplaatsTaakAction,
+  zetGezienAction,
   zetStatusAction,
 } from "@/app/actions";
-import { BRON_LABELS, domeinVan, type Prio, type Taak } from "@/lib/taak";
+import {
+  BRON_LABELS,
+  domeinVan,
+  STATUS_LABELS,
+  type Prio,
+  type Taak,
+} from "@/lib/taak";
 import { ExternalLink } from "./ExternalLink";
 import {
   BlockIcon,
@@ -51,9 +58,9 @@ function dialoogBron(taak: Taak): DialoogBron {
   };
 }
 
-type Props = { taken: Taak[]; genegeerd: Taak[] };
+type Props = { taken: Taak[]; genegeerd: Taak[]; updates: Taak[] };
 
-export function Inbox({ taken, genegeerd }: Props) {
+export function Inbox({ taken, genegeerd, updates }: Props) {
   // Weggehaald is lokaal bijgehouden, zodat een item niet terugspringt voor de server klaar is.
   const [weg, setWeg] = useState<ReadonlySet<number>>(new Set());
   const [kiezen, setKiezen] = useState<Taak | null>(null);
@@ -117,6 +124,21 @@ export function Inbox({ taken, genegeerd }: Props) {
     });
   }
 
+  function markeerGezien(taak: Taak) {
+    haalWeg(taak.id);
+    void zetGezienAction(taak.id, true);
+    toon("Gezien, de to-do blijft staan", {
+      ongedaan: () => {
+        setWeg((huidig) => {
+          const nieuw = new Set(huidig);
+          nieuw.delete(taak.id);
+          return nieuw;
+        });
+        void zetGezienAction(taak.id, false);
+      },
+    });
+  }
+
   function negeer(taak: Taak) {
     haalWeg(taak.id);
     void verplaatsTaakAction(taak.id, "genegeerd");
@@ -158,7 +180,11 @@ export function Inbox({ taken, genegeerd }: Props) {
     });
   }
 
-  const open = taken.filter((taak) => !weg.has(taak.id));
+  // Updates op to-do's staan op het moment van de reactie tussen de berichten.
+  const feed = [...taken, ...updates].sort(
+    (a, b) => (b.tijd ?? 0) - (a.tijd ?? 0),
+  );
+  const open = feed.filter((taak) => !weg.has(taak.id));
   const stil = genegeerd.filter((taak) => !terug.has(taak.id));
 
   return (
@@ -166,7 +192,62 @@ export function Inbox({ taken, genegeerd }: Props) {
       <section className={styles.paneel} aria-label="Inbox">
         {open.length === 0 && <p className="nd-empty">Inbox leeg.</p>}
         <ul className={styles.lijst}>
-          {taken.map((taak) => {
+          {feed.map((taak) => {
+            if (taak.lijst === "todo") {
+              return (
+                <li
+                  key={taak.id}
+                  className={styles.rij}
+                  data-weg={weg.has(taak.id) || undefined}
+                  inert={weg.has(taak.id)}
+                >
+                  <div className={styles.klap}>
+                    <div className={`nd-row ${styles.item} ${styles.update}`}>
+                      <div className={styles.body}>
+                        <p className={`nd-meta ${styles.meta}`}>
+                          <span
+                            className="nd-chip"
+                            data-tint={taak.bron === "gmail" ? "pink" : "lilac"}
+                          >
+                            {BRON_LABELS[taak.bron]}
+                          </span>
+                          <span className="nd-chip" data-tint="yellow">
+                            To-do · {STATUS_LABELS[taak.status]}
+                          </span>
+                          {taak.auteur && <span>{taak.auteur}</span>}
+                          {taak.tijd !== null && <span>{tijdTekst(taak)}</span>}
+                        </p>
+                        <p className={styles.titel}>{taak.titel}</p>
+                        {taak.bericht && (
+                          <p className={styles.snippet}>{taak.bericht}</p>
+                        )}
+                      </div>
+                      <div className={`nd-actions ${styles.acties}`}>
+                        <button
+                          type="button"
+                          className="nd-action nd-action--main"
+                          onClick={() => markeerGezien(taak)}
+                        >
+                          <CheckIcon
+                            className={styles.icoon}
+                            aria-hidden="true"
+                          />
+                          Gezien
+                          <span className="nd-visually-hidden">
+                            : {taak.titel}
+                          </span>
+                        </button>
+                        {taak.url && (
+                          <ExternalLink href={taak.url} className="nd-action">
+                            Openen in {BRON_LABELS[taak.bron]}
+                          </ExternalLink>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            }
             const gmail = taak.bron === "gmail";
             const Markering =
               taak.soort === "Ster"

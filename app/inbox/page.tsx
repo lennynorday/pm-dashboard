@@ -5,7 +5,6 @@ import { InboxLaden } from "@/components/InboxLaden";
 import { InboxVerversen } from "@/components/InboxVerversen";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
-import { TodoUpdates } from "@/components/TodoUpdates";
 import { currentUser } from "@/lib/session";
 import { synchroniseerGmail } from "@/lib/gmail/sync";
 import { bronAan } from "@/lib/inbox-bronnen";
@@ -76,8 +75,7 @@ async function InboxInhoud() {
         </Melding>
       )}
 
-      <Inbox taken={taken} genegeerd={genegeerd} />
-      <TodoUpdates taken={updates} />
+      <Inbox taken={taken} genegeerd={genegeerd} updates={updates} />
     </>
   );
 }
