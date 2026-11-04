@@ -90,7 +90,10 @@ export function leesTaak(
     .prepare("SELECT * FROM taken WHERE email = ? AND id = ?")
     .get(email, id);
   const taak = row ? parseTaak(row) : null;
-  return taak && row ? { taak, bronId: tekst(row.bron_id) } : null;
+  const bronId = tekst(row?.bron_id);
+  // Een losgekoppelde Gmail-to-do heeft bron_id <thread>:<tijd> (zie voegGmailToe).
+  const threadId = taak?.bron === "gmail" ? bronId?.split(":")[0] : bronId;
+  return taak && row ? { taak, bronId: threadId ?? null } : null;
 }
 
 /** Open to-do's met een nieuwe reactie die je nog niet hebt gezien, nieuwste eerst. */
@@ -377,9 +380,16 @@ const gmailUrl = (email: string, gesprekId: string) =>
 /**
  * Zet mailgesprekken in de inbox, één item per thread (bron_id = thread-id).
  * Net als een DM-gesprek: nieuwere mail werkt het bij en haalt het terug uit
- * genegeerd, op To-do's wordt het een update.
+ * genegeerd, op To-do's wordt het een update. Op een afgeronde to-do kan nieuwe
+ * mail nieuw werk zijn: die to-do wordt losgekoppeld (bron_id <thread>:<tijd>)
+ * en de mail komt als nieuw item in de inbox.
  */
 export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
+  const loskoppelen = database().prepare(
+    `UPDATE OR IGNORE taken SET bron_id = bron_id || ':' || tijd
+     WHERE email = ? AND bron = 'gmail' AND bron_id = ?
+       AND lijst = 'todo' AND status = 'klaar' AND tijd < ?`,
+  );
   const insert = database().prepare(
     `INSERT INTO taken
        (email, bron, bron_id, titel, bericht, auteur, afzender, tijd, url, soort, lijst, toegevoegd)
@@ -392,6 +402,7 @@ export function voegGmailToe(email: string, gesprekken: GmailGesprek[]): void {
      WHERE taken.lijst != 'todo' AND excluded.tijd > taken.tijd`,
   );
   for (const gesprek of gesprekken) {
+    loskoppelen.run(email, gesprek.id, gesprek.tijd);
     insert.run(
       email,
       gesprek.id,
