@@ -9,7 +9,6 @@ import {
   zetMeetingTerugAction,
 } from "@/app/actions";
 import {
-  FOCUS,
   type Meeting,
   type PlatformNaam,
   PRIVE,
@@ -52,7 +51,6 @@ const kort = (datum: string) =>
   dagMaand.format(Date.parse(`${datum}T00:00:00Z`)).replaceAll(".", "");
 
 function status(meeting: Meeting, notulen?: NotulenStatus): string {
-  if (meeting.hoort === FOCUS) return "Focus";
   if (notulen) return notulen.tekst;
   if (meeting.overgeslagen) return "Geen notulen";
   if (meeting.afgelopen) return "Afgelopen";
@@ -61,7 +59,6 @@ function status(meeting: Meeting, notulen?: NotulenStatus): string {
 
 function soort(meeting: Meeting): string {
   if (meeting.hoort === TEAM || meeting.hoort === PRIVE) return meeting.hoort;
-  if (meeting.hoort === FOCUS) return FOCUS;
   return "platform";
 }
 
@@ -93,10 +90,9 @@ export function Meetings({
   const kies = (meeting: Meeting) =>
     setGekozenId(gekozenId === meeting.id ? null : meeting.id);
 
-  // Uren in overleg deze week, per platform, Team en Privé; Focus telt niet.
+  // Uren in overleg deze week, per platform, Team en Privé.
   const minuten = new Map<string, number>();
   for (const meeting of meetings) {
-    if (meeting.hoort === FOCUS) continue;
     minuten.set(
       meeting.hoort,
       (minuten.get(meeting.hoort) ?? 0) + meeting.eind - meeting.begin,
@@ -514,24 +510,15 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
             {meeting.extern ? "Extern" : "Intern"}
           </span>
         )}
-        {meeting.hoort === FOCUS ? (
-          <span className="nd-chip">Focus</span>
-        ) : (
-          <HoortMenu
-            meeting={meeting}
-            platforms={platforms}
-            kies={(doel, scope) =>
-              doe(() => koppelMeetingAction(ref(meeting), doel, scope))
-            }
-          />
-        )}
+        <HoortMenu
+          meeting={meeting}
+          platforms={platforms}
+          kies={(doel, scope) =>
+            doe(() => koppelMeetingAction(ref(meeting), doel, scope))
+          }
+        />
       </div>
 
-      {meeting.hoort === FOCUS && (
-        <p className={styles.uitleg}>
-          Geen andere deelnemers. Hier worden geen notulen voor gemaakt.
-        </p>
-      )}
       {status && meeting.overgeslagen && (
         <p className={styles.statuskop}>
           <Dot stand={status.stand} stap={status.stap} />
@@ -541,7 +528,7 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
       {status && !meeting.overgeslagen && (
         <Checklist meeting={meeting} status={status} />
       )}
-      {meeting.hoort !== FOCUS && meeting.overgeslagen && (
+      {meeting.overgeslagen && (
         <>
           <p className={styles.uitleg}>
             {meeting.overgeslagen === "serie"
@@ -561,7 +548,7 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
           </div>
         </>
       )}
-      {meeting.hoort !== FOCUS && !meeting.overgeslagen && (
+      {!meeting.overgeslagen && (
         <div className={styles.linkKnoppen}>
           {meeting.serieId ? (
             <TodosMenu

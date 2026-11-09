@@ -1,6 +1,6 @@
 /** Waar een meeting in de notulen-flow staat. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
 import type { Actiepunt } from "./actiepunt.ts";
-import { FOCUS, type Meeting, PRIVE } from "./meetings.ts";
+import { type Meeting, PRIVE } from "./meetings.ts";
 import type { DeelInfo } from "./notulen-delen.ts";
 
 export const STAPPEN = [
@@ -69,7 +69,7 @@ const MISLUKT = [
 ];
 
 /**
- * De status van één meeting; null als er geen notulen-flow is: Focus, nog niet
+ * De status van één meeting; null als er geen notulen-flow is: nog niet
  * geweest, of afgelopen vóór het dashboard notulen ging maken (`vanaf`).
  */
 export function notulenStatus(
@@ -81,7 +81,6 @@ export function notulenStatus(
   vanaf: number | null,
   nu: number,
 ): NotulenStatus | null {
-  if (meeting.hoort === FOCUS) return null;
   const basis = {
     stap: rij?.stap ?? 1,
     vast: false,

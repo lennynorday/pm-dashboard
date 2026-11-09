@@ -34,11 +34,7 @@ const stand = (
   return status && `${status.stand} ${status.tekst}`;
 };
 
-test("geen flow voor Focus, toekomst en meetings van vóór de start", () => {
-  assert.strictEqual(
-    stand(undefined, eind, { ...meeting, hoort: "focus" }),
-    null,
-  );
+test("geen flow voor toekomst en meetings van vóór de start", () => {
   assert.strictEqual(
     stand(undefined, eind, { ...meeting, afgelopen: false }),
     null,

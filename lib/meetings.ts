@@ -15,7 +15,6 @@ export type AgendaItem = {
 
 export const TEAM = "team";
 export const PRIVE = "prive";
-export const FOCUS = "focus";
 
 export type Scope = "deze" | "serie" | "titel";
 export type RegelSoort = "meeting" | "serie" | "titel";
@@ -54,7 +53,7 @@ export type Meeting = {
   /** Minuten na middernacht, lokale tijd. */
   begin: number;
   eind: number;
-  /** Een platform-slug, "team", "prive" of "focus". */
+  /** Een platform-slug, "team" of "prive". */
   hoort: string;
   label: string;
   extern: boolean;
@@ -149,8 +148,7 @@ export function titelWoord(titel: string): string {
 }
 
 /**
- * Waar een afspraak bij hoort. Volgorde: Focus (geen andere deelnemers), dan de
- * handmatige regels (meeting, serie, titelwoord), dan de platformnaam of een roepnaam in de titel,
+ * Waar een afspraak bij hoort. Volgorde: de handmatige regels (meeting, serie, titelwoord), dan de platformnaam of een roepnaam in de titel,
  * anders Privé.
  */
 export function hoortBij(
@@ -158,7 +156,6 @@ export function hoortBij(
   platforms: PlatformNaam[],
   regels: Regel[],
 ): string {
-  if (item.deelnemers.length === 0) return FOCUS;
   const start = Date.parse(item.start);
   const bestaat = (regel: Regel) =>
     regel.doel === TEAM ||
@@ -193,7 +190,6 @@ export function hoortBij(
 export function labelVan(hoort: string, platforms: PlatformNaam[]): string {
   if (hoort === TEAM) return "Team";
   if (hoort === PRIVE) return "Privé";
-  if (hoort === FOCUS) return "Focus";
   return platforms.find((platform) => platform.slug === hoort)?.naam ?? hoort;
 }
 
@@ -239,7 +235,7 @@ export function naastElkaar<T extends { begin: number; eind: number }>(
   return uit;
 }
 
-/** De meetings van deze werkweek, gesorteerd op dag en tijd. */
+/** De meetings van deze werkweek, gesorteerd op dag en tijd. Afspraken zonder andere deelnemers (focusblokken) vallen weg. */
 export function bepaalMeetings(
   items: AgendaItem[],
   week: Week,
@@ -251,7 +247,8 @@ export function bepaalMeetings(
 ): Meeting[] {
   const basis = items.flatMap((item) => {
     const begin = lokaal(item.start);
-    if (!week.dagen.includes(begin.datum)) return [];
+    if (!week.dagen.includes(begin.datum) || item.deelnemers.length === 0)
+      return [];
     const einde = lokaal(item.eind);
     // Loopt hij door na middernacht, dan eindigt hij voor de week om 24:00.
     const eind = einde.datum === begin.datum ? einde.minuten : 24 * 60;

@@ -21,7 +21,6 @@ import { leesOvergeslagen, leesRegels } from "./meeting-regels";
 import {
   type Meeting,
   type PlatformNaam,
-  FOCUS,
   PRIVE,
   TEAM,
   alsWoordIn,
@@ -328,18 +327,12 @@ export async function verwerkNotulen(
     );
     const kandidaten = meetings.filter(
       (m) =>
-        m.hoort !== FOCUS &&
         !m.overgeslagen &&
         m.afgelopen &&
         (Date.parse(m.einde) >= vanaf || bekendeIds.has(m.id)),
     );
     for (const meeting of kandidaten) bewaarMeeting(email, meeting);
-    await zoekOpnames(
-      email,
-      kandidaten,
-      meetings.filter((m) => m.hoort !== FOCUS),
-      nu,
-    );
+    await zoekOpnames(email, kandidaten, meetings, nu);
     for (const meeting of kandidaten) {
       await verder(email, meeting, platforms);
     }

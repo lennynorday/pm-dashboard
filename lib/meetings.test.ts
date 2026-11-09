@@ -83,7 +83,7 @@ test("titelWoord: wat vóór de streep staat, anders de hele titel", () => {
   assert.strictEqual(titelWoord("Accountoverleg Zoie"), "Accountoverleg Zoie");
 });
 
-test("hoortBij: herkenning en Focus", () => {
+test("hoortBij: herkenning", () => {
   assert.strictEqual(
     hoortBij(item({ titel: "Kunsthal | Planning" }), PLATFORMS, []),
     "kunsthal",
@@ -103,10 +103,6 @@ test("hoortBij: herkenning en Focus", () => {
   assert.strictEqual(
     hoortBij(item({ titel: "1-op-1 Wade" }), PLATFORMS, []),
     "prive",
-  );
-  assert.strictEqual(
-    hoortBij(item({ titel: "Kunsthal", deelnemers: [] }), PLATFORMS, []),
-    "focus",
   );
 });
 
@@ -154,7 +150,7 @@ test("naastElkaar: overlappende meetings krijgen een eigen kolom", () => {
   assert.deepStrictEqual(plek, { a: [0, 2], b: [1, 2], c: [0, 2], d: [0, 1] });
 });
 
-test("bepaalMeetings: extern, overgeslagen en buiten de week", () => {
+test("bepaalMeetings: extern, overgeslagen, buiten de week en focusblokken", () => {
   const week = weekVan("2026-11-09");
   const meetings = bepaalMeetings(
     [
@@ -169,6 +165,7 @@ test("bepaalMeetings: extern, overgeslagen en buiten de week", () => {
         eind: "2026-11-14T11:00:00+01:00",
       }),
       item({ id: "z" }),
+      item({ id: "focus", titel: "Focus: offertes", deelnemers: [] }),
     ],
     week,
     PLATFORMS,

@@ -173,12 +173,6 @@
   box-shadow: inset 0 0 0 1px var(--color-line-subtle);
 }
 
-.afspraak[data-soort="focus"] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--color-line-soft);
-  color: var(--color-text-muted);
-}
-
 .afspraak[data-overgeslagen] {
   opacity: 0.55;
 }
