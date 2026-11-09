@@ -40,7 +40,9 @@ import { titelWoord } from "@/lib/meetings";
 import {
   deelInSlack,
   herstelNotulen,
+  nietDelen,
   notulenPlatforms,
+  tochDelen,
   verwerkNotulen,
   zetDeelConcept,
 } from "@/lib/notulen";
@@ -837,6 +839,19 @@ export async function opnieuwNotulenAction(meetingId: string): Promise<void> {
   const platforms = await notulenPlatforms();
   if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
+}
+
+/** Niet delen (`niet` true) of toch delen: er wordt niets verstuurd. */
+export async function nietDelenAction(
+  meetingId: string,
+  niet: boolean,
+): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  const gelukt = niet
+    ? nietDelen(user.email, meetingId)
+    : tochDelen(user.email, meetingId);
+  if (gelukt) revalidatePath("/", "layout");
 }
 
 /** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */

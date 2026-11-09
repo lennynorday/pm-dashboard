@@ -23,6 +23,7 @@ const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   slackTekst: null,
   gedeeldUrl: null,
   actiesUit: false,
+  nietGedeeld: false,
   ...extra,
 });
 const stand = (
@@ -138,5 +139,32 @@ test("actiepunten: klaar pas als de acties uitgelezen zijn, ook bij nul acties",
   assert.strictEqual(
     stand(rij(5, { actiesUit: true })),
     "open Claude schrijft het Slack-bericht",
+  );
+});
+
+test("niet delen: Gedeeld is afgerond, door naar de actiepunten; toch delen zet hem terug", () => {
+  const laat = eind + 5 * UUR;
+  // Niet delen zet stap 6 met nietGedeeld; er is niets vastgelopen meer.
+  const niet = notulenStatus(
+    meeting,
+    rij(6, { nietGedeeld: true }),
+    null,
+    laat,
+  );
+  assert.strictEqual(niet?.tekst, "Actiepunten uitlezen");
+  assert.strictEqual(niet?.vast, false);
+  assert.strictEqual(niet?.nietGedeeld, true);
+  const klaar = notulenStatus(
+    meeting,
+    rij(6, { nietGedeeld: true, actiesUit: true }),
+    null,
+    laat,
+  );
+  assert.strictEqual(klaar?.stand, "ok");
+  assert.strictEqual(klaar?.stap, 7);
+  // Toch delen zet stap 5 terug zonder nietGedeeld.
+  assert.strictEqual(
+    stand(rij(5, { slackTekst: "Notulen staan klaar", actiesUit: true })),
+    "jij Wacht op jou: delen",
   );
 });

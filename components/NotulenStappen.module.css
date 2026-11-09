@@ -161,6 +161,19 @@
   cursor: pointer;
 }
 
+/* Tekstlink zoals "Geen notulen" in het paneel */
+.linkKnop {
+  justify-self: end;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: var(--type-meta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* Notulen-overlay */
 .dialoog {
   width: min(760px, calc(100vw - 2 * var(--space-04)));

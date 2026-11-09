@@ -32,6 +32,8 @@ export type NotulenRij = {
   gedeeldUrl: string | null;
   /** Zijn de actiepunten uit de notulen gehaald? */
   actiesUit: boolean;
+  /** Gekozen voor Niet delen: Gedeeld is afgerond zonder dat er iets weg ging. */
+  nietGedeeld: boolean;
 };
 
 export type NotulenStatus = {
@@ -47,6 +49,7 @@ export type NotulenStatus = {
   conceptUrl: string | null;
   slackTekst: string | null;
   gedeeldUrl: string | null;
+  nietGedeeld: boolean;
   /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
   delen: DeelInfo | null;
   /** De actiepunten van deze meeting, als ze uitgelezen zijn; de pagina vult dit in. */
@@ -91,6 +94,7 @@ export function notulenStatus(
     conceptUrl: rij?.conceptUrl ?? null,
     slackTekst: rij?.slackTekst ?? null,
     gedeeldUrl: rij?.gedeeldUrl ?? null,
+    nietGedeeld: rij?.nietGedeeld ?? false,
     delen: null,
     acties: null,
   };

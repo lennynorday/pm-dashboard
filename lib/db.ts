@@ -146,6 +146,7 @@ function open(): DatabaseSync {
     -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
     -- Delen: extern via een Gmail-concept (concept_id = het conceptbericht, thread_id),
     -- intern en Team via Slack (slack_tekst van Claude, slack_ts); gedeeld_url = mail of bericht.
+    -- niet_gedeeld: wanneer (ms) de gebruiker koos om niet te delen; Gedeeld telt dan als afgerond.
     CREATE TABLE IF NOT EXISTS notulen (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       meeting_id TEXT NOT NULL,
@@ -168,6 +169,7 @@ function open(): DatabaseSync {
       slack_tekst TEXT,
       slack_ts TEXT,
       gedeeld_url TEXT,
+      niet_gedeeld INTEGER,
       fout TEXT,
       bezig INTEGER,
       acties_uit INTEGER,

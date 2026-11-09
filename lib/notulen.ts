@@ -117,6 +117,7 @@ function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
     slackTekst: tekst(rij.slack_tekst),
     gedeeldUrl: tekst(rij.gedeeld_url),
     actiesUit: rij.acties_uit !== null,
+    nietGedeeld: rij.niet_gedeeld !== null,
   };
 }
 
@@ -585,6 +586,29 @@ export async function deelInSlack(
   } finally {
     laatLos(email, id);
   }
+}
+
+/** Niet delen: Gedeeld is afgerond zonder dat er iets weggaat, door naar de actiepunten. */
+export function nietDelen(email: string, id: string): boolean {
+  const nu = Date.now();
+  const { changes } = database()
+    .prepare(
+      `UPDATE notulen SET stap = 6, sinds = ?, niet_gedeeld = ?, bezig = NULL, fout = NULL
+       WHERE email = ? AND meeting_id = ? AND stap = 5 AND hoort IS NOT 'prive'`,
+    )
+    .run(nu, nu, email, id);
+  return changes === 1;
+}
+
+/** Toch delen: terug naar de stap Gedeeld. */
+export function tochDelen(email: string, id: string): boolean {
+  const { changes } = database()
+    .prepare(
+      `UPDATE notulen SET stap = 5, sinds = ?, niet_gedeeld = NULL
+       WHERE email = ? AND meeting_id = ? AND stap = 6 AND niet_gedeeld IS NOT NULL`,
+    )
+    .run(Date.now(), email, id);
+  return changes === 1;
 }
 
 const wanneerFormat = new Intl.DateTimeFormat("nl-NL", {

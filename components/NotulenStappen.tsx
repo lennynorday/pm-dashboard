@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
-import { opnieuwNotulenAction } from "@/app/actions";
+import { nietDelenAction, opnieuwNotulenAction } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
 import { PRIVE } from "@/lib/meetings";
 import {
@@ -151,7 +151,23 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </p>
       );
     }
-    if (index === 5) return <Delen meeting={meeting} status={status} />;
+    if (index === 5) {
+      return (
+        <>
+          <Delen meeting={meeting} status={status} />
+          <button
+            type="button"
+            className={styles.linkKnop}
+            disabled={bezig}
+            onClick={() =>
+              startTransition(() => nietDelenAction(meeting.id, true))
+            }
+          >
+            Niet delen
+          </button>
+        </>
+      );
+    }
     if (index === 6) {
       return (
         <p className={`nd-meta ${styles.regel}`}>
@@ -196,6 +212,20 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </button>
       );
     }
+    if (index === 5 && status.nietGedeeld) {
+      return (
+        <button
+          type="button"
+          className={styles.openen}
+          disabled={bezig}
+          onClick={() =>
+            startTransition(() => nietDelenAction(meeting.id, false))
+          }
+        >
+          Toch delen
+        </button>
+      );
+    }
     if (index === 5 && status.gedeeldUrl) {
       return (
         <ExternalLink href={status.gedeeldUrl} className={styles.openen}>
@@ -220,7 +250,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
           return (
             <li key={naam} className={styles.stap} data-stand={stap}>
               <span className={styles.naam} data-stand={stap}>
-                {naam}
+                {index === 5 && status.nietGedeeld ? "Niet gedeeld" : naam}
                 {index === 6 && status.acties && ` · ${status.acties.length}`}
                 {stap === "nvt" && " · niet nodig"}
                 {stap === "klaar" && openen(index)}
