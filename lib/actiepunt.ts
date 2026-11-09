@@ -47,6 +47,8 @@ export type Actiepunt = GelezenActie & {
   /** Wanneer Lenny de eigenaar herinnerde (ms). */
   herinnerd: number | null;
   vanMij: boolean;
+  /** Geen Norday-collega (niet in Slack): geen herinnering mogelijk. */
+  extern: boolean;
 };
 
 const ACTIE = /\*\*Actie\s+([^*:]+?)\s*:\s*\*\*\s*(.+)$/i;
@@ -103,4 +105,21 @@ export function koppelNaam(
     (p) => klein(p.naam).split(" ")[0] === gezocht,
   );
   return voornaam.length === 1 ? voornaam[0] : null;
+}
+
+/**
+ * Extern: de naam komt niet voor in de Norday-Slack, op volledige naam of
+ * voornaam. Meerdere treffers (niet eenduidig) telt als collega, dan kiest de
+ * gebruiker. Zonder bekende Slack-leden (null of leeg) is niemand extern.
+ */
+export function isExtern(
+  eigenaar: string,
+  personen: SlackPersoon[] | null,
+): boolean {
+  const gezocht = klein(eigenaar);
+  if (!gezocht || !personen?.length) return false;
+  return !personen.some((p) => {
+    const naam = klein(p.naam);
+    return naam === gezocht || naam.split(" ")[0] === gezocht;
+  });
 }

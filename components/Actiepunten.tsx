@@ -34,11 +34,12 @@ import { useToast } from "./Toast";
 import inbox from "./Inbox.module.css";
 import styles from "./Actiepunten.module.css";
 
-export type Wie = "mij" | "collega" | "alles";
+export type Wie = "mij" | "collega" | "extern" | "alles";
 
 const WIE: [Wie, string][] = [
   ["mij", "Van mij"],
   ["collega", "Van collega's"],
+  ["extern", "Van externen"],
   ["alles", "Alles"],
 ];
 
@@ -166,7 +167,8 @@ export function Actiepunten({ acties, filters: begin, herinner }: Props) {
     if (persoon && actie.eigenaar !== persoon) return false;
     if (platform && actie.label !== platform) return false;
     if (wie === "mij") return actie.vanMij;
-    if (wie === "collega") return !actie.vanMij;
+    if (wie === "collega") return !actie.vanMij && !actie.extern;
+    if (wie === "extern") return actie.extern;
     return true;
   });
 
@@ -288,21 +290,23 @@ export function Actiepunten({ acties, filters: begin, herinner }: Props) {
                             </span>
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            className="nd-action nd-action--main"
-                            aria-expanded={open === actie.id}
-                            aria-controls={`herinner-${actie.id}`}
-                            onClick={() =>
-                              setOpen(open === actie.id ? null : actie.id)
-                            }
-                          >
-                            <BellIcon className={inbox.icoon} />
-                            Herinner {actie.eigenaar}
-                            <span className="nd-visually-hidden">
-                              : {actie.wat}
-                            </span>
-                          </button>
+                          !actie.extern && (
+                            <button
+                              type="button"
+                              className="nd-action nd-action--main"
+                              aria-expanded={open === actie.id}
+                              aria-controls={`herinner-${actie.id}`}
+                              onClick={() =>
+                                setOpen(open === actie.id ? null : actie.id)
+                              }
+                            >
+                              <BellIcon className={inbox.icoon} />
+                              Herinner {actie.eigenaar}
+                              <span className="nd-visually-hidden">
+                                : {actie.wat}
+                              </span>
+                            </button>
+                          )
                         )}
                       </div>
                       <div className={inbox.kolom}>
@@ -585,17 +589,19 @@ export function ActiepuntenDialoog({ meta, acties, onSluit }: DialoogProps) {
                           </span>
                         </button>
                       ) : (
-                        <NextLink
-                          href={`/actiepunten?wie=collega&herinner=${actie.id}`}
-                          className="nd-button nd-button--small nd-button--quiet"
-                        >
-                          <BellIcon className={inbox.icoon} />
-                          Herinner
-                          <span className="nd-visually-hidden">
-                            {" "}
-                            {actie.eigenaar}: {actie.wat}
-                          </span>
-                        </NextLink>
+                        !actie.extern && (
+                          <NextLink
+                            href={`/actiepunten?wie=collega&herinner=${actie.id}`}
+                            className="nd-button nd-button--small nd-button--quiet"
+                          >
+                            <BellIcon className={inbox.icoon} />
+                            Herinner
+                            <span className="nd-visually-hidden">
+                              {" "}
+                              {actie.eigenaar}: {actie.wat}
+                            </span>
+                          </NextLink>
+                        )
                       )}
                       <button
                         type="button"

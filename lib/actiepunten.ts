@@ -3,6 +3,7 @@ import {
   type ActieStatus,
   type SlackPersoon,
   inFeed,
+  isExtern,
   isVanMij,
   koppelNaam,
   leesActies,
@@ -63,13 +64,65 @@ export function haalActiesUit(email: string): void {
   }
 }
 
+type Leden = { personen: SlackPersoon[] | null; gekozen: Set<string> };
+
+const naamSleutel = (naam: string) => naam.trim().toLowerCase();
+
+/** De bewaarde Slack-leden en de namen die de gebruiker zelf aan Slack koppelde; null personen = nog niet opgehaald. */
+function leesLeden(email: string): Leden {
+  const db = database();
+  const personen = db
+    .prepare("SELECT id, naam FROM slack_leden WHERE email = ?")
+    .all(email)
+    .map((rij) => ({ id: String(rij.id), naam: String(rij.naam) }));
+  const gekozen = db
+    .prepare("SELECT naam FROM slack_namen WHERE email = ?")
+    .all(email)
+    .map((rij) => String(rij.naam));
+  return {
+    personen: personen.length > 0 ? personen : null,
+    gekozen: new Set(gekozen),
+  };
+}
+
+const LEDEN_VERS = 60 * 60 * 1000;
+const opgehaald = new Map<string, number>();
+
+/** Haalt de Slack-leden hooguit elk uur op en bewaart ze; zonder Slack-koppeling blijft alles zoals het was. */
+export async function ververLeden(email: string): Promise<void> {
+  if (Date.now() - (opgehaald.get(email) ?? 0) < LEDEN_VERS) return;
+  opgehaald.set(email, Date.now());
+  try {
+    const personen = await slackPersonen(email);
+    if (personen.length === 0) return;
+    const db = database();
+    const voegToe = db.prepare(
+      "INSERT INTO slack_leden (email, id, naam) VALUES (?, ?, ?)",
+    );
+    db.exec("BEGIN");
+    try {
+      db.prepare("DELETE FROM slack_leden WHERE email = ?").run(email);
+      for (const p of personen) voegToe.run(email, p.id, p.naam);
+      db.exec("COMMIT");
+    } catch (fout) {
+      db.exec("ROLLBACK");
+      throw fout;
+    }
+  } catch {
+    // Geen Slack of een rate limit: de vorige lijst blijft staan.
+    opgehaald.delete(email);
+  }
+}
+
 function parseActiepunt(
   rij: Record<string, unknown>,
   voornaam: string,
+  leden: Leden = { personen: null, gekozen: new Set() },
 ): Actiepunt | null {
   const status = parseActieStatus(rij.status);
   if (!status || typeof rij.id !== "number") return null;
   const eigenaar = String(rij.eigenaar);
+  const vanMij = isVanMij(eigenaar, voornaam);
   return {
     id: rij.id,
     meetingId: String(rij.meeting_id),
@@ -82,7 +135,11 @@ function parseActiepunt(
     paginaUrl: tekst(rij.pagina_url),
     status,
     herinnerd: typeof rij.herinnerd === "number" ? rij.herinnerd : null,
-    vanMij: isVanMij(eigenaar, voornaam),
+    vanMij,
+    extern:
+      !vanMij &&
+      !leden.gekozen.has(naamSleutel(eigenaar)) &&
+      isExtern(eigenaar, leden.personen),
   };
 }
 
@@ -91,13 +148,14 @@ const SELECT = `SELECT a.*, n.titel, n.label, n.start, n.pagina_url
 
 /** De actiepunten in de feed (open of herinnerd), nieuwste meeting eerst. */
 export function leesFeed(email: string, voornaam: string): Actiepunt[] {
+  const leden = leesLeden(email);
   return database()
     .prepare(
       `${SELECT} WHERE a.email = ? AND a.status IN ('open', 'herinnerd')
        ORDER BY n.start DESC, a.volgnummer`,
     )
     .all(email)
-    .map((rij) => parseActiepunt(rij, voornaam))
+    .map((rij) => parseActiepunt(rij, voornaam, leden))
     .filter((actie): actie is Actiepunt => actie !== null);
 }
 
@@ -107,13 +165,14 @@ export function leesVanMeetings(
   voornaam: string,
   ids: string[],
 ): Actiepunt[] {
+  const leden = leesLeden(email);
   return database()
     .prepare(
       `${SELECT} WHERE a.email = ? AND a.meeting_id IN (SELECT value FROM json_each(?))
        ORDER BY a.volgnummer`,
     )
     .all(email, JSON.stringify(ids))
-    .map((rij) => parseActiepunt(rij, voornaam))
+    .map((rij) => parseActiepunt(rij, voornaam, leden))
     .filter((actie): actie is Actiepunt => actie !== null);
 }
 
@@ -186,10 +245,8 @@ function leesVanId(email: string, voornaam: string, id: number) {
   const rij = database()
     .prepare(`${SELECT} WHERE a.email = ? AND a.id = ?`)
     .get(email, id);
-  return rij ? parseActiepunt(rij, voornaam) : null;
+  return rij ? parseActiepunt(rij, voornaam, leesLeden(email)) : null;
 }
-
-const naamSleutel = (naam: string) => naam.trim().toLowerCase();
 
 /** De gekozen of gevonden Slack-gebruiker bij de eigenaar; null als het niet eenduidig is. */
 function persoonVan(
@@ -221,7 +278,7 @@ export async function herinnerVoorstel(
   gekozen: string | null,
 ): Promise<HerinnerVoorstel> {
   const actie = leesVanId(email, voornaam, id);
-  if (!actie || actie.vanMij || !inFeed(actie.status))
+  if (!actie || actie.vanMij || actie.extern || !inFeed(actie.status))
     return { soort: "fout", fout: "Deze actie staat niet meer open" };
   const personen = await slackPersonen(email);
   const keuze = personen.find((p) => p.id === gekozen);
@@ -265,7 +322,7 @@ export async function herinner(
   bericht: string,
 ): Promise<{ fout: string } | null> {
   const actie = leesVanId(email, voornaam, id);
-  if (!actie || actie.vanMij || !inFeed(actie.status))
+  if (!actie || actie.vanMij || actie.extern || !inFeed(actie.status))
     return { fout: "Deze actie staat niet meer open" };
   const persoon = persoonVan(email, actie.eigenaar, await slackPersonen(email));
   if (!persoon) return { fout: `Kies eerst wie ${actie.eigenaar} is in Slack` };

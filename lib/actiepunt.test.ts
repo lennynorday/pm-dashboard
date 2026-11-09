@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { isVanMij, koppelNaam, leesActies } from "./actiepunt.ts";
+import { isExtern, isVanMij, koppelNaam, leesActies } from "./actiepunt.ts";
 
 const NOTULEN = `**Aanwezig:** Lennart ter Haar (Norday), Theo (WO2)
 
@@ -71,4 +71,18 @@ test("niet eenduidig of niet gevonden: kiezen", () => {
   assert.strictEqual(koppelNaam("Misha", PERSONEN), null);
   assert.strictEqual(koppelNaam("Theo", PERSONEN), null);
   assert.strictEqual(koppelNaam("", PERSONEN), null);
+});
+
+test("extern is wie niet in de Slack-leden zit", () => {
+  const leden = [
+    { id: "U1", naam: "Lisanne de Vries" },
+    { id: "U2", naam: "Jos Bakker" },
+    { id: "U3", naam: "Jos Smit" },
+  ];
+  assert.strictEqual(isExtern("Theo", leden), true);
+  assert.strictEqual(isExtern("Lisanne", leden), false);
+  assert.strictEqual(isExtern("lisanne de vries", leden), false);
+  assert.strictEqual(isExtern("Jos", leden), false);
+  assert.strictEqual(isExtern("Theo", null), false);
+  assert.strictEqual(isExtern("Theo", []), false);
 });

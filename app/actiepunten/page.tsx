@@ -1,13 +1,15 @@
 import { connection } from "next/server";
 import { Actiepunten, type Wie } from "@/components/Actiepunten";
 import { PageHeading } from "@/components/PageHeading";
-import { haalActiesUit, leesFeed } from "@/lib/actiepunten";
+import { haalActiesUit, leesFeed, ververLeden } from "@/lib/actiepunten";
 import { currentUser } from "@/lib/session";
 
 const HOME = { label: "Overzicht", href: "/" };
 
 const parseWie = (waarde: unknown): Wie =>
-  waarde === "collega" || waarde === "alles" ? waarde : "mij";
+  waarde === "collega" || waarde === "extern" || waarde === "alles"
+    ? waarde
+    : "mij";
 const tekst = (waarde: unknown) =>
   typeof waarde === "string" && waarde ? waarde : null;
 
@@ -23,6 +25,7 @@ export default async function ActiepuntenPage({
   const herinner = Number(params.herinner);
   // Notulen die nog niet uitgelezen zijn, staan er zo meteen in.
   haalActiesUit(user.email);
+  await ververLeden(user.email);
 
   return (
     <>
