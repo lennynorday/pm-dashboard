@@ -11,6 +11,7 @@ import {
   STAPPEN,
 } from "@/lib/notulen-stand";
 import { ExternalLink } from "./ExternalLink";
+import { Delen } from "./NotulenDelen";
 import {
   AlertIcon,
   CheckIcon,
@@ -75,8 +76,9 @@ type ChecklistProps = { meeting: Meeting; status: NotulenStatus };
 export function Checklist({ meeting, status }: ChecklistProps) {
   const [notulenOpen, setNotulenOpen] = useState(false);
   const [bezig, startTransition] = useTransition();
-  // Delen en Actiepunten komen in latere PR's: die staan nog open, zonder knoppen.
-  const huidig = status.stap <= 4 ? status.stap : -1;
+  // Actiepunten komt in een latere PR: die staat nog open, zonder knoppen. Privé deelt niet.
+  const delen = status.stap === 5 && meeting.hoort !== PRIVE;
+  const huidig = status.stap <= 4 || delen ? status.stap : -1;
   const standVan = (index: number): Stap => {
     if (index === 5 && meeting.hoort === PRIVE) return "nvt";
     if (index < status.stap) return "klaar";
@@ -149,6 +151,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </p>
       );
     }
+    if (index === 5) return <Delen meeting={meeting} status={status} />;
     return (
       <p className={`nd-meta ${styles.regel}`}>
         Het dashboard zet de notulen in Superhuman.
@@ -172,6 +175,16 @@ export function Checklist({ meeting, status }: ChecklistProps) {
       return (
         <ExternalLink href={status.paginaUrl} className={styles.openen}>
           Openen<span className="nd-visually-hidden"> in Superhuman</span>
+        </ExternalLink>
+      );
+    }
+    if (index === 5 && status.gedeeldUrl) {
+      return (
+        <ExternalLink href={status.gedeeldUrl} className={styles.openen}>
+          Openen
+          <span className="nd-visually-hidden">
+            {meeting.extern ? ": verzonden mail" : ": Slack-bericht"}
+          </span>
         </ExternalLink>
       );
     }

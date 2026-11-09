@@ -81,6 +81,22 @@ const meetingTijd = new Intl.DateTimeFormat("nl-NL", {
   timeZone: "Europe/Amsterdam",
 });
 
+/** Waarom een meeting vastzit en wat je kunt doen, per stap. */
+function vastTekst(stap: number): { wat: string; hulp: string } {
+  if (stap <= 1)
+    return { wat: "Geen opname gevonden", hulp: "Stond Plaud Desktop aan?" };
+  if (stap === 2) {
+    return {
+      wat: "Transcript nog niet gemaakt",
+      hulp: "Klik in Plaud web op Auto-generate.",
+    };
+  }
+  return {
+    wat: "Notulen nog niet gedeeld",
+    hulp: "Deel ze vanuit de meeting via Gmail of Slack.",
+  };
+}
+
 export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
   // Weggehaald is lokaal bijgehouden, zodat een item niet terugspringt voor de server klaar is.
   const [weg, setWeg] = useState<ReadonlySet<number>>(new Set());
@@ -241,10 +257,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
         )}
         <ul className={styles.lijst}>
           {meetings.map((meeting) => {
-            const wat =
-              meeting.stap <= 1
-                ? "Geen opname gevonden"
-                : "Transcript nog niet gemaakt";
+            const { wat, hulp } = vastTekst(meeting.stap);
             const datum = meeting.start.slice(0, 10);
             return (
               <li key={meeting.id} className={styles.rij}>
@@ -264,11 +277,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
                       <p className={styles.titel}>
                         {wat}: {meeting.titel}
                       </p>
-                      <p className={styles.snippet}>
-                        {meeting.stap <= 1
-                          ? "Stond Plaud Desktop aan?"
-                          : "Klik in Plaud web op Auto-generate."}
-                      </p>
+                      <p className={styles.snippet}>{hulp}</p>
                     </div>
                     <div className={`nd-actions ${styles.acties}`}>
                       <NextLink

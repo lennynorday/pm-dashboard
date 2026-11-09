@@ -1,5 +1,6 @@
 /** Waar een meeting in de notulen-flow staat. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
 import { FOCUS, type Meeting, PRIVE } from "./meetings.ts";
+import type { DeelInfo } from "./notulen-delen.ts";
 
 export const STAPPEN = [
   "Ingepland",
@@ -22,18 +23,29 @@ export type NotulenRij = {
   tekst: string | null;
   paginaUrl: string | null;
   fout: string | null;
+  /** Het Gmail-concept dat nog open staat (extern). */
+  conceptUrl: string | null;
+  /** Het Slack-bericht dat Claude schreef (intern en Team). */
+  slackTekst: string | null;
+  /** De verzonden mail of het Slack-bericht. */
+  gedeeldUrl: string | null;
 };
 
 export type NotulenStatus = {
   stap: number;
   stand: Stand;
   tekst: string;
-  /** Vastgelopen: 4 uur na de meeting nog geen opname of transcript. */
+  /** Vastgelopen: 4 uur na de meeting nog geen opname, transcript of gedeelde notulen. */
   vast: boolean;
   fout: string | null;
   opnameId: string | null;
   notulen: string | null;
   paginaUrl: string | null;
+  conceptUrl: string | null;
+  slackTekst: string | null;
+  gedeeldUrl: string | null;
+  /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
+  delen: DeelInfo | null;
 };
 
 /** De opname in Plaud web; de URL gebruikt het id zonder "of_". */
@@ -48,6 +60,7 @@ const MISLUKT = [
   "Transcript ophalen mislukt",
   "Notulen maken mislukt",
   "Naar Superhuman mislukt",
+  "Delen mislukt",
 ];
 
 /**
@@ -55,7 +68,10 @@ const MISLUKT = [
  * geweest, of afgelopen vóór het dashboard notulen ging maken (`vanaf`).
  */
 export function notulenStatus(
-  meeting: Pick<Meeting, "hoort" | "overgeslagen" | "afgelopen" | "einde">,
+  meeting: Pick<
+    Meeting,
+    "hoort" | "overgeslagen" | "afgelopen" | "einde" | "extern"
+  >,
   rij: NotulenRij | undefined,
   vanaf: number | null,
   nu: number,
@@ -68,6 +84,10 @@ export function notulenStatus(
     opnameId: rij?.opnameId ?? null,
     notulen: rij?.tekst ?? null,
     paginaUrl: rij?.paginaUrl ?? null,
+    conceptUrl: rij?.conceptUrl ?? null,
+    slackTekst: rij?.slackTekst ?? null,
+    gedeeldUrl: rij?.gedeeldUrl ?? null,
+    delen: null,
   };
   if (meeting.overgeslagen) {
     return {
@@ -102,8 +122,19 @@ export function notulenStatus(
   if (stap === 3)
     return { ...basis, stand: "open", tekst: "Claude maakt notulen" };
   if (stap === 4) return { ...basis, stand: "open", tekst: "Naar Superhuman" };
-  // shortcut: Delen en Actiepunten komen in latere PR's; tot dan is privé hier klaar en wacht de rest op jou.
-  if (meeting.hoort === PRIVE) return { ...basis, stand: "ok", tekst: "Klaar" };
+  // shortcut: Actiepunten komt in een latere PR; tot dan is een meeting klaar na Gedeeld.
+  if (stap >= 6 || meeting.hoort === PRIVE)
+    return { ...basis, stand: "ok", tekst: "Klaar" };
+  if (nu - eind > VASTGELOPEN_MS)
+    return { ...basis, vast: true, stand: "warn", tekst: "Nog niet gedeeld" };
+  if (basis.conceptUrl)
+    return { ...basis, stand: "jij", tekst: "Wacht op jou: verstuur in Gmail" };
+  if (!meeting.extern && !basis.slackTekst)
+    return {
+      ...basis,
+      stand: "open",
+      tekst: "Claude schrijft het Slack-bericht",
+    };
   return { ...basis, stand: "jij", tekst: "Wacht op jou: delen" };
 }
 

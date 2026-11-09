@@ -141,14 +141,18 @@ function open(): DatabaseSync {
       PRIMARY KEY (email, soort, sleutel)
     );
     -- Notulen: waar een afgelopen meeting in de flow staat. stap = aantal afgeronde stappen
-    -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman).
+    -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman, 6 gedeeld).
     -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
+    -- Delen: extern via een Gmail-concept (concept_id = het conceptbericht, thread_id),
+    -- intern en Team via Slack (slack_tekst van Claude, slack_ts); gedeeld_url = mail of bericht.
     CREATE TABLE IF NOT EXISTS notulen (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       meeting_id TEXT NOT NULL,
       serie_id TEXT,
       titel TEXT NOT NULL,
       label TEXT NOT NULL,
+      hoort TEXT,
+      extern INTEGER,
       start TEXT NOT NULL,
       eind TEXT NOT NULL,
       stap INTEGER NOT NULL,
@@ -158,6 +162,11 @@ function open(): DatabaseSync {
       pagina_doc TEXT,
       pagina_id TEXT,
       pagina_url TEXT,
+      concept_id TEXT,
+      thread_id TEXT,
+      slack_tekst TEXT,
+      slack_ts TEXT,
+      gedeeld_url TEXT,
       fout TEXT,
       bezig INTEGER,
       PRIMARY KEY (email, meeting_id)

@@ -45,3 +45,28 @@ export async function zetConceptKlaar(
     throw new Error("Gmail gaf geen concept terug");
   return `https://mail.google.com/mail/?authuser=${encodeURIComponent(email)}#drafts?compose=${berichtId}`;
 }
+
+/**
+ * Zet een nieuwe mail klaar als concept (`drafts.create` zonder thread). Er
+ * wordt niets verstuurd. Geeft het id van het conceptbericht en zijn thread.
+ */
+export async function maakConcept(
+  email: string,
+  mail: { aan: string[]; onderwerp: string; tekst: string },
+): Promise<{ berichtId: string; threadId: string }> {
+  const gemaakt = await gmailPost(email, "drafts", {
+    message: {
+      raw: bouwAntwoord({
+        aan: mail.aan.join(", "),
+        onderwerp: mail.onderwerp,
+        tekst: mail.tekst,
+        inReplyTo: null,
+        references: null,
+      }),
+    },
+  });
+  const bericht = json(gemaakt?.message);
+  if (typeof bericht.id !== "string" || typeof bericht.threadId !== "string")
+    throw new Error("Gmail gaf geen concept terug");
+  return { berichtId: bericht.id, threadId: bericht.threadId };
+}

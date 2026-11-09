@@ -8,19 +8,33 @@ import { loadDashboard } from "@/lib/dashboard";
 import { leesAgenda } from "@/lib/google/agenda";
 import { NORDAY_DOMEIN } from "@/lib/google/oauth";
 import { leesOvergeslagen, leesRegels } from "@/lib/meeting-regels";
-import { bepaalMeetings, lokaal, type Meeting, weekVan } from "@/lib/meetings";
 import {
+  bepaalMeetings,
+  lokaal,
+  type Meeting,
+  PRIVE,
+  weekVan,
+} from "@/lib/meetings";
+import {
+  alsNotulenPlatform,
   leesNotulen,
   meetingsVoorNotulen,
   notulenVanaf,
   verwerkNotulen,
 } from "@/lib/notulen";
 import {
+  type DeelInfo,
+  deelKanaal,
+  externeGenodigden,
+  poAdressen,
+} from "@/lib/notulen-delen";
+import {
   nogTeDoen,
   notulenStatus,
   type NotulenStatus,
 } from "@/lib/notulen-stand";
 import { currentUser } from "@/lib/session";
+import { slackMagSchrijven } from "@/lib/slack/api";
 
 const HOME = { label: "Overzicht", href: "/" };
 
@@ -47,26 +61,23 @@ export default async function MeetingsPage({
     loadDashboard(),
     leesAgenda(user.email, week.maandag),
   ]);
-  const platforms =
+  const metLinks =
     dashboard.status === "ok"
-      ? dashboard.platforms.map(({ slug, naam }) => ({ slug, naam }))
+      ? dashboard.platforms.map(alsNotulenPlatform)
       : [];
+  const platforms = metLinks.map(({ slug, naam }) => ({ slug, naam }));
   // Bij het openen een ronde notulen; zonder Orbit zou alles op Privé vallen.
   if (dashboard.status === "ok") {
-    const metLinks = dashboard.platforms.map(({ slug, naam, gegevens }) => ({
-      slug,
-      naam,
-      links: gegevens.links,
-    }));
     after(() => verwerkNotulen(user.email, metLinks));
   }
+  const regels = leesRegels(user.email);
   const meetings =
     "items" in agenda
       ? bepaalMeetings(
           agenda.items,
           week,
           platforms,
-          leesRegels(user.email),
+          regels,
           leesOvergeslagen(user.email),
           NORDAY_DOMEIN,
           nu.getTime(),
@@ -83,6 +94,22 @@ export default async function MeetingsPage({
     ).map((rij) => [rij.meetingId, rij]),
   );
   const vanaf = notulenVanaf(user.email);
+  const magSchrijven = await slackMagSchrijven(user.email);
+  // Ontvangers of kanaal voor de stap Gedeeld.
+  const deelInfo = (meeting: Meeting): DeelInfo => {
+    if (meeting.extern) {
+      return {
+        soort: "gmail",
+        ontvangers: poAdressen(
+          metLinks.find((p) => p.slug === meeting.hoort)?.contactpersonen ?? [],
+        ),
+        genodigden: externeGenodigden(meeting.deelnemers, NORDAY_DOMEIN),
+      };
+    }
+    const doel = deelKanaal(meeting, metLinks, regels);
+    if ("melding" in doel) return doel;
+    return { soort: "slack", naam: doel.naam, magSchrijven };
+  };
   const statussen: Record<string, NotulenStatus> = {};
   for (const meeting of alle) {
     const status = notulenStatus(
@@ -91,7 +118,11 @@ export default async function MeetingsPage({
       vanaf,
       nu.getTime(),
     );
-    if (status) statussen[meeting.id] = status;
+    if (!status) continue;
+    const delen = status.stap === 5 && meeting.hoort !== PRIVE;
+    statussen[meeting.id] = delen
+      ? { ...status, delen: deelInfo(meeting) }
+      : status;
   }
   const teDoen: Meeting[] = notulenMeetings
     .filter((meeting) => nogTeDoen(statussen[meeting.id] ?? null))

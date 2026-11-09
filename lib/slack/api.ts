@@ -1,4 +1,5 @@
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
+import { heeftSchrijfScope } from "./oauth";
 import { platteTekst } from "./tekst";
 
 export type SlackTodo = {
@@ -36,6 +37,48 @@ export function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)
     : {};
+}
+
+/** Verbonden, maar het token mag geen berichten plaatsen (chat:write): opnieuw verbinden. */
+export class SlackSchrijvenOntbreektError extends Error {
+  constructor() {
+    super("Geen toestemming om berichten in Slack te plaatsen");
+  }
+}
+
+/** Mag het dashboard namens de gebruiker berichten plaatsen? */
+export async function slackMagSchrijven(email: string): Promise<boolean> {
+  const token = await validToken(email, "slack", parseStoredToken, () =>
+    Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
+  );
+  return token !== null && heeftSchrijfScope(token);
+}
+
+/**
+ * Plaatst een bericht onder de naam van de gebruiker (een gebruikerstoken
+ * post altijd als de gebruiker). Alleen na een klik op Verstuur.
+ */
+export async function plaatsBericht(
+  email: string,
+  kanaal: string,
+  tekst: string,
+): Promise<{ ts: string; permalink: string | null }> {
+  if (!(await slackMagSchrijven(email)))
+    throw new SlackSchrijvenOntbreektError();
+  const geplaatst = await slackPost(email, "chat.postMessage", {
+    channel: kanaal,
+    text: tekst,
+  });
+  const ts = String(geplaatst.ts);
+  // Het bericht staat er al: een mislukte permalink mag niet tot een tweede bericht leiden.
+  const link = await slackPost(email, "chat.getPermalink", {
+    channel: String(geplaatst.channel),
+    message_ts: ts,
+  }).catch(() => null);
+  return {
+    ts,
+    permalink: typeof link?.permalink === "string" ? link.permalink : null,
+  };
 }
 
 /** Eén aanroep van de Slack Web API met het token van de gebruiker. */

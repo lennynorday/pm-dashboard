@@ -1,6 +1,10 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { bouwNotulenPrompt, parseNotulen } from "./notulen.ts";
+import {
+  bouwNotulenPrompt,
+  parseNotulen,
+  parseSlackBericht,
+} from "./notulen.ts";
 
 const BASIS = {
   titel: "WO2 | Theo x Lenny",
@@ -70,4 +74,19 @@ test("parseNotulen geeft een fout bij iets anders dan notulen", () => {
     parseNotulen(envelop("**Aanwezig:** Lennart\n\nNiets besproken.")),
     { fout: "Claude gaf geen genummerde onderwerpen terug" },
   );
+});
+
+test("het Slack-bericht: zonder codeblok, en de link staat er altijd in", () => {
+  const envelop = (result: string) => JSON.stringify({ result });
+  const link = "https://docs.superhuman.com/p";
+  assert.deepStrictEqual(
+    parseSlackBericht(envelop(`Notulen staan klaar: ${link}`), link),
+    { tekst: `Notulen staan klaar: ${link}` },
+  );
+  assert.deepStrictEqual(
+    parseSlackBericht(envelop("```\nNotulen staan klaar.\n```"), link),
+    { tekst: `Notulen staan klaar.\n${link}` },
+  );
+  assert.ok("fout" in parseSlackBericht(envelop("  "), link));
+  assert.ok("fout" in parseSlackBericht("geen json", link));
 });

@@ -10,6 +10,7 @@ const meeting = {
   overgeslagen: null,
   afgelopen: true,
   einde: EIND,
+  extern: false,
 } as const;
 const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   meetingId: "m1",
@@ -18,6 +19,9 @@ const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   tekst: null,
   paginaUrl: null,
   fout: null,
+  conceptUrl: null,
+  slackTekst: null,
+  gedeeldUrl: null,
   ...extra,
 });
 const stand = (
@@ -68,7 +72,6 @@ test("geen opname of transcript na 4 uur is vastgelopen", () => {
 test("dashboard bezig, klaar, fout en overgeslagen", () => {
   assert.strictEqual(stand(rij(3)), "open Claude maakt notulen");
   assert.strictEqual(stand(rij(4)), "open Naar Superhuman");
-  assert.strictEqual(stand(rij(5)), "jij Wacht op jou: delen");
   assert.strictEqual(
     stand(rij(5), eind, { ...meeting, hoort: "prive" }),
     "ok Klaar",
@@ -80,5 +83,39 @@ test("dashboard bezig, klaar, fout en overgeslagen", () => {
   assert.strictEqual(
     stand(rij(2), eind, { ...meeting, overgeslagen: "serie" }),
     "muted Geen notulen",
+  );
+});
+
+test("delen: intern wacht op Claude, dan op jou; extern op jou, dan op Gmail", () => {
+  const extern = { ...meeting, extern: true };
+  assert.strictEqual(stand(rij(5)), "open Claude schrijft het Slack-bericht");
+  assert.strictEqual(
+    stand(rij(5, { slackTekst: "Notulen staan klaar" })),
+    "jij Wacht op jou: delen",
+  );
+  assert.strictEqual(stand(rij(5), eind, extern), "jij Wacht op jou: delen");
+  assert.strictEqual(
+    stand(rij(5, { conceptUrl: "https://mail.google.com/x" }), eind, extern),
+    "jij Wacht op jou: verstuur in Gmail",
+  );
+  assert.strictEqual(stand(rij(6, { gedeeldUrl: "https://x" })), "ok Klaar");
+  assert.strictEqual(
+    stand(rij(5, { fout: "Claude reageerde niet" })),
+    "warn Delen mislukt",
+  );
+});
+
+test("delen: na 4 uur nog niet gedeeld is vastgelopen, privé nooit", () => {
+  const status = notulenStatus(meeting, rij(5), null, eind + 5 * UUR);
+  assert.strictEqual(status?.stand, "warn");
+  assert.strictEqual(status?.tekst, "Nog niet gedeeld");
+  assert.strictEqual(status?.vast, true);
+  assert.strictEqual(
+    stand(rij(5), eind + 3 * UUR, { ...meeting, extern: true }),
+    "jij Wacht op jou: delen",
+  );
+  assert.strictEqual(
+    stand(rij(5), eind + 5 * UUR, { ...meeting, hoort: "prive" }),
+    "ok Klaar",
   );
 });

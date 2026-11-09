@@ -38,10 +38,21 @@ import {
 } from "@/lib/meeting-regels";
 import { titelWoord } from "@/lib/meetings";
 import {
+  deelInSlack,
   herstelNotulen,
   notulenPlatforms,
   verwerkNotulen,
+  zetDeelConcept,
 } from "@/lib/notulen";
+import { isEmail } from "@/lib/notulen-delen";
+import {
+  GmailComposeOntbreektError,
+  GmailNietVerbondenError,
+} from "@/lib/gmail/api";
+import {
+  SlackNietVerbondenError,
+  SlackSchrijvenOntbreektError,
+} from "@/lib/slack/api";
 import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
@@ -813,4 +824,85 @@ export async function opnieuwNotulenAction(meetingId: string): Promise<void> {
   const platforms = await notulenPlatforms();
   if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
+}
+
+/** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */
+export type DeelUitkomst =
+  | { uitkomst: "gelukt"; conceptUrl: string | null }
+  | { uitkomst: "verbinden" }
+  | { uitkomst: "fout"; fout: string };
+
+const reden = (fout: unknown) =>
+  fout instanceof Error ? fout.message : String(fout);
+
+/** Zet een Gmail-concept met de notulen klaar aan de gekozen ontvangers. Verstuurt niets. */
+export async function zetDeelConceptAction(
+  meetingId: string,
+  ontvangers: string[],
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string")
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  if (
+    !Array.isArray(ontvangers) ||
+    ontvangers.length === 0 ||
+    ontvangers.length > 50 ||
+    !ontvangers.every((adres) => typeof adres === "string" && isEmail(adres))
+  ) {
+    return { uitkomst: "fout", fout: "Kies minstens één geldig e-mailadres" };
+  }
+  try {
+    const uit = await zetDeelConcept(
+      user.email,
+      meetingId,
+      ontvangers.map((adres) => adres.trim()),
+      user.voornaam,
+    );
+    revalidatePath("/meetings");
+    if ("fout" in uit) return { uitkomst: "fout", fout: uit.fout };
+    return { uitkomst: "gelukt", conceptUrl: uit.conceptUrl };
+  } catch (fout) {
+    if (
+      fout instanceof GmailComposeOntbreektError ||
+      fout instanceof GmailNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return {
+      uitkomst: "fout",
+      fout: `Het concept zetten mislukte: ${reden(fout)}`,
+    };
+  }
+}
+
+/** Plaatst het Slack-bericht over de notulen, na een klik op Verstuur. */
+export async function deelInSlackAction(
+  meetingId: string,
+  bericht: string,
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string")
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  if (typeof bericht !== "string" || !bericht.trim() || bericht.length > 4000)
+    return { uitkomst: "fout", fout: "Het bericht is leeg of te lang" };
+  const platforms = await notulenPlatforms();
+  if (!platforms)
+    return { uitkomst: "fout", fout: "De platforms zijn niet te lezen" };
+  try {
+    const fout = await deelInSlack(
+      user.email,
+      meetingId,
+      bericht.trim(),
+      platforms,
+    );
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    revalidatePath("/", "layout");
+    return { uitkomst: "gelukt", conceptUrl: null };
+  } catch (fout) {
+    if (
+      fout instanceof SlackSchrijvenOntbreektError ||
+      fout instanceof SlackNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
+  }
 }
