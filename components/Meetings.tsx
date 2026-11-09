@@ -635,13 +635,14 @@ function HoortMenu({ meeting, platforms, kies }: HoortMenuProps) {
         ref={knop}
         type="button"
         className={styles.pil}
+        title={meeting.label}
         aria-haspopup="dialog"
         onPointerDown={() => {
           wasOpen.current = !!menu.current?.matches(":popover-open");
         }}
         onClick={toggle}
       >
-        {meeting.label}
+        <span className={styles.pilTekst}>{meeting.label}</span>
         <PencilIcon className={styles.pilIcoon} />
         <span className="nd-visually-hidden">
           : wijzig waar deze meeting bij hoort
