@@ -17,12 +17,12 @@ export const TEAM = "team";
 export const PRIVE = "prive";
 
 export type Scope = "deze" | "serie" | "titel";
-export type RegelSoort = "meeting" | "serie" | "titel";
+export type RegelSoort = "meeting" | "serie";
 
 /** Een handmatige keuze waar meetings bij horen. Doel: een platform-slug, "team" of "prive". */
 export type Regel = {
   soort: RegelSoort;
-  /** Het meeting-id, het serie-id of het titelwoord (kleine letters). */
+  /** Het meeting-id of het serie-id. */
   sleutel: string;
   doel: string;
   titel: string;
@@ -149,7 +149,7 @@ export function titelWoord(titel: string): string {
 }
 
 /**
- * Waar een afspraak bij hoort. Volgorde: de handmatige regels (meeting, serie, titelwoord), dan de platformnaam of een roepnaam in de titel,
+ * Waar een afspraak bij hoort. Volgorde: de handmatige regels (meeting, serie), dan de platformnaam of een roepnaam in de titel,
  * anders Privé.
  */
 export function hoortBij(
@@ -179,9 +179,6 @@ function koppeling(
         r.soort === "serie" &&
         r.sleutel === item.serieId &&
         (r.vanaf ?? 0) <= start,
-    ) ??
-    geldig.find(
-      (r) => r.soort === "titel" && alsWoordIn(item.titel, r.sleutel),
     );
   if (handmatig) return { doel: handmatig.doel, terugval: false };
   // De langste naam eerst, zodat "Kunsthal Kids" wint van "Kunsthal".

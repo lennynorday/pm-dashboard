@@ -501,7 +501,12 @@ type DetailProps = {
 function Detail({ meeting, status, platforms, terug }: DetailProps) {
   const [bezig, startTransition] = useTransition();
   const dag = DAGNAMEN[new Date(`${meeting.datum}T00:00:00Z`).getUTCDay() - 1];
+  const [fout, setFout] = useState<string | null>(null);
   const doe = (actie: () => Promise<void>) => startTransition(actie);
+  const koppel = (doel: string, scope: Scope) =>
+    startTransition(async () => {
+      setFout(await koppelMeetingAction(ref(meeting), doel, scope));
+    });
 
   return (
     <div className={styles.detail} aria-busy={bezig}>
@@ -530,11 +535,14 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
         <HoortMenu
           meeting={meeting}
           platforms={platforms}
-          kies={(doel, scope) =>
-            doe(() => koppelMeetingAction(ref(meeting), doel, scope))
-          }
+          kies={koppel}
         />
       </div>
+      {fout && (
+        <p role="alert" className={styles.uitleg}>
+          {fout}
+        </p>
+      )}
 
       {status && meeting.overgeslagen && (
         <p className={styles.statuskop}>
@@ -554,9 +562,7 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
             {meeting.overgeslagen === "prive" ? (
               <AanzetKnop
                 meeting={meeting}
-                kies={(scope) =>
-                  doe(() => koppelMeetingAction(ref(meeting), PRIVE, scope))
-                }
+                kies={(scope) => koppel(PRIVE, scope)}
               />
             ) : (
               <button
@@ -720,6 +726,10 @@ function HoortMenu({ meeting, platforms, kies }: HoortMenuProps) {
                 type="button"
                 className="nd-menu__item"
                 aria-pressed={meeting.hoort === doel.slug}
+                // Een titelwoord wordt een roepnaam van een platform; Team en Privé hebben die niet.
+                disabled={
+                  scope === "titel" && (doel.slug === TEAM || doel.slug === PRIVE)
+                }
                 onClick={() => {
                   menu.current?.hidePopover();
                   kies(doel.slug, scope);

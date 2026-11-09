@@ -282,6 +282,7 @@ export async function savePlatformRij(
       [KOLOM.orbitProjecten, platform.orbitProjecten.join(", ")],
       [KOLOM.jiraKeys, platform.jiraKeys.join(", ")],
       [KOLOM.supportOrganizations, platform.supportOrganizations.join(", ")],
+      [KOLOM.roepnamen, platform.roepnamen.join(", ")],
       [KOLOM.contactpersonen, formatContactpersonen(platform.contactpersonen)],
       [KOLOM.eigenLinks, formatEigenLinks(platform.eigenLinks)],
       ...LINK_TYPES.map((type): [string, string] => [

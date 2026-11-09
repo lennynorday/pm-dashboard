@@ -106,17 +106,13 @@ test("hoortBij: herkenning", () => {
   );
 });
 
-test("hoortBij: meeting gaat voor serie, serie voor titel, titel voor herkenning", () => {
+test("hoortBij: meeting gaat voor serie, serie voor herkenning", () => {
   const afspraak = item({ titel: "Kunsthal | Sprintreview", serieId: "s1" });
-  const titel = regel({ soort: "titel", sleutel: "sprintreview", doel: "wo2" });
   const serie = regel({ soort: "serie", sleutel: "s1", doel: "team" });
   const meeting = regel({ doel: "prive" });
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [titel]), "wo2");
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [titel, serie]), "team");
-  assert.strictEqual(
-    hoortBij(afspraak, PLATFORMS, [titel, serie, meeting]),
-    "prive",
-  );
+  assert.strictEqual(hoortBij(afspraak, PLATFORMS, []), "kunsthal");
+  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [serie]), "team");
+  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [serie, meeting]), "prive");
 });
 
 test("hoortBij: een serieregel geldt pas vanaf zijn startmoment", () => {

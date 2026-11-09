@@ -36,7 +36,8 @@ import {
   zetKanaal,
   zetTerug,
 } from "@/lib/meeting-regels";
-import { titelWoord } from "@/lib/meetings";
+import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
+import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
 import {
   deelInSlack,
   eldersGedeeld,
@@ -228,6 +229,17 @@ async function savePlatform(
     };
   }
 
+  const conflict = roepnaamConflict(
+    uitkomst.platform.roepnamen,
+    dashboard.platforms
+      .filter((item) => nieuw || item.slug !== slug)
+      .map((item) => ({
+        naam: item.naam,
+        roepnamen: item.gegevens.roepnamen,
+      })),
+  );
+  if (conflict) return { fouten: { roepnamen: conflict }, waarden };
+
   try {
     await savePlatformGegevens(
       orbitId,
@@ -237,13 +249,8 @@ async function savePlatform(
         zonderPlatform: platform.klant.velden.zonderPlatform,
       },
       nieuw
-        ? { ...uitkomst.platform, roepnamen: [] }
-        : {
-            ...uitkomst.platform,
-            rijId: platform.gegevens.rijId,
-            // Het formulier beheert geen roepnamen; houd ze in de cache tot de volgende ophaalronde.
-            roepnamen: platform.gegevens.roepnamen,
-          },
+        ? uitkomst.platform
+        : { ...uitkomst.platform, rijId: platform.gegevens.rijId },
       nieuw ? null : platform.gegevens.naam,
     );
   } catch (error) {
@@ -751,14 +758,72 @@ async function bijMeetings(doe: (email: string) => void): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-/** De pil: waar deze meeting, de rest van de serie of elke meeting met dit titelwoord bij hoort. */
+/**
+ * Voegt het titelwoord toe aan de roepnamen van een platform, in Superhuman en
+ * meteen in de cache. Een fout komt terug als tekst; bij succes null.
+ */
+async function bewaarRoepnaam(
+  meeting: MeetingRef,
+  slug: string,
+): Promise<string | null> {
+  const woord = titelWoord(meeting.titel);
+  if (!woord) return "Deze titel heeft geen woord om te onthouden.";
+  if (woord.includes(",")) {
+    return `"${woord}" bevat een komma en kan geen roepnaam zijn.`;
+  }
+  const dashboard = await loadDashboard();
+  if (dashboard.status !== "ok") return "Orbit is niet bereikbaar.";
+  // Zonder actuele gegevens zou opslaan wat er in Superhuman staat overschrijven.
+  if (dashboard.gegevensFout) {
+    return `De accountgegevens konden niet uit Superhuman worden opgehaald. ${dashboard.gegevensFout}`;
+  }
+  const platform = dashboard.platforms.find((item) => item.slug === slug);
+  const orbitId = platform?.klant.orbitId;
+  if (!platform || !orbitId) return "Dit platform is niet in Orbit gevonden.";
+
+  const conflict = roepnaamConflict(
+    [woord],
+    dashboard.platforms
+      .filter((item) => item.slug !== slug)
+      .map((item) => ({ naam: item.naam, roepnamen: item.gegevens.roepnamen })),
+  );
+  if (conflict) return conflict;
+
+  const roepnamen = normaliseerRoepnamen([
+    ...platform.gegevens.roepnamen,
+    woord,
+  ]);
+  try {
+    await savePlatformGegevens(
+      orbitId,
+      platform.klant.orbitNaam,
+      platform.klant.velden,
+      { ...platform.gegevens, naam: platform.naam, roepnamen },
+      platform.gegevens.naam,
+    );
+  } catch (error) {
+    return `Opslaan in Superhuman is mislukt. ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return null;
+}
+
+/**
+ * De pil: waar deze meeting, de rest van de serie of elke meeting met dit titelwoord bij hoort.
+ * Een fout komt terug als tekst; bij succes null.
+ */
 export async function koppelMeetingAction(
   meeting: MeetingRef,
   doel: string,
   scope: string,
-): Promise<void> {
+): Promise<string | null> {
   if (!geldigeMeeting(meeting) || typeof doel !== "string" || !DOEL.test(doel))
-    return;
+    return null;
+  if (!(await currentUser())) return null;
+  const alsRoepnaam = scope === "titel" && doel !== TEAM && doel !== PRIVE;
+  if (alsRoepnaam) {
+    const fout = await bewaarRoepnaam(meeting, doel);
+    if (fout) return fout;
+  }
   await bijMeetings((email) => {
     // De nieuwe keuze moet ook voor deze meeting gelden, dus een oude keuze voor alleen deze vervalt.
     verwijderMeetingRegel(email, meeting.id);
@@ -772,17 +837,8 @@ export async function koppelMeetingAction(
       });
       return;
     }
-    if (scope === "titel" && titelWoord(meeting.titel)) {
-      const woord = titelWoord(meeting.titel);
-      bewaarRegel(email, {
-        soort: "titel",
-        sleutel: woord.toLowerCase(),
-        doel,
-        titel: woord,
-        vanaf: null,
-      });
-      return;
-    }
+    // Bij een roepnaam herkent Meetings de meeting daaraan; een regel is dan niet nodig.
+    if (alsRoepnaam) return;
     bewaarRegel(email, {
       soort: "meeting",
       sleutel: meeting.id,
@@ -791,6 +847,7 @@ export async function koppelMeetingAction(
       vanaf: null,
     });
   });
+  return null;
 }
 
 /** "Geen notulen": alleen deze meeting of de hele serie. */

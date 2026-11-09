@@ -12,8 +12,8 @@ export function leesRegels(email: string): Regel[] {
     .all(email)
     .flatMap((rij) => {
       const soort = rij.soort;
-      if (soort !== "meeting" && soort !== "serie" && soort !== "titel")
-        return [];
+      // Oude titelwoord-regels blijven in de database staan, maar tellen niet meer mee.
+      if (soort !== "meeting" && soort !== "serie") return [];
       return [
         {
           soort,
