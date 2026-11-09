@@ -13,9 +13,9 @@ import {
 } from "./meetings.ts";
 
 const PLATFORMS = [
-  { slug: "kunsthal", naam: "Kunsthal" },
-  { slug: "kunsthal-kids", naam: "Kunsthal Kids" },
-  { slug: "wo2", naam: "Tweedewereldoorlog.nl" },
+  { slug: "kunsthal", naam: "Kunsthal", roepnamen: ["KH"] },
+  { slug: "kunsthal-kids", naam: "Kunsthal Kids", roepnamen: [] },
+  { slug: "wo2", naam: "Tweedewereldoorlog.nl", roepnamen: ["TWO"] },
 ];
 
 const item = (extra: Partial<AgendaItem>): AgendaItem => ({
@@ -91,6 +91,14 @@ test("hoortBij: herkenning en Focus", () => {
   assert.strictEqual(
     hoortBij(item({ titel: "Kunsthal Kids demo" }), PLATFORMS, []),
     "kunsthal-kids",
+  );
+  assert.strictEqual(
+    hoortBij(item({ titel: "KH | Planning" }), PLATFORMS, []),
+    "kunsthal",
+  );
+  assert.strictEqual(
+    hoortBij(item({ titel: "Kickoff two" }), PLATFORMS, []),
+    "wo2",
   );
   assert.strictEqual(
     hoortBij(item({ titel: "1-op-1 Wade" }), PLATFORMS, []),

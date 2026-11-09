@@ -163,6 +163,7 @@ export function demoGegevens(): AlleAccountGegevens {
             orbitProjecten: [],
             jiraKeys: [],
             supportOrganizations: [],
+            roepnamen: [],
             contactpersonen: [],
             eigenLinks: [],
             links: {

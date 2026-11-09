@@ -227,8 +227,13 @@ async function savePlatform(
         zonderPlatform: platform.klant.velden.zonderPlatform,
       },
       nieuw
-        ? uitkomst.platform
-        : { ...uitkomst.platform, rijId: platform.gegevens.rijId },
+        ? { ...uitkomst.platform, roepnamen: [] }
+        : {
+            ...uitkomst.platform,
+            rijId: platform.gegevens.rijId,
+            // Het formulier beheert geen roepnamen; houd ze in de cache tot de volgende ophaalronde.
+            roepnamen: platform.gegevens.roepnamen,
+          },
       nieuw ? null : platform.gegevens.naam,
     );
   } catch (error) {

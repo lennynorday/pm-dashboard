@@ -68,6 +68,7 @@ export const alsNotulenPlatform = (platform: {
 }): NotulenPlatform => ({
   slug: platform.slug,
   naam: platform.naam,
+  roepnamen: platform.gegevens.roepnamen,
   links: platform.gegevens.links,
   contactpersonen: platform.gegevens.contactpersonen,
 });

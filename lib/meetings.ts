@@ -39,7 +39,7 @@ export type Overslaan = {
   titel: string;
 };
 
-export type PlatformNaam = { slug: string; naam: string };
+export type PlatformNaam = { slug: string; naam: string; roepnamen: string[] };
 
 export type Meeting = {
   id: string;
@@ -150,7 +150,7 @@ export function titelWoord(titel: string): string {
 
 /**
  * Waar een afspraak bij hoort. Volgorde: Focus (geen andere deelnemers), dan de
- * handmatige regels (meeting, serie, titelwoord), dan de platformnaam in de titel,
+ * handmatige regels (meeting, serie, titelwoord), dan de platformnaam of een roepnaam in de titel,
  * anders Privé.
  */
 export function hoortBij(
@@ -178,10 +178,16 @@ export function hoortBij(
     );
   if (handmatig) return handmatig.doel;
   // De langste naam eerst, zodat "Kunsthal Kids" wint van "Kunsthal".
-  const platform = [...platforms]
+  const kandidaat = platforms
+    .flatMap((platform) =>
+      [platform.naam, ...platform.roepnamen].map((naam) => ({
+        slug: platform.slug,
+        naam,
+      })),
+    )
     .sort((a, b) => b.naam.length - a.naam.length)
-    .find((kandidaat) => alsWoordIn(item.titel, kandidaat.naam));
-  return platform?.slug ?? PRIVE;
+    .find(({ naam }) => alsWoordIn(item.titel, naam));
+  return kandidaat?.slug ?? PRIVE;
 }
 
 export function labelVan(hoort: string, platforms: PlatformNaam[]): string {

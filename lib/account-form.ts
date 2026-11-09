@@ -35,7 +35,8 @@ const LEGE_CONTACT: ContactRij = { naam: "", rol: "", email: "" };
 const LEGE_LINK: EigenLink = { naam: "", url: "" };
 
 /** Wat het formulier van een platform oplevert; de rij blijft zoals die was. */
-export type PlatformVelden = Omit<PlatformGegevens, "rijId">;
+/** Wat het formulier beheert; roepnamen staan alleen in Superhuman. */
+export type PlatformVelden = Omit<PlatformGegevens, "rijId" | "roepnamen">;
 
 export function toFormWaarden(
   klant: KlantVelden,

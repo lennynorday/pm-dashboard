@@ -30,6 +30,8 @@ export type PlatformGegevens = {
   jiraKeys: string[];
   /** Organizations in SUPP (Beheer en Support). */
   supportOrganizations: string[];
+  /** Andere namen in agendatitels voor dit platform, zoals CMU; alleen gelezen, het dashboard schrijft ze niet. */
+  roepnamen: string[];
   contactpersonen: Contactpersoon[];
   links: LinkUrls;
   /** Hooguit vier, met een eigen naam; de groep Overig op de platformpagina. */
@@ -49,6 +51,7 @@ export const LEEG_PLATFORM: PlatformGegevens = {
   orbitProjecten: [],
   jiraKeys: [],
   supportOrganizations: [],
+  roepnamen: [],
   contactpersonen: [],
   links: {},
   eigenLinks: [],

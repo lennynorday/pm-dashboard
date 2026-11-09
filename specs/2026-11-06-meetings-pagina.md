@@ -36,7 +36,7 @@
 - **Meeting:** een afspraak uit Google Agenda, met optioneel een serie (de herhaling in Google).
 - **Hoort bij:** een platform, Team of Privé. Komt uit de herkenning of uit een handmatige keuze.
 - **Soort:** Extern of Intern, op basis van de deelnemers (alleen bij een platform).
-- **Roepnaam:** een alternatieve naam van een platform voor de herkenning (bijvoorbeeld CMU). Wordt bewaard bij de accountgegevens in Superhuman.
+- **Roepnaam:** een alternatieve naam van een platform voor de herkenning (bijvoorbeeld CMU). Wordt bewaard bij de accountgegevens in Superhuman, in de kolom Roepnamen (gescheiden door komma's). Het dashboard leest ze alleen; je beheert ze in Superhuman.
 - **Regel:** een handmatige keuze voor één meeting, een serie of een titelwoord. Wordt lokaal bewaard.
 - **Overgeslagen:** een meeting of serie zonder notulen. Wordt lokaal bewaard.
 - **Team-serie:** een terugkerend intern overleg zonder project, met één Slack-kanaal.

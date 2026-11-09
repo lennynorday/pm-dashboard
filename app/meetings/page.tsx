@@ -66,7 +66,11 @@ export default async function MeetingsPage({
     dashboard.status === "ok"
       ? dashboard.platforms.map(alsNotulenPlatform)
       : [];
-  const platforms = metLinks.map(({ slug, naam }) => ({ slug, naam }));
+  const platforms = metLinks.map(({ slug, naam, roepnamen }) => ({
+    slug,
+    naam,
+    roepnamen,
+  }));
   // Bij het openen een ronde notulen; zonder Orbit zou alles op Privé vallen.
   if (dashboard.status === "ok") {
     after(() => verwerkNotulen(user.email, metLinks));
