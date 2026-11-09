@@ -63,7 +63,7 @@ export type GegevensResult = {
   fout: string | null;
 };
 
-const SLEUTEL = "superhuman:accountgegevens:v4";
+const SLEUTEL = "superhuman:accountgegevens:v5";
 const CACHE_MS = 24 * 60 * 60 * 1000;
 
 function melding(error: unknown): string {
