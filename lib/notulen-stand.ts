@@ -1,7 +1,7 @@
 /** Waar een meeting in de notulen-flow staat. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
 import type { Actiepunt } from "./actiepunt.ts";
 import { type Meeting, PRIVE } from "./meetings.ts";
-import type { DeelInfo } from "./notulen-delen.ts";
+import type { DeelInfo, Onderdeel } from "./notulen-delen.ts";
 
 export const STAPPEN = [
   "Ingepland",
@@ -24,17 +24,34 @@ export type NotulenRij = {
   tekst: string | null;
   paginaUrl: string | null;
   fout: string | null;
-  /** Het Gmail-concept dat nog open staat (extern). */
-  conceptUrl: string | null;
   /** Het Slack-bericht dat Claude schreef (intern en Team). */
   slackTekst: string | null;
-  /** De verzonden mail of het Slack-bericht. */
-  gedeeldUrl: string | null;
+  /** De mail aan de klant (extern) en het Slack-bericht. */
+  mail: Onderdeel;
+  slack: Onderdeel;
   /** Zijn de actiepunten uit de notulen gehaald? */
   actiesUit: boolean;
   /** Gekozen voor Niet delen: Gedeeld is afgerond zonder dat er iets weg ging. */
   nietGedeeld: boolean;
+  /** Gekozen voor Al gedeeld: het is elders gedeeld, er ging niets via het dashboard. */
+  elders: boolean;
+  /** Handmatig gekozen voor Geen opname: het dashboard koppelt er niet zelf een. */
+  geenOpname?: boolean;
 };
+
+/** Een Plaud-opname zoals het paneel hem toont. */
+export type OpnameInfo = {
+  id: string;
+  naam: string;
+  /** Begin in ms (UTC). */
+  start: number;
+  duurMs: number;
+  /** Titel van de andere meeting waar deze opname nu aan hangt. */
+  bezetDoor: string | null;
+};
+
+export type OpnameKeuzes =
+  { gekoppeld: OpnameInfo | null; opties: OpnameInfo[] } | { fout: string };
 
 export type NotulenStatus = {
   stap: number;
@@ -46,10 +63,12 @@ export type NotulenStatus = {
   opnameId: string | null;
   notulen: string | null;
   paginaUrl: string | null;
-  conceptUrl: string | null;
   slackTekst: string | null;
-  gedeeldUrl: string | null;
+  mail: Onderdeel;
+  slack: Onderdeel;
   nietGedeeld: boolean;
+  elders: boolean;
+  geenOpname: boolean;
   /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
   delen: DeelInfo | null;
   /** De actiepunten van deze meeting, als ze uitgelezen zijn; de pagina vult dit in. */
@@ -91,10 +110,12 @@ export function notulenStatus(
     opnameId: rij?.opnameId ?? null,
     notulen: rij?.tekst ?? null,
     paginaUrl: rij?.paginaUrl ?? null,
-    conceptUrl: rij?.conceptUrl ?? null,
     slackTekst: rij?.slackTekst ?? null,
-    gedeeldUrl: rij?.gedeeldUrl ?? null,
+    mail: rij?.mail ?? { stand: "open", url: null },
+    slack: rij?.slack ?? { stand: "open", url: null },
     nietGedeeld: rij?.nietGedeeld ?? false,
+    elders: rij?.elders ?? false,
+    geenOpname: rij?.geenOpname ?? false,
     delen: null,
     acties: null,
   };
@@ -111,6 +132,8 @@ export function notulenStatus(
   if (!rij && (vanaf === null || eind < vanaf)) return null;
 
   const { stap } = basis;
+  if (basis.geenOpname && stap <= 1)
+    return { ...basis, stand: "muted", tekst: "Geen opname" };
   if (basis.fout)
     return { ...basis, stand: "warn", tekst: MISLUKT[stap] ?? "Mislukt" };
   const vast = stap <= 2 && nu - eind > VASTGELOPEN_MS;
@@ -139,9 +162,7 @@ export function notulenStatus(
   }
   if (nu - eind > VASTGELOPEN_MS)
     return { ...basis, vast: true, stand: "warn", tekst: "Nog niet gedeeld" };
-  if (basis.conceptUrl)
-    return { ...basis, stand: "jij", tekst: "Wacht op jou: verstuur in Gmail" };
-  if (!meeting.extern && !basis.slackTekst)
+  if (!basis.slackTekst)
     return {
       ...basis,
       stand: "open",

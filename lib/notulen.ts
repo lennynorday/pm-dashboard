@@ -12,8 +12,7 @@ import type { Contactpersoon, PlatformGegevens } from "./accountgegevens";
 import { loadDashboard } from "./dashboard";
 import { database } from "./db";
 import { DEMO } from "./demo";
-import { gmailGet } from "./gmail/api";
-import { maakConcept } from "./gmail/concept";
+import { stuurMail } from "./gmail/concept";
 import { leesAgenda } from "./google/agenda";
 import { NORDAY_DOMEIN } from "./google/oauth";
 import type { LinkUrls } from "./links";
@@ -29,17 +28,23 @@ import {
   weekVan,
 } from "./meetings";
 import {
-  conceptMail,
+  type Onderdeel,
+  type OnderdeelStand,
+  deelAfgerond,
   deelKanaal,
-  gmailConceptUrl,
   gmailThreadUrl,
-  threadStand,
 } from "./notulen-delen";
-import { type NotulenRij, VASTGELOPEN_MS } from "./notulen-stand";
+import {
+  type NotulenRij,
+  type OpnameInfo,
+  type OpnameKeuzes,
+  VASTGELOPEN_MS,
+} from "./notulen-stand";
 import {
   type OpnameDetails,
   leesTranscript,
   opnameDetails,
+  opnamesRondDag,
   recenteOpnames,
   verdeelOpnames,
 } from "./plaud";
@@ -105,7 +110,10 @@ export function notulenVanaf(email: string, nu?: number): number | null {
 }
 
 function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
-  const conceptId = tekst(rij.concept_id);
+  const onderdeel = (stand: unknown, url: unknown): Onderdeel => ({
+    stand: stand === "verstuurd" || stand === "overgeslagen" ? stand : "open",
+    url: tekst(url),
+  });
   return {
     meetingId: String(rij.meeting_id),
     stap: Number(rij.stap),
@@ -113,11 +121,13 @@ function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
     tekst: tekst(rij.tekst),
     paginaUrl: tekst(rij.pagina_url),
     fout: tekst(rij.fout),
-    conceptUrl: conceptId && gmailConceptUrl(email, conceptId),
     slackTekst: tekst(rij.slack_tekst),
-    gedeeldUrl: tekst(rij.gedeeld_url),
+    mail: onderdeel(rij.mail_stand, rij.mail_url),
+    slack: onderdeel(rij.slack_stand, rij.slack_url),
     actiesUit: rij.acties_uit !== null,
     nietGedeeld: rij.niet_gedeeld !== null,
+    elders: rij.elders !== null,
+    geenOpname: rij.opname_keuze === "geen",
   };
 }
 
@@ -147,6 +157,7 @@ export function leesVastgelopen(email: string): VastgelopenMeeting[] {
     .prepare(
       `SELECT * FROM notulen n
        WHERE email = ? AND (stap <= 2 OR (stap = 5 AND hoort IS NOT 'prive')) AND fout IS NULL
+         AND opname_keuze IS NOT 'geen'
          AND NOT EXISTS (SELECT 1 FROM meetings_overgeslagen o WHERE o.email = n.email
            AND ((o.soort = 'meeting' AND o.sleutel = n.meeting_id)
              OR (o.soort = 'serie' AND o.sleutel = n.serie_id)))
@@ -202,15 +213,13 @@ function zetStap(
   email: string,
   id: string,
   stap: number,
-  velden: Partial<
-    Record<"opname_id" | "tekst" | "pagina_url" | "gedeeld_url", string>
-  > = {},
+  velden: Partial<Record<"opname_id" | "tekst" | "pagina_url", string>> = {},
 ): void {
   database()
     .prepare(
       `UPDATE notulen SET stap = ?, sinds = ?, bezig = NULL, fout = NULL,
          opname_id = COALESCE(?, opname_id), tekst = COALESCE(?, tekst),
-         pagina_url = COALESCE(?, pagina_url), gedeeld_url = COALESCE(?, gedeeld_url)
+         pagina_url = COALESCE(?, pagina_url)
        WHERE email = ? AND meeting_id = ?`,
     )
     .run(
@@ -219,7 +228,6 @@ function zetStap(
       velden.opname_id ?? null,
       velden.tekst ?? null,
       velden.pagina_url ?? null,
-      velden.gedeeld_url ?? null,
       email,
       id,
     );
@@ -283,6 +291,13 @@ export async function meetingsVoorNotulen(
     if ("verbinden" in agenda)
       return { fout: "Geen toegang tot Google Agenda" };
     if ("fout" in agenda) return agenda;
+    // Een privé-meeting met al een notulen-run wordt niet alsnog automatisch overgeslagen.
+    const metNotulen = new Set(
+      leesNotulen(
+        email,
+        agenda.items.map((item) => item.id),
+      ).map((rij) => rij.meetingId),
+    );
     meetings.push(
       ...bepaalMeetings(
         agenda.items,
@@ -292,6 +307,7 @@ export async function meetingsVoorNotulen(
         overgeslagen,
         NORDAY_DOMEIN,
         nu,
+        metNotulen,
       ),
     );
   }
@@ -359,7 +375,7 @@ async function zoekOpnames(
 ): Promise<void> {
   const zoeken = meetings.filter((m) => {
     const rij = leesRij(email, m.id);
-    return rij?.stap === 1 && rij.fout === null;
+    return rij?.stap === 1 && rij.fout === null && rij.opname_keuze === null;
   });
   if (zoeken.length === 0) return;
   const oudste = Math.min(...zoeken.map((m) => Date.parse(m.start)));
@@ -373,14 +389,8 @@ async function zoekOpnames(
   const details = new Map<string, OpnameDetails>();
   const gelukt: Meeting[] = [];
   for (const meeting of zoeken) {
-    // Alleen opnames van rond die dag; de datum in de lijst kan in UTC staan.
-    const dagen = [
-      dagPlus(meeting.datum, -1),
-      meeting.datum,
-      dagPlus(meeting.datum, 1),
-    ];
     let fout: string | null = null;
-    for (const opname of recent.filter((o) => dagen.includes(o.datum))) {
+    for (const opname of opnamesRondDag(recent, meeting.datum)) {
       const gelezen = bekend.get(opname.id) ?? (await opnameDetails(opname.id));
       if ("fout" in gelezen) {
         fout = gelezen.fout;
@@ -395,9 +405,10 @@ async function zoekOpnames(
   const bezet = new Set(
     database()
       .prepare(
-        "SELECT opname_id FROM notulen WHERE email = ? AND opname_id IS NOT NULL",
+        `SELECT opname_id FROM notulen WHERE email = ? AND opname_id IS NOT NULL
+         UNION SELECT opname_keuze FROM notulen WHERE email = ? AND opname_keuze IS NOT NULL AND opname_keuze != 'geen'`,
       )
-      .all(email)
+      .all(email, email)
       .map((rij) => String(rij.opname_id)),
   );
   const verdeeld = verdeelOpnames(
@@ -456,38 +467,13 @@ async function verder(
 }
 
 /**
- * Extern: kijkt of het concept verstuurd is (een mail met label SENT in de
- * thread) of weggegooid. Intern en Team: laat Claude het Slack-bericht schrijven.
+ * Laat Claude het Slack-bericht schrijven voor elke meeting die nog gedeeld
+ * moet worden; bij een externe meeting gaat het naar het interne kanaal.
  */
 async function bijDelen(email: string, meeting: Meeting, rij: Rij) {
-  const threadId = tekst(rij.thread_id);
-  if (threadId) {
-    // Lukt het lezen niet (Gmail even weg), dan probeert de volgende ronde het opnieuw.
-    const thread = await gmailGet(
-      email,
-      `threads/${threadId}`,
-      new URLSearchParams({ format: "minimal" }),
-    ).catch(() => undefined);
-    if (thread === undefined) return;
-    const stand = threadStand(thread);
-    if (stand === "verstuurd") {
-      return zetStap(email, meeting.id, 6, {
-        gedeeld_url: gmailThreadUrl(email, threadId),
-      });
-    }
-    if (stand === "weg") {
-      database()
-        .prepare(
-          "UPDATE notulen SET concept_id = NULL, thread_id = NULL WHERE email = ? AND meeting_id = ? AND thread_id = ?",
-        )
-        .run(email, meeting.id, threadId);
-    }
-    return;
-  }
   const paginaUrl = tekst(rij.pagina_url);
   const notulen = tekst(rij.tekst);
-  if (meeting.extern || rij.slack_tekst !== null || !paginaUrl || !notulen)
-    return;
+  if (rij.slack_tekst !== null || !paginaUrl || !notulen) return;
   if (!claim(email, meeting.id)) return;
   const run = await draaiClaude(
     bouwSlackPrompt({ titel: meeting.titel, link: paginaUrl, notulen }),
@@ -512,38 +498,78 @@ function teDelen(email: string, id: string): Rij | null {
   return rij ?? null;
 }
 
-/**
- * Maakt het Gmail-concept aan de ontvangers met de link naar de notulen en
- * bewaart concept en thread. Verstuurt niets. Geeft de link naar het concept.
- */
-export async function zetDeelConcept(
+const KOLOMMEN = {
+  mail: ["mail_stand", "mail_url"],
+  slack: ["slack_stand", "slack_url"],
+} as const;
+
+/** De onderdelen van Delen: de mail aan de klant (alleen extern) en Slack. */
+export type DeelOnderdeel = keyof typeof KOLOMMEN;
+
+export const isDeelOnderdeel = (waarde: unknown): waarde is DeelOnderdeel =>
+  waarde === "mail" || waarde === "slack";
+
+/** Zet de stand van een onderdeel; null maakt het weer open. */
+function zetOnderdeel(
   email: string,
   id: string,
-  ontvangers: string[],
-  voornaam: string,
-): Promise<{ conceptUrl: string } | { fout: string }> {
+  onderdeel: DeelOnderdeel,
+  stand: Exclude<OnderdeelStand, "open"> | null,
+  url: string | null = null,
+): void {
+  const [standKolom, urlKolom] = KOLOMMEN[onderdeel];
+  database()
+    .prepare(
+      `UPDATE notulen SET ${standKolom} = ?, ${urlKolom} = ? WHERE email = ? AND meeting_id = ?`,
+    )
+    .run(stand, url, email, id);
+}
+
+/** Is elk onderdeel verstuurd of overgeslagen, dan is Delen klaar: Niet gedeeld als er niets verstuurd is. */
+function rondDeelAf(email: string, id: string): boolean {
   const rij = teDelen(email, id);
-  const paginaUrl = tekst(rij?.pagina_url);
-  if (!rij || rij.extern !== 1 || !paginaUrl)
-    return { fout: "Deze meeting staat niet klaar om te delen" };
-  const bestaand = tekst(rij.concept_id);
-  if (bestaand) return { conceptUrl: gmailConceptUrl(email, bestaand) };
-  if (!claim(email, id)) return { fout: "Het concept wordt al gemaakt" };
+  if (!rij) return false;
+  const status = parseRij(email, rij);
+  const uitkomst = deelAfgerond([
+    status.slack.stand,
+    ...(rij.extern === 1 ? [status.mail.stand] : []),
+  ]);
+  if (uitkomst === "open") return false;
+  const nu = Date.now();
+  const { changes } = database()
+    .prepare(
+      `UPDATE notulen SET stap = 6, sinds = ?, niet_gedeeld = ?, bezig = NULL, fout = NULL
+       WHERE email = ? AND meeting_id = ? AND stap = 5`,
+    )
+    .run(nu, uitkomst === "niet" ? nu : null, email, id);
+  return changes === 1;
+}
+
+/**
+ * Verstuurt de mail aan de klant direct via Gmail, onder het account van de
+ * gebruiker, en bewaart de thread voor "Openen in Gmail".
+ */
+export async function stuurDeelMail(
+  email: string,
+  id: string,
+  mail: { aan: string[]; onderwerp: string; tekst: string },
+): Promise<{ fout: string } | null> {
+  const rij = teDelen(email, id);
+  if (!rij || rij.extern !== 1 || rij.mail_stand !== null)
+    return { fout: "Deze meeting staat niet klaar om te mailen" };
+  // Tegen een dubbele klik: één mail per meeting.
+  if (!claim(email, id)) return { fout: "De mail wordt al verstuurd" };
   try {
-    const { berichtId, threadId } = await maakConcept(email, {
-      aan: ontvangers,
-      ...conceptMail(
-        { titel: String(rij.titel), start: String(rij.start) },
-        paginaUrl,
-        voornaam,
-      ),
-    });
-    database()
-      .prepare(
-        "UPDATE notulen SET concept_id = ?, thread_id = ? WHERE email = ? AND meeting_id = ?",
-      )
-      .run(berichtId, threadId, email, id);
-    return { conceptUrl: gmailConceptUrl(email, berichtId) };
+    const { threadId } = await stuurMail(email, mail);
+    zetOnderdeel(
+      email,
+      id,
+      "mail",
+      "verstuurd",
+      gmailThreadUrl(email, threadId),
+    );
+    rondDeelAf(email, id);
+    return null;
   } finally {
     laatLos(email, id);
   }
@@ -551,7 +577,7 @@ export async function zetDeelConcept(
 
 /**
  * Plaatst het (aangepaste) bericht onder de naam van de gebruiker in het
- * kanaal van het platform of de Team-serie en zet de stap op klaar.
+ * kanaal van het platform of de Team-serie.
  */
 export async function deelInSlack(
   email: string,
@@ -560,7 +586,7 @@ export async function deelInSlack(
   platforms: NotulenPlatform[],
 ): Promise<{ fout: string } | null> {
   const rij = teDelen(email, id);
-  if (!rij || rij.extern !== 0)
+  if (!rij || rij.slack_stand !== null)
     return { fout: "Deze meeting staat niet klaar om te delen" };
   const doel = deelKanaal(
     {
@@ -581,31 +607,79 @@ export async function deelInSlack(
         "UPDATE notulen SET slack_ts = ? WHERE email = ? AND meeting_id = ?",
       )
       .run(ts, email, id);
-    zetStap(email, id, 6, permalink ? { gedeeld_url: permalink } : {});
+    zetOnderdeel(email, id, "slack", "verstuurd", permalink ?? null);
+    rondDeelAf(email, id);
     return null;
   } finally {
     laatLos(email, id);
   }
 }
 
-/** Niet delen: Gedeeld is afgerond zonder dat er iets weggaat, door naar de actiepunten. */
+/** Slaat een onderdeel over; zijn alle onderdelen klaar, dan is Delen afgerond. */
+export function slaOnderdeelOver(
+  email: string,
+  id: string,
+  onderdeel: DeelOnderdeel,
+): boolean {
+  const rij = teDelen(email, id);
+  if (!rij || (onderdeel === "mail" && rij.extern !== 1)) return false;
+  if (rij[KOLOMMEN[onderdeel][0]] !== null) return false;
+  zetOnderdeel(email, id, onderdeel, "overgeslagen");
+  rondDeelAf(email, id);
+  return true;
+}
+
+/** Toch versturen: een overgeslagen onderdeel is weer open, en Delen ook als het al afgerond was. */
+export function heropenOnderdeel(
+  email: string,
+  id: string,
+  onderdeel: DeelOnderdeel,
+): boolean {
+  const rij = leesRij(email, id);
+  if (!rij || rij.hoort === PRIVE || Number(rij.stap) < 5) return false;
+  if (rij[KOLOMMEN[onderdeel][0]] !== "overgeslagen") return false;
+  zetOnderdeel(email, id, onderdeel, null);
+  database()
+    .prepare(
+      `UPDATE notulen SET stap = 5, sinds = ?, niet_gedeeld = NULL, elders = NULL
+       WHERE email = ? AND meeting_id = ? AND stap = 6`,
+    )
+    .run(Date.now(), email, id);
+  return true;
+}
+
+/** Niet delen: alles wat nog open staat wordt overgeslagen, door naar de actiepunten. */
 export function nietDelen(email: string, id: string): boolean {
+  const rij = teDelen(email, id);
+  if (!rij) return false;
+  if (rij.slack_stand === null)
+    zetOnderdeel(email, id, "slack", "overgeslagen");
+  if (rij.extern === 1 && rij.mail_stand === null)
+    zetOnderdeel(email, id, "mail", "overgeslagen");
+  return rondDeelAf(email, id);
+}
+
+/** Al gedeeld: Delen is afgerond zonder dat het dashboard iets verstuurt, door naar de actiepunten. */
+export function eldersGedeeld(email: string, id: string): boolean {
   const nu = Date.now();
   const { changes } = database()
     .prepare(
-      `UPDATE notulen SET stap = 6, sinds = ?, niet_gedeeld = ?, bezig = NULL, fout = NULL
+      `UPDATE notulen SET stap = 6, sinds = ?, elders = ?, bezig = NULL, fout = NULL
        WHERE email = ? AND meeting_id = ? AND stap = 5 AND hoort IS NOT 'prive'`,
     )
     .run(nu, nu, email, id);
   return changes === 1;
 }
 
-/** Toch delen: terug naar de stap Gedeeld. */
+/** Ongedaan maken van Niet delen of Al gedeeld: terug naar de stap Delen; wat al verstuurd is blijft verstuurd. */
 export function tochDelen(email: string, id: string): boolean {
   const { changes } = database()
     .prepare(
-      `UPDATE notulen SET stap = 5, sinds = ?, niet_gedeeld = NULL
-       WHERE email = ? AND meeting_id = ? AND stap = 6 AND niet_gedeeld IS NOT NULL`,
+      `UPDATE notulen SET stap = 5, sinds = ?, niet_gedeeld = NULL, elders = NULL,
+         mail_stand = CASE WHEN mail_stand = 'overgeslagen' THEN NULL ELSE mail_stand END,
+         slack_stand = CASE WHEN slack_stand = 'overgeslagen' THEN NULL ELSE slack_stand END
+       WHERE email = ? AND meeting_id = ? AND stap = 6
+         AND (niet_gedeeld IS NOT NULL OR elders IS NOT NULL)`,
     )
     .run(Date.now(), email, id);
   return changes === 1;
@@ -725,7 +799,9 @@ async function naarSuperhuman(
   let paginaId = tekst(rij.pagina_id);
   if (!docId || !paginaId) {
     const doel = await bestemming(email, meeting, platforms);
-    const naam = paginaNaam(meeting);
+    // Na een andere opname komt er een nieuwe pagina; de oude blijft staan.
+    const versie = Number(rij.pagina_versie ?? 0);
+    const naam = paginaNaam(meeting) + (versie > 0 ? ` (${versie + 1})` : "");
     const paginas = doel.paginas ?? (await leesPaginas(doel.docId));
     const bestaand = paginas.find(
       (p) => p.parentId === doel.ouder && p.naam === naam,
@@ -747,4 +823,151 @@ async function naarSuperhuman(
     await wacht(10_000);
   }
   laatLos(email, meeting.id);
+}
+
+// ---------- Opname achteraf corrigeren ----------
+
+/**
+ * Koppelt een opname aan een meeting (of niets, bij `opnameId` null) en zet de meeting
+ * terug om de notulen opnieuw te maken. Een andere meeting die de opname had, raakt hem
+ * kwijt. Superhuman-pagina's blijven staan: de volgende run maakt een nieuwe pagina.
+ */
+export function zetOpname(
+  email: string,
+  id: string,
+  opnameId: string | null,
+): boolean {
+  const db = database();
+  if (!leesRij(email, id)) return false;
+  const terug = db.prepare(
+    `UPDATE notulen SET opname_id = ?, opname_keuze = ?, stap = ?, sinds = ?,
+       pagina_versie = COALESCE(pagina_versie, 0) + (pagina_id IS NOT NULL),
+       tekst = NULL, pagina_doc = NULL, pagina_id = NULL, pagina_url = NULL,
+       concept_id = NULL, thread_id = NULL, slack_tekst = NULL, slack_ts = NULL,
+       gedeeld_url = NULL, niet_gedeeld = NULL, elders = NULL,
+       mail_stand = NULL, mail_url = NULL, slack_stand = NULL, slack_url = NULL,
+       fout = NULL, bezig = NULL, acties_uit = NULL
+     WHERE email = ? AND meeting_id = ?`,
+  );
+  // De acties komen opnieuw uit de nieuwe notulen; al gemaakte to-do's blijven bestaan.
+  const actiesWeg = db.prepare(
+    "DELETE FROM actiepunten WHERE email = ? AND meeting_id = ?",
+  );
+  db.exec("BEGIN");
+  try {
+    if (opnameId) {
+      const anderen = db
+        .prepare(
+          "SELECT meeting_id FROM notulen WHERE email = ? AND opname_id = ? AND meeting_id != ?",
+        )
+        .all(email, opnameId, id);
+      for (const andere of anderen) {
+        terug.run(null, null, 1, Date.now(), email, String(andere.meeting_id));
+        actiesWeg.run(email, String(andere.meeting_id));
+      }
+    }
+    actiesWeg.run(email, id);
+    terug.run(
+      opnameId,
+      opnameId ?? "geen",
+      opnameId ? 2 : 1,
+      Date.now(),
+      email,
+      id,
+    );
+    db.exec("COMMIT");
+  } catch (fout) {
+    db.exec("ROLLBACK");
+    throw fout;
+  }
+  return true;
+}
+
+const recentCache = new Map<
+  number,
+  { op: number; lijst: Promise<Awaited<ReturnType<typeof recenteOpnames>>> }
+>();
+
+/** `plaud recent` met 1 minuut geheugen, want het paneel vraagt het bij elk openen. */
+function recentGeheugen(dagen: number) {
+  const nu = Date.now();
+  const bewaard = recentCache.get(dagen);
+  if (bewaard && nu - bewaard.op < 60_000) return bewaard.lijst;
+  const lijst = recenteOpnames(dagen);
+  recentCache.set(dagen, { op: nu, lijst });
+  return lijst;
+}
+
+async function infoVan(
+  id: string,
+  naam: string,
+  bezetDoor: string | null,
+): Promise<OpnameInfo | { fout: string }> {
+  const gelezen = bekend.get(id) ?? (await opnameDetails(id));
+  if ("fout" in gelezen) return gelezen;
+  bekend.set(id, gelezen);
+  return { id, naam, start: gelezen.start, duurMs: gelezen.duurMs, bezetDoor };
+}
+
+/** De gekoppelde opname en de opnames rond de dag van de meeting, voor het paneel. */
+export async function opnameKeuzes(
+  email: string,
+  id: string,
+): Promise<OpnameKeuzes> {
+  const rij = leesRij(email, id);
+  if (!rij) return { fout: "Deze meeting is niet gevonden" };
+  const dag = lokaal(String(rij.start)).datum;
+  const dagen = Math.min(
+    30,
+    Math.ceil((Date.now() - Date.parse(String(rij.start))) / DAG_MS) + 2,
+  );
+  const recent = await recentGeheugen(dagen);
+  if ("fout" in recent) return recent;
+  const titels = new Map(
+    database()
+      .prepare(
+        "SELECT opname_id, titel FROM notulen WHERE email = ? AND opname_id IS NOT NULL AND meeting_id != ?",
+      )
+      .all(email, id)
+      .map((andere) => [String(andere.opname_id), String(andere.titel)]),
+  );
+  const opties: OpnameInfo[] = [];
+  for (const opname of opnamesRondDag(recent, dag)) {
+    const info = await infoVan(
+      opname.id,
+      opname.naam,
+      titels.get(opname.id) ?? null,
+    );
+    if ("fout" in info) return info;
+    opties.push(info);
+  }
+  opties.sort((a, b) => a.start - b.start);
+  const opnameId = tekst(rij.opname_id);
+  if (!opnameId) return { gekoppeld: null, opties };
+  const gekoppeld =
+    opties.find((o) => o.id === opnameId) ??
+    (await infoVan(opnameId, "Opname in Plaud", null));
+  if ("fout" in gekoppeld) return gekoppeld;
+  return { gekoppeld, opties };
+}
+
+/**
+ * Verversen voor één meeting: kijkt opnieuw in Plaud naar de opname, en het
+ * transcript als de opname er is. De zware stappen (notulen) lopen daarna zelf door.
+ */
+export async function ververs(
+  email: string,
+  id: string,
+  platforms: NotulenPlatform[],
+): Promise<(() => Promise<void>) | { fout: string }> {
+  const rij = leesRij(email, id);
+  if (!rij) return { fout: "Deze meeting is niet gevonden" };
+  const meetings = await meetingsVoorNotulen(email, platforms, Date.now());
+  if ("fout" in meetings) return meetings;
+  const meeting = meetings.find((m) => m.id === id);
+  if (!meeting) return { fout: "Deze meeting staat niet meer in de agenda" };
+  // Een opgeloste fout hoort bij Verversen: opnieuw kijken is precies opnieuw proberen.
+  herstelNotulen(email, id);
+  await zoekOpnames(email, [meeting], meetings, Date.now());
+  return () => verder(email, meeting, platforms);
 }

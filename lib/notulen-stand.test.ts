@@ -19,11 +19,12 @@ const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   tekst: null,
   paginaUrl: null,
   fout: null,
-  conceptUrl: null,
   slackTekst: null,
-  gedeeldUrl: null,
+  mail: { stand: "open", url: null },
+  slack: { stand: "open", url: null },
   actiesUit: false,
   nietGedeeld: false,
+  elders: false,
   ...extra,
 });
 const stand = (
@@ -84,20 +85,24 @@ test("dashboard bezig, klaar, fout en overgeslagen", () => {
   );
 });
 
-test("delen: intern wacht op Claude, dan op jou; extern op jou, dan op Gmail", () => {
+test("delen: wacht op Claude (ook extern), dan op jou; afgerond is klaar", () => {
   const extern = { ...meeting, extern: true };
   assert.strictEqual(stand(rij(5)), "open Claude schrijft het Slack-bericht");
   assert.strictEqual(
-    stand(rij(5, { slackTekst: "Notulen staan klaar" })),
+    stand(rij(5), eind, extern),
+    "open Claude schrijft het Slack-bericht",
+  );
+  assert.strictEqual(
+    stand(rij(5, { slackTekst: "Notulen staan klaar" }), eind, extern),
     "jij Wacht op jou: delen",
   );
-  assert.strictEqual(stand(rij(5), eind, extern), "jij Wacht op jou: delen");
   assert.strictEqual(
-    stand(rij(5, { conceptUrl: "https://mail.google.com/x" }), eind, extern),
-    "jij Wacht op jou: verstuur in Gmail",
-  );
-  assert.strictEqual(
-    stand(rij(6, { gedeeldUrl: "https://x", actiesUit: true })),
+    stand(
+      rij(6, {
+        slack: { stand: "verstuurd", url: "https://x" },
+        actiesUit: true,
+      }),
+    ),
     "ok Klaar",
   );
   assert.strictEqual(
@@ -112,7 +117,10 @@ test("delen: na 4 uur nog niet gedeeld is vastgelopen, privé nooit", () => {
   assert.strictEqual(status?.tekst, "Nog niet gedeeld");
   assert.strictEqual(status?.vast, true);
   assert.strictEqual(
-    stand(rij(5), eind + 3 * UUR, { ...meeting, extern: true }),
+    stand(rij(5, { slackTekst: "Hoi" }), eind + 3 * UUR, {
+      ...meeting,
+      extern: true,
+    }),
     "jij Wacht op jou: delen",
   );
   assert.strictEqual(
@@ -167,4 +175,15 @@ test("niet delen: Gedeeld is afgerond, door naar de actiepunten; toch delen zet 
     stand(rij(5, { slackTekst: "Notulen staan klaar", actiesUit: true })),
     "jij Wacht op jou: delen",
   );
+});
+
+test("al gedeeld: Gedeeld is afgerond zonder dat het dashboard iets verstuurde", () => {
+  const status = notulenStatus(
+    meeting,
+    rij(6, { elders: true, actiesUit: true }),
+    null,
+    eind,
+  );
+  assert.strictEqual(status?.elders, true);
+  assert.strictEqual(status?.stand, "ok");
 });

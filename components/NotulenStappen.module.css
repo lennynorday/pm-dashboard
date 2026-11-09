@@ -174,6 +174,49 @@
   cursor: pointer;
 }
 
+/* Opname wisselen in de stap Opgenomen */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-01) var(--space-03);
+}
+
+.opnameLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: var(--type-meta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.opnames {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opnameKeuze {
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--space-02);
+  background: none;
+  color: var(--norday-dark);
+  font: var(--type-meta);
+  text-align: left;
+  cursor: pointer;
+}
+
+.opnameKeuze:hover,
+.opnameKeuze[aria-current="true"] {
+  background: var(--color-line-soft);
+}
+
 /* Notulen-overlay */
 .dialoog {
   width: min(760px, calc(100vw - 2 * var(--space-04)));

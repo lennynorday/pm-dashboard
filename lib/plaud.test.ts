@@ -4,6 +4,7 @@ import {
   parseDuur,
   parseFile,
   parseRecent,
+  opnamesRondDag,
   parseTranscript,
   verdeelOpnames,
 } from "./plaud.ts";
@@ -148,5 +149,20 @@ test("plaudWebUrl laat of_ weg", () => {
   assert.strictEqual(
     plaudWebUrl("of_9e7c39949756c4b78019c878b249d9f3"),
     "https://web.plaud.ai/file/9e7c39949756c4b78019c878b249d9f3",
+  );
+});
+
+test("opnamesRondDag houdt de dag zelf en de dagen ernaast, ook over een maandgrens", () => {
+  const opname = (datum: string) => ({ id: `of_${datum}`, naam: "x", datum });
+  const lijst = [
+    "2026-10-30",
+    "2026-10-31",
+    "2026-11-01",
+    "2026-11-02",
+    "2026-11-03",
+  ].map(opname);
+  assert.deepStrictEqual(
+    opnamesRondDag(lijst, "2026-11-01").map((o) => o.datum),
+    ["2026-10-31", "2026-11-01", "2026-11-02"],
   );
 });

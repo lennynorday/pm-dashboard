@@ -1,17 +1,26 @@
-/** Delen van notulen: ontvangers, Slack-kanaal en verzonden mail. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
+/** Delen van notulen: ontvangers, Slack-kanaal en wat er verstuurd is. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
 import type { Contactpersoon } from "./accountgegevens.ts";
 import type { LinkUrls } from "./links.ts";
 import { type Meeting, type Regel, TEAM } from "./meetings.ts";
 
-/** Wat het paneel nodig heeft om de stap Gedeeld te tonen. */
-export type DeelInfo =
-  | {
-      soort: "gmail";
-      /** Standaard: de PO('s) uit de accountgegevens. */
-      ontvangers: string[];
-      /** De externe genodigden van de afspraak, voor "Aan alle genodigden". */
-      genodigden: string[];
-    }
+/** De mail aan de klant, zoals de overlay hem voorinvult. */
+export type MailInfo = {
+  /** Standaard: de PO('s) uit de accountgegevens. */
+  ontvangers: string[];
+  /** De externe genodigden van de afspraak, voor "Aan alle genodigden". */
+  genodigden: string[];
+  onderwerp: string;
+  tekst: string;
+};
+
+export type GeenKanaal = {
+  soort: "geen-kanaal";
+  melding: string;
+  href: string;
+  linkTekst: string;
+};
+
+export type SlackInfo =
   | {
       soort: "slack";
       /** Zoals in de knop: "#kanaal" of "het interne kanaal". */
@@ -19,7 +28,23 @@ export type DeelInfo =
       /** Mag het Slack-token berichten plaatsen (chat:write)? */
       magSchrijven: boolean;
     }
-  | { soort: "geen-kanaal"; melding: string; href: string; linkTekst: string };
+  | GeenKanaal;
+
+/** Wat de overlay nodig heeft om te delen: extern een mail en Slack, anders alleen Slack. */
+export type DeelInfo = { mail: MailInfo | null; slack: SlackInfo };
+
+export type OnderdeelStand = "open" | "verstuurd" | "overgeslagen";
+
+/** Een onderdeel van Delen (mail of Slack) met de link naar wat er verstuurd is. */
+export type Onderdeel = { stand: OnderdeelStand; url: string | null };
+
+/** Hoe Delen eindigt: open zolang een onderdeel nog moet, gedeeld als er iets verstuurd is, anders niet gedeeld. */
+export function deelAfgerond(
+  onderdelen: OnderdeelStand[],
+): "open" | "gedeeld" | "niet" {
+  if (onderdelen.includes("open")) return "open";
+  return onderdelen.includes("verstuurd") ? "gedeeld" : "niet";
+}
 
 // Eenvoudig, zoals een adresveld: iets@iets.tld zonder spaties.
 const EMAIL = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/i;
@@ -75,8 +100,6 @@ export function slackKanaal(
   return null;
 }
 
-type GeenKanaal = Extract<DeelInfo, { soort: "geen-kanaal" }>;
-
 /**
  * Waar het Slack-bericht heen gaat: bij Team het kanaal van de serie
  * (Instellingen), bij een platform de link Slack intern. Anders een melding
@@ -117,28 +140,9 @@ export function deelKanaal(
   };
 }
 
-/** Wat er in de Gmail-thread van het concept staat: verstuurd, nog een concept, of weg (weggegooid). */
-export function threadStand(
-  thread: Record<string, unknown> | null,
-): "verstuurd" | "concept" | "weg" {
-  const berichten = Array.isArray(thread?.messages) ? thread.messages : [];
-  const labels = berichten.map((bericht: unknown) =>
-    typeof bericht === "object" && bericht !== null && "labelIds" in bericht
-      ? String(bericht.labelIds)
-      : "",
-  );
-  if (labels.some((l) => l.split(",").includes("SENT"))) return "verstuurd";
-  if (labels.some((l) => l.split(",").includes("DRAFT"))) return "concept";
-  return "weg";
-}
-
 /** Een thread in Gmail web; ook het hex-id van de API werkt daar. */
 export const gmailThreadUrl = (email: string, threadId: string) =>
   `https://mail.google.com/mail/?authuser=${encodeURIComponent(email)}#all/${threadId}`;
-
-/** Een concept openen in Gmail web, met het id van het conceptbericht. */
-export const gmailConceptUrl = (email: string, berichtId: string) =>
-  `https://mail.google.com/mail/?authuser=${encodeURIComponent(email)}#drafts?compose=${berichtId}`;
 
 const datumFormat = new Intl.DateTimeFormat("nl-NL", {
   day: "numeric",
@@ -147,15 +151,18 @@ const datumFormat = new Intl.DateTimeFormat("nl-NL", {
   timeZone: "Europe/Amsterdam",
 });
 
-/** Onderwerp en tekst van de mail aan de klant. */
+/** Onderwerp en tekst van de mail aan de klant, met de link naar de notulen en de acties. */
 export function conceptMail(
   meeting: { titel: string; start: string },
   paginaUrl: string,
   voornaam: string,
+  acties: { eigenaar: string; wat: string }[],
 ): { onderwerp: string; tekst: string } {
   const datum = datumFormat.format(Date.parse(meeting.start));
+  const lijst = acties.map((a) => `• ${a.eigenaar}: ${a.wat}`).join("\n");
+  const actieBlok = lijst ? `Acties:\n${lijst}\n\n` : "";
   return {
     onderwerp: `Notulen ${meeting.titel} ${datum}`,
-    tekst: `Hoi,\n\nDe notulen van ${meeting.titel} van ${datum} staan klaar:\n${paginaUrl}\n\nLaat het weten als er iets niet klopt of ontbreekt.\n\nGroet,\n${voornaam}`,
+    tekst: `Hoi,\n\nDe notulen van ${meeting.titel} van ${datum} staan klaar:\n${paginaUrl}\n\n${actieBlok}Laat het weten als er iets niet klopt of ontbreekt.\n\nGroet,\n${voornaam}`,
   };
 }

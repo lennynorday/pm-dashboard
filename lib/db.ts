@@ -144,9 +144,12 @@ function open(): DatabaseSync {
     -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman, 6 gedeeld).
     -- acties_uit: wanneer (ms) de actiepunten uit de notulen zijn gehaald.
     -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
-    -- Delen: extern via een Gmail-concept (concept_id = het conceptbericht, thread_id),
-    -- intern en Team via Slack (slack_tekst van Claude, slack_ts); gedeeld_url = mail of bericht.
+    -- Delen: extern een mail (mail_stand, mail_url = de thread in Gmail) en Slack, intern en Team alleen
+    -- Slack (slack_tekst van Claude, slack_ts, slack_stand, slack_url). Een stand is 'verstuurd' of
+    -- 'overgeslagen'; leeg = nog te doen. concept_id, thread_id en gedeeld_url zijn van de oude flow
+    -- met een Gmail-concept en worden niet meer gebruikt.
     -- niet_gedeeld: wanneer (ms) de gebruiker koos om niet te delen; Gedeeld telt dan als afgerond.
+    -- elders: wanneer (ms) de gebruiker aangaf dat het al elders gedeeld is.
     CREATE TABLE IF NOT EXISTS notulen (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       meeting_id TEXT NOT NULL,
@@ -170,6 +173,11 @@ function open(): DatabaseSync {
       slack_ts TEXT,
       gedeeld_url TEXT,
       niet_gedeeld INTEGER,
+      mail_stand TEXT,
+      mail_url TEXT,
+      slack_stand TEXT,
+      slack_url TEXT,
+      elders INTEGER,
       fout TEXT,
       bezig INTEGER,
       acties_uit INTEGER,
@@ -198,6 +206,13 @@ function open(): DatabaseSync {
       naam TEXT NOT NULL,
       slack_id TEXT NOT NULL,
       PRIMARY KEY (email, naam)
+    );
+    -- De Slack-leden bij de laatste keer ophalen: wie hier niet in staat is extern.
+    CREATE TABLE IF NOT EXISTS slack_leden (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      id TEXT NOT NULL,
+      naam TEXT NOT NULL,
+      PRIMARY KEY (email, id)
     );
     -- Vanaf wanneer (ms) het dashboard notulen maakt; eerdere meetings doen niet mee.
     CREATE TABLE IF NOT EXISTS notulen_start (
@@ -282,6 +297,34 @@ function open(): DatabaseSync {
   // Feedback die nog in een nieuwe versie moet worden verwerkt; leeg als Claude niet bezig is met een aanpassing.
   if (!opdrachtKolommen.some((kolom) => kolom.name === "feedback")) {
     db.exec("ALTER TABLE opdrachten ADD COLUMN feedback TEXT");
+  }
+  // Handmatige opnamekeuze: leeg = automatisch, 'geen' = geen opname, anders het gekozen opname-id.
+  // pagina_versie telt hoe vaak de notulen opnieuw zijn gemaakt na een andere opname; elke versie krijgt een eigen Superhuman-pagina.
+  const notulenKolommen = db.prepare("PRAGMA table_info(notulen)").all();
+  if (!notulenKolommen.some((kolom) => kolom.name === "opname_keuze")) {
+    db.exec(`
+      ALTER TABLE notulen ADD COLUMN opname_keuze TEXT;
+      ALTER TABLE notulen ADD COLUMN pagina_versie INTEGER;
+    `);
+  }
+  // Delen per onderdeel (mail, Slack); eerder gedeelde meetings krijgen hun onderdeel op verstuurd.
+  if (
+    !db
+      .prepare("PRAGMA table_info(notulen)")
+      .all()
+      .some((kolom) => kolom.name === "mail_stand")
+  ) {
+    db.exec(`
+      ALTER TABLE notulen ADD COLUMN mail_stand TEXT;
+      ALTER TABLE notulen ADD COLUMN mail_url TEXT;
+      ALTER TABLE notulen ADD COLUMN slack_stand TEXT;
+      ALTER TABLE notulen ADD COLUMN slack_url TEXT;
+      ALTER TABLE notulen ADD COLUMN elders INTEGER;
+      UPDATE notulen SET mail_stand = 'verstuurd', mail_url = gedeeld_url
+        WHERE extern = 1 AND stap >= 6 AND niet_gedeeld IS NULL AND gedeeld_url IS NOT NULL;
+      UPDATE notulen SET slack_stand = 'verstuurd', slack_url = gedeeld_url
+        WHERE extern = 0 AND stap >= 6 AND niet_gedeeld IS NULL AND gedeeld_url IS NOT NULL;
+    `);
   }
   if (DEMO) vulDemo(db);
   return db;

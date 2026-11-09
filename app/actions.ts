@@ -39,14 +39,22 @@ import {
 import { titelWoord } from "@/lib/meetings";
 import {
   deelInSlack,
+  eldersGedeeld,
   herstelNotulen,
+  heropenOnderdeel,
+  isDeelOnderdeel,
   nietDelen,
   notulenPlatforms,
+  opnameKeuzes,
+  slaOnderdeelOver,
+  stuurDeelMail,
   tochDelen,
   verwerkNotulen,
-  zetDeelConcept,
+  ververs,
+  zetOpname,
 } from "@/lib/notulen";
 import { isEmail } from "@/lib/notulen-delen";
+import type { OpnameKeuzes } from "@/lib/notulen-stand";
 import {
   GmailComposeOntbreektError,
   GmailNietVerbondenError,
@@ -841,16 +849,70 @@ export async function opnieuwNotulenAction(meetingId: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-/** Niet delen (`niet` true) of toch delen: er wordt niets verstuurd. */
-export async function nietDelenAction(
+/** De gekoppelde Plaud-opname en de opnames rond de dag van de meeting. */
+export async function opnameKeuzesAction(
   meetingId: string,
-  niet: boolean,
+): Promise<OpnameKeuzes> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return { fout: "Niet ingelogd" };
+  return opnameKeuzes(user.email, meetingId);
+}
+
+/** Een andere opname koppelen, of null voor Geen opname; de notulen worden opnieuw gemaakt. */
+export async function kiesOpnameAction(
+  meetingId: string,
+  opnameId: string | null,
 ): Promise<void> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string") return;
-  const gelukt = niet
-    ? nietDelen(user.email, meetingId)
-    : tochDelen(user.email, meetingId);
+  if (opnameId !== null && !/^of_[0-9a-f]{32}$/.test(opnameId)) return;
+  if (!zetOpname(user.email, meetingId, opnameId)) return;
+  const platforms = await notulenPlatforms();
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
+  revalidatePath("/", "layout");
+}
+
+/** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */
+export async function verversMeetingAction(meetingId: string): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  const platforms = await notulenPlatforms();
+  if (!platforms) return;
+  const vervolg = await ververs(user.email, meetingId, platforms);
+  if (typeof vervolg === "function") after(vervolg);
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Niet delen (`soort` "niet"), Al gedeeld ("elders") of ongedaan maken ("terug"):
+ * er wordt niets verstuurd.
+ */
+export async function nietDelenAction(
+  meetingId: string,
+  soort: "niet" | "elders" | "terug",
+): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  const wijzig = {
+    niet: nietDelen,
+    elders: eldersGedeeld,
+    terug: tochDelen,
+  }[soort];
+  if (wijzig?.(user.email, meetingId)) revalidatePath("/", "layout");
+}
+
+/** Slaat de mail of het Slack-bericht over (`overslaan` true), of zet het weer open (Toch versturen). */
+export async function zetDeelOnderdeelAction(
+  meetingId: string,
+  onderdeel: string,
+  overslaan: boolean,
+): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string" || !isDeelOnderdeel(onderdeel))
+    return;
+  const gelukt = overslaan
+    ? slaOnderdeelOver(user.email, meetingId, onderdeel)
+    : heropenOnderdeel(user.email, meetingId, onderdeel);
   if (gelukt) revalidatePath("/", "layout");
 }
 
@@ -863,42 +925,52 @@ export type DeelUitkomst =
 const reden = (fout: unknown) =>
   fout instanceof Error ? fout.message : String(fout);
 
-/** Zet een Gmail-concept met de notulen klaar aan de gekozen ontvangers. Verstuurt niets. */
-export async function zetDeelConceptAction(
+/** Verstuurt de mail met de notulen aan de klant, direct via Gmail, na een klik op Verstuur mail. */
+export async function stuurDeelMailAction(
   meetingId: string,
-  ontvangers: string[],
+  mail: { aan: string[]; onderwerp: string; tekst: string },
 ): Promise<DeelUitkomst> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string")
     return { uitkomst: "fout", fout: "Niet ingelogd" };
+  const { aan, onderwerp, tekst } = mail ?? {};
   if (
-    !Array.isArray(ontvangers) ||
-    ontvangers.length === 0 ||
-    ontvangers.length > 50 ||
-    !ontvangers.every((adres) => typeof adres === "string" && isEmail(adres))
+    !Array.isArray(aan) ||
+    aan.length === 0 ||
+    aan.length > 50 ||
+    !aan.every((adres) => typeof adres === "string" && isEmail(adres))
   ) {
     return { uitkomst: "fout", fout: "Kies minstens één geldig e-mailadres" };
   }
+  if (
+    typeof onderwerp !== "string" ||
+    !onderwerp.trim() ||
+    onderwerp.length > 300 ||
+    typeof tekst !== "string" ||
+    !tekst.trim() ||
+    tekst.length > 10000
+  ) {
+    return {
+      uitkomst: "fout",
+      fout: "Het onderwerp of bericht is leeg of te lang",
+    };
+  }
   try {
-    const uit = await zetDeelConcept(
-      user.email,
-      meetingId,
-      ontvangers.map((adres) => adres.trim()),
-      user.voornaam,
-    );
-    revalidatePath("/meetings");
-    if ("fout" in uit) return { uitkomst: "fout", fout: uit.fout };
-    return { uitkomst: "gelukt", conceptUrl: uit.conceptUrl };
+    const fout = await stuurDeelMail(user.email, meetingId, {
+      aan: aan.map((adres) => adres.trim()),
+      onderwerp: onderwerp.trim(),
+      tekst: tekst.trim(),
+    });
+    revalidatePath("/", "layout");
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    return { uitkomst: "gelukt", conceptUrl: null };
   } catch (fout) {
     if (
       fout instanceof GmailComposeOntbreektError ||
       fout instanceof GmailNietVerbondenError
     )
       return { uitkomst: "verbinden" };
-    return {
-      uitkomst: "fout",
-      fout: `Het concept zetten mislukte: ${reden(fout)}`,
-    };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
   }
 }
 

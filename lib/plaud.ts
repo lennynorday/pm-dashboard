@@ -61,6 +61,18 @@ export function parseTranscript(tekst: string): string {
     .join("\n");
 }
 
+const DAG_MS = 24 * 60 * 60 * 1000;
+const dagPlus = (dag: string, n: number) =>
+  new Date(Date.parse(`${dag}T00:00:00Z`) + n * DAG_MS)
+    .toISOString()
+    .slice(0, 10);
+
+/** Opnames van de dag zelf en de dag ervoor en erna; de datum in de lijst kan in UTC staan. */
+export function opnamesRondDag(opnames: Opname[], dag: string): Opname[] {
+  const dagen = [dagPlus(dag, -1), dag, dagPlus(dag, 1)];
+  return opnames.filter((opname) => dagen.includes(opname.datum));
+}
+
 const overlap = (
   meeting: { start: number; eind: number },
   opname: OpnameDetails,

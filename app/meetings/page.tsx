@@ -1,5 +1,6 @@
 import { after, connection } from "next/server";
 import { ExternalLink } from "@/components/ExternalLink";
+import { leesActies } from "@/lib/actiepunt";
 import { leesVanMeetings } from "@/lib/actiepunten";
 import { Meetings } from "@/components/Meetings";
 import { Melding } from "@/components/Melding";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/notulen";
 import {
   type DeelInfo,
+  conceptMail,
   deelKanaal,
   externeGenodigden,
   poAdressen,
@@ -86,6 +88,12 @@ export default async function MeetingsPage({
           leesOvergeslagen(user.email),
           NORDAY_DOMEIN,
           nu.getTime(),
+          new Set(
+            leesNotulen(
+              user.email,
+              agenda.items.map((item) => item.id),
+            ).map((rij) => rij.meetingId),
+          ),
         )
       : [];
 
@@ -100,20 +108,29 @@ export default async function MeetingsPage({
   );
   const vanaf = notulenVanaf(user.email);
   const magSchrijven = await slackMagSchrijven(user.email);
-  // Ontvangers of kanaal voor de stap Gedeeld.
+  // De mail en het Slack-kanaal voor de stap Delen.
   const deelInfo = (meeting: Meeting): DeelInfo => {
-    if (meeting.extern) {
-      return {
-        soort: "gmail",
-        ontvangers: poAdressen(
-          metLinks.find((p) => p.slug === meeting.hoort)?.contactpersonen ?? [],
-        ),
-        genodigden: externeGenodigden(meeting.deelnemers, NORDAY_DOMEIN),
-      };
-    }
     const doel = deelKanaal(meeting, metLinks, regels);
-    if ("melding" in doel) return doel;
-    return { soort: "slack", naam: doel.naam, magSchrijven };
+    const rij = rijen.get(meeting.id);
+    const mail = {
+      ontvangers: poAdressen(
+        metLinks.find((p) => p.slug === meeting.hoort)?.contactpersonen ?? [],
+      ),
+      genodigden: externeGenodigden(meeting.deelnemers, NORDAY_DOMEIN),
+      ...conceptMail(
+        meeting,
+        rij?.paginaUrl ?? "",
+        user.voornaam,
+        leesActies(rij?.tekst ?? ""),
+      ),
+    };
+    return {
+      mail: meeting.extern ? mail : null,
+      slack:
+        "melding" in doel
+          ? doel
+          : { soort: "slack", naam: doel.naam, magSchrijven },
+    };
   };
   const acties = Map.groupBy(
     leesVanMeetings(
@@ -132,7 +149,8 @@ export default async function MeetingsPage({
       nu.getTime(),
     );
     if (!status) continue;
-    const delen = status.stap === 5 && meeting.hoort !== PRIVE;
+    // Ook na het delen: de overlay toont dan wat er verstuurd is.
+    const delen = status.stap >= 5 && meeting.hoort !== PRIVE;
     statussen[meeting.id] = {
       ...status,
       delen: delen ? deelInfo(meeting) : null,

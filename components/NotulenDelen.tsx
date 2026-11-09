@@ -1,51 +1,107 @@
 "use client";
 
 import NextLink from "next/link";
-import { useId, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   deelInSlackAction,
   type DeelUitkomst,
-  zetDeelConceptAction,
+  nietDelenAction,
+  stuurDeelMailAction,
+  zetDeelOnderdeelAction,
 } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
-import { type DeelInfo, isEmail, voegToe } from "@/lib/notulen-delen";
+import {
+  type DeelInfo,
+  type MailInfo,
+  type Onderdeel,
+  type SlackInfo,
+  isEmail,
+  voegToe,
+} from "@/lib/notulen-delen";
 import type { NotulenStatus } from "@/lib/notulen-stand";
 import { ExternalLink } from "./ExternalLink";
-import { CloseIcon } from "./icons";
+import { CloseIcon, CheckIcon } from "./icons";
 import { VerbindLink } from "./VerbindLink";
 import styles from "./NotulenStappen.module.css";
+import delenStyles from "./NotulenDelen.module.css";
 
-type Props = { meeting: Meeting; status: NotulenStatus };
+type PaneelProps = {
+  meeting: Meeting;
+  status: NotulenStatus;
+  onOpen: () => void;
+};
 
-/** De stap Gedeeld: extern een Gmail-concept, intern en Team een Slack-bericht. Er gaat niets weg zonder klik. */
-export function Delen({ meeting, status }: Props) {
+function samenvatting(delen: DeelInfo): string {
+  const slack =
+    delen.slack.soort === "slack" ? `Slack in ${delen.slack.naam}` : null;
+  return [delen.mail ? "Mail aan de klant" : null, slack]
+    .filter(Boolean)
+    .join(" en ");
+}
+
+/** De stap Delen in het paneel: de overlay openen, niet delen of al elders gedeeld. */
+export function Delen({ meeting, status, onOpen }: PaneelProps) {
+  const [bezig, startTransition] = useTransition();
   const delen = status.delen;
   if (!delen) return null;
-  if (delen.soort === "geen-kanaal") {
-    return (
-      <p className={styles.regel}>
-        {delen.melding} <NextLink href={delen.href}>{delen.linkTekst}</NextLink>
-      </p>
-    );
-  }
-  if (delen.soort === "gmail") {
-    return <GmailDelen meeting={meeting} status={status} delen={delen} />;
-  }
-  if (!delen.magSchrijven) return <SlackVerbinden />;
-  if (!status.slackTekst) {
-    return (
-      <p className={`nd-meta ${styles.regel}`}>
-        Claude schrijft het Slack-bericht, 1 tot 3 minuten.
-      </p>
-    );
-  }
+  const kies = (soort: "niet" | "elders") =>
+    startTransition(() => nietDelenAction(meeting.id, soort));
+  const alleenGeenKanaal = !delen.mail && delen.slack.soort === "geen-kanaal";
+  const wachtOpClaude = !status.slackTekst && status.slack.stand === "open";
+
   return (
-    <SlackDelen
-      key={meeting.id}
-      meeting={meeting}
-      tekst={status.slackTekst}
-      naam={delen.naam}
-    />
+    <>
+      {delen.slack.soort === "geen-kanaal" && !delen.mail && (
+        <p className={styles.regel}>
+          {delen.slack.melding}{" "}
+          <NextLink href={delen.slack.href}>{delen.slack.linkTekst}</NextLink>
+        </p>
+      )}
+      {wachtOpClaude && (
+        <p className={`nd-meta ${styles.regel}`}>
+          Claude schrijft het Slack-bericht, 1 tot 3 minuten.
+        </p>
+      )}
+      {!alleenGeenKanaal && !wachtOpClaude && (
+        <>
+          <p className={`nd-meta ${styles.regel}`}>{samenvatting(delen)}</p>
+          <div className={styles.knoppen}>
+            <button
+              type="button"
+              className="nd-button nd-button--small"
+              onClick={onOpen}
+            >
+              Delen
+            </button>
+          </div>
+        </>
+      )}
+      <div className={delenStyles.acties}>
+        <button
+          type="button"
+          className={styles.linkKnop}
+          disabled={bezig}
+          onClick={() => kies("niet")}
+        >
+          Niet delen
+        </button>
+        <button
+          type="button"
+          className={styles.linkKnop}
+          disabled={bezig}
+          onClick={() => kies("elders")}
+        >
+          Al gedeeld
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -72,74 +128,152 @@ function Uitkomst({ uitkomst }: { uitkomst: DeelUitkomst | null }) {
   return null;
 }
 
-type GmailProps = Props & { delen: Extract<DeelInfo, { soort: "gmail" }> };
+type Onderdelen = "mail" | "slack";
 
-function GmailDelen({ meeting, status, delen }: GmailProps) {
+type KaderProps = {
+  kop: string;
+  klaar?: boolean;
+  actie: ReactNode;
+  children: ReactNode;
+};
+
+/** Eén onderdeel van de overlay, met zijn kop en rechtsboven een actie (Overslaan, Openen of Toch versturen). */
+function Kader({ kop, klaar, actie, children }: KaderProps) {
   const id = useId();
-  const [ontvangers, setOntvangers] = useState(delen.ontvangers);
+  return (
+    <section
+      className={delenStyles.onderdeel}
+      aria-labelledby={id}
+      data-klaar={klaar ? "" : undefined}
+    >
+      <div className={delenStyles.kop}>
+        <h3 className={delenStyles.titel} id={id}>
+          {kop}
+        </h3>
+        {actie}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+type KlaarProps = {
+  meeting: Meeting;
+  onderdeel: Onderdeel;
+  welk: Onderdelen;
+  kop: string;
+  regel: string;
+  openen: string;
+};
+
+/** Een verstuurd onderdeel (vinkje, regel en link) of een overgeslagen onderdeel (met Toch versturen). */
+function Klaar({ meeting, onderdeel, welk, kop, regel, openen }: KlaarProps) {
+  const [bezig, startTransition] = useTransition();
+  const verstuurd = onderdeel.stand === "verstuurd";
+  const link = onderdeel.url && (
+    <ExternalLink href={onderdeel.url} className={styles.linkKnop}>
+      {openen}
+    </ExternalLink>
+  );
+  const terug = (
+    <button
+      type="button"
+      className={styles.linkKnop}
+      disabled={bezig}
+      onClick={() =>
+        startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, false))
+      }
+    >
+      Toch versturen
+    </button>
+  );
+  return (
+    <Kader kop={kop} klaar actie={verstuurd ? link : terug}>
+      <p className={delenStyles.klaarRegel}>
+        {verstuurd && <CheckIcon className={delenStyles.vink} />}
+        {verstuurd ? regel : "Overgeslagen"}
+      </p>
+    </Kader>
+  );
+}
+
+function Overslaan({ meeting, welk }: { meeting: Meeting; welk: Onderdelen }) {
+  const [bezig, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      className={styles.linkKnop}
+      disabled={bezig}
+      onClick={() =>
+        startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, true))
+      }
+    >
+      Overslaan
+    </button>
+  );
+}
+
+type MailProps = { meeting: Meeting; info: MailInfo; onderdeel: Onderdeel };
+
+function MailOnderdeel({ meeting, info, onderdeel }: MailProps) {
+  const id = useId();
+  const [ontvangers, setOntvangers] = useState(info.ontvangers);
   const [invoer, setInvoer] = useState("");
   const [invoerFout, setInvoerFout] = useState<string | null>(null);
+  const [onderwerp, setOnderwerp] = useState(info.onderwerp);
+  const [tekst, setTekst] = useState(info.tekst);
   const [uitkomst, setUitkomst] = useState<DeelUitkomst | null>(null);
   const [bezig, startTransition] = useTransition();
+  const kop = "Mail aan de klant";
 
-  if (status.conceptUrl) {
+  if (onderdeel.stand !== "open") {
     return (
-      <>
-        <p className={styles.regel}>
-          Het concept staat in Gmail. Verstuur het daar; het dashboard ziet
-          binnen 5 minuten dat het verstuurd is.
-        </p>
-        <div className={styles.knoppen}>
-          <ExternalLink
-            href={status.conceptUrl}
-            className="nd-button nd-button--small"
-          >
-            Open concept in Gmail
-          </ExternalLink>
-        </div>
-      </>
+      <Klaar
+        meeting={meeting}
+        onderdeel={onderdeel}
+        welk="mail"
+        kop={kop}
+        regel="Verstuurd onder jouw naam"
+        openen="Openen in Gmail"
+      />
     );
   }
-  if (uitkomst?.uitkomst === "verbinden") {
-    return (
-      <p className={styles.regel}>
-        Het dashboard mag nog geen concepten in Gmail maken. Verbind opnieuw met
-        Google en geef toestemming.{" "}
-        <VerbindLink href="/api/google/login">
-          Opnieuw verbinden met Google
-        </VerbindLink>
-      </p>
-    );
+
+  /** De ontvangers inclusief wat nog in het invoerveld staat; null bij een ongeldig adres. */
+  function metInvoer(): string[] | null {
+    const adres = invoer.trim();
+    if (!adres) return ontvangers;
+    if (!isEmail(adres)) {
+      setInvoerFout(`"${adres}" is geen geldig e-mailadres`);
+      return null;
+    }
+    return voegToe(ontvangers, [adres]);
   }
 
   function voeg() {
-    const adres = invoer.trim();
-    if (!adres) return;
-    if (!isEmail(adres)) {
-      setInvoerFout(`"${adres}" is geen geldig e-mailadres`);
-      return;
-    }
-    setOntvangers(voegToe(ontvangers, [adres]));
+    const lijst = metInvoer();
+    if (!lijst) return;
+    setOntvangers(lijst);
     setInvoer("");
     setInvoerFout(null);
   }
 
-  function zetKlaar() {
-    if (ontvangers.length === 0) {
+  function verstuur() {
+    const aan = metInvoer();
+    if (!aan) return;
+    if (aan.length === 0) {
       setInvoerFout("Voeg eerst een ontvanger toe");
       return;
     }
     startTransition(async () => {
-      setUitkomst(await zetDeelConceptAction(meeting.id, ontvangers));
+      setUitkomst(
+        await stuurDeelMailAction(meeting.id, { aan, onderwerp, tekst }),
+      );
     });
   }
 
   return (
-    <>
-      <p className={styles.regel}>
-        Kies de ontvangers, dan zet het dashboard een Gmail-concept met de link
-        naar de notulen klaar. Versturen doe je zelf in Gmail.
-      </p>
+    <Kader kop={kop} actie={<Overslaan meeting={meeting} welk="mail" />}>
       <div>
         <label className="nd-label" htmlFor={`${id}-aan`}>
           Aan
@@ -185,35 +319,120 @@ function GmailDelen({ meeting, status, delen }: GmailProps) {
             {invoerFout}
           </p>
         )}
-      </div>
-      <div className={styles.knoppen}>
-        <button
-          type="button"
-          className="nd-button nd-button--small"
-          aria-busy={bezig}
-          disabled={bezig}
-          onClick={zetKlaar}
-        >
-          Zet concept klaar in Gmail
-        </button>
-        {delen.genodigden.length > 0 && (
+        {info.genodigden.length > 0 && (
           <button
             type="button"
-            className="nd-button nd-button--small nd-button--quiet"
-            onClick={() => setOntvangers(voegToe(ontvangers, delen.genodigden))}
+            className={styles.linkKnop}
+            onClick={() => setOntvangers(voegToe(ontvangers, info.genodigden))}
           >
             Aan alle genodigden
           </button>
         )}
       </div>
+      <div>
+        <label className="nd-label" htmlFor={`${id}-onderwerp`}>
+          Onderwerp
+        </label>
+        <input
+          id={`${id}-onderwerp`}
+          className="nd-field"
+          value={onderwerp}
+          onChange={(event) => setOnderwerp(event.target.value)}
+        />
+      </div>
+      <div>
+        <label className="nd-label" htmlFor={`${id}-bericht`}>
+          Bericht
+        </label>
+        <textarea
+          id={`${id}-bericht`}
+          className={`nd-field ${delenStyles.tekst}`}
+          value={tekst}
+          onChange={(event) => setTekst(event.target.value)}
+        />
+      </div>
+      {uitkomst?.uitkomst === "verbinden" && (
+        <p className={styles.regel}>
+          Het dashboard mag nog geen mail versturen. Verbind opnieuw met Google
+          en geef toestemming.{" "}
+          <VerbindLink href="/api/google/login">
+            Opnieuw verbinden met Google
+          </VerbindLink>
+        </p>
+      )}
       <Uitkomst uitkomst={uitkomst} />
-    </>
+      <div className={delenStyles.acties}>
+        <button
+          type="button"
+          className="nd-button nd-button--small"
+          aria-busy={bezig}
+          disabled={bezig || !onderwerp.trim() || !tekst.trim()}
+          onClick={verstuur}
+        >
+          Verstuur mail
+        </button>
+      </div>
+    </Kader>
   );
 }
 
-type SlackProps = { meeting: Meeting; tekst: string; naam: string };
+type SlackProps = {
+  meeting: Meeting;
+  info: SlackInfo;
+  tekst: string | null;
+  onderdeel: Onderdeel;
+};
 
-function SlackDelen({ meeting, tekst, naam }: SlackProps) {
+function SlackOnderdeel({ meeting, info, tekst, onderdeel }: SlackProps) {
+  const kop = info.soort === "slack" ? `Slack in ${info.naam}` : "Slack";
+  if (onderdeel.stand !== "open") {
+    return (
+      <Klaar
+        meeting={meeting}
+        onderdeel={onderdeel}
+        welk="slack"
+        kop={kop}
+        regel="Geplaatst onder jouw naam"
+        openen="Openen in Slack"
+      />
+    );
+  }
+  const actie = <Overslaan meeting={meeting} welk="slack" />;
+  if (info.soort === "geen-kanaal") {
+    return (
+      <Kader kop={kop} actie={actie}>
+        <p className={styles.regel}>
+          {info.melding} <NextLink href={info.href}>{info.linkTekst}</NextLink>
+        </p>
+      </Kader>
+    );
+  }
+  if (!info.magSchrijven) {
+    return (
+      <Kader kop={kop} actie={actie}>
+        <SlackVerbinden />
+      </Kader>
+    );
+  }
+  if (tekst === null) {
+    return (
+      <Kader kop={kop} actie={actie}>
+        <p className={`nd-meta ${styles.regel}`}>
+          Claude schrijft het Slack-bericht, 1 tot 3 minuten.
+        </p>
+      </Kader>
+    );
+  }
+  return (
+    <Kader kop={kop} actie={actie}>
+      <SlackFormulier meeting={meeting} naam={info.naam} tekst={tekst} />
+    </Kader>
+  );
+}
+
+type FormulierProps = { meeting: Meeting; naam: string; tekst: string };
+
+function SlackFormulier({ meeting, naam, tekst }: FormulierProps) {
   const id = useId();
   const [bericht, setBericht] = useState(tekst);
   const [uitkomst, setUitkomst] = useState<DeelUitkomst | null>(null);
@@ -225,16 +444,17 @@ function SlackDelen({ meeting, tekst, naam }: SlackProps) {
     <>
       <div>
         <label className="nd-label" htmlFor={`${id}-bericht`}>
-          Bericht voor {naam} (geschreven door Claude, pas aan wat je wilt)
+          Bericht (geschreven door Claude, pas aan wat je wilt)
         </label>
         <textarea
           id={`${id}-bericht`}
-          className={`nd-field ${styles.bericht}`}
+          className={`nd-field ${delenStyles.tekst}`}
           value={bericht}
           onChange={(event) => setBericht(event.target.value)}
         />
       </div>
-      <div className={styles.knoppen}>
+      <Uitkomst uitkomst={uitkomst} />
+      <div className={delenStyles.acties}>
         <button
           type="button"
           className="nd-button nd-button--small"
@@ -249,7 +469,85 @@ function SlackDelen({ meeting, tekst, naam }: SlackProps) {
           Verstuur naar {naam}
         </button>
       </div>
-      <Uitkomst uitkomst={uitkomst} />
     </>
+  );
+}
+
+const dagFormat = new Intl.DateTimeFormat("nl-NL", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "Europe/Amsterdam",
+});
+
+type DialoogProps = {
+  meeting: Meeting;
+  status: NotulenStatus;
+  onSluit: () => void;
+};
+
+/** De overlay om te delen: extern de mail en Slack naast elkaar, intern en Team alleen Slack. */
+export function DelenDialoog({ meeting, status, onSluit }: DialoogProps) {
+  const id = useId();
+  const dialoog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    dialoog.current?.showModal();
+  }, []);
+  const delen = status.delen;
+  if (!delen) return null;
+
+  return (
+    <dialog
+      ref={dialoog}
+      className={`nd-dialog ${delenStyles.dialoog}`}
+      data-twee={delen.mail ? "" : undefined}
+      aria-labelledby={`${id}-kop`}
+      onClose={onSluit}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dialoog.current?.close();
+      }}
+    >
+      <div className="nd-dialog__body">
+        <p className={`nd-meta ${styles.regel}`}>
+          {dagFormat.format(Date.parse(meeting.start))} · {meeting.van}–
+          {meeting.tot} · {meeting.label}
+        </p>
+        <h2 className="nd-title" id={`${id}-kop`}>
+          Notulen delen · {meeting.titel}
+        </h2>
+        <div className={delenStyles.onderdelen}>
+          {delen.mail && (
+            <MailOnderdeel
+              meeting={meeting}
+              info={delen.mail}
+              onderdeel={status.mail}
+            />
+          )}
+          <SlackOnderdeel
+            meeting={meeting}
+            info={delen.slack}
+            tekst={status.slackTekst}
+            onderdeel={status.slack}
+          />
+        </div>
+        <div className="nd-dialog__foot">
+          {status.paginaUrl && (
+            <ExternalLink
+              href={status.paginaUrl}
+              className="nd-button nd-button--quiet"
+            >
+              Notulen in Superhuman
+            </ExternalLink>
+          )}
+          <button
+            type="button"
+            className="nd-button"
+            onClick={() => dialoog.current?.close()}
+          >
+            Sluiten
+          </button>
+        </div>
+      </div>
+    </dialog>
   );
 }

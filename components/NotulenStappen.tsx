@@ -1,18 +1,26 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
-import { nietDelenAction, opnieuwNotulenAction } from "@/app/actions";
+import {
+  kiesOpnameAction,
+  nietDelenAction,
+  opnameKeuzesAction,
+  opnieuwNotulenAction,
+  verversMeetingAction,
+} from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
 import { PRIVE } from "@/lib/meetings";
 import {
   type NotulenStatus,
+  type OpnameInfo,
+  type OpnameKeuzes,
   plaudWebUrl,
   type Stand,
   STAPPEN,
 } from "@/lib/notulen-stand";
 import { ActiepuntenDialoog } from "./Actiepunten";
 import { ExternalLink } from "./ExternalLink";
-import { Delen } from "./NotulenDelen";
+import { Delen, DelenDialoog } from "./NotulenDelen";
 import {
   AlertIcon,
   CheckIcon,
@@ -77,6 +85,7 @@ type ChecklistProps = { meeting: Meeting; status: NotulenStatus };
 export function Checklist({ meeting, status }: ChecklistProps) {
   const [notulenOpen, setNotulenOpen] = useState(false);
   const [actiesOpen, setActiesOpen] = useState(false);
+  const [delenOpen, setDelenOpen] = useState(false);
   const [bezig, startTransition] = useTransition();
   const huidig = huidigeStap(status, meeting.hoort === PRIVE);
   const standVan = (index: number): Stap => {
@@ -107,6 +116,13 @@ export function Checklist({ meeting, status }: ChecklistProps) {
             </button>
           </div>
         </>
+      );
+    }
+    if (index === 1 && status.geenOpname) {
+      return (
+        <p className={`nd-meta ${styles.regel}`}>
+          Geen opname: het dashboard zoekt er niet zelf een.
+        </p>
       );
     }
     if (index === 1 && status.vast) {
@@ -153,19 +169,11 @@ export function Checklist({ meeting, status }: ChecklistProps) {
     }
     if (index === 5) {
       return (
-        <>
-          <Delen meeting={meeting} status={status} />
-          <button
-            type="button"
-            className={styles.linkKnop}
-            disabled={bezig}
-            onClick={() =>
-              startTransition(() => nietDelenAction(meeting.id, true))
-            }
-          >
-            Niet delen
-          </button>
-        </>
+        <Delen
+          meeting={meeting}
+          status={status}
+          onOpen={() => setDelenOpen(true)}
+        />
       );
     }
     if (index === 6) {
@@ -212,28 +220,31 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </button>
       );
     }
-    if (index === 5 && status.nietGedeeld) {
+    if (index === 5 && (status.nietGedeeld || status.elders)) {
       return (
         <button
           type="button"
           className={styles.openen}
           disabled={bezig}
           onClick={() =>
-            startTransition(() => nietDelenAction(meeting.id, false))
+            startTransition(() => nietDelenAction(meeting.id, "terug"))
           }
         >
-          Toch delen
+          Ongedaan maken
         </button>
       );
     }
-    if (index === 5 && status.gedeeldUrl) {
+    const verstuurd =
+      status.mail.stand === "verstuurd" || status.slack.stand === "verstuurd";
+    if (index === 5 && status.delen && verstuurd) {
       return (
-        <ExternalLink href={status.gedeeldUrl} className={styles.openen}>
-          Openen
-          <span className="nd-visually-hidden">
-            {meeting.extern ? ": verzonden mail" : ": Slack-bericht"}
-          </span>
-        </ExternalLink>
+        <button
+          type="button"
+          className={styles.openen}
+          onClick={() => setDelenOpen(true)}
+        >
+          Openen<span className="nd-visually-hidden">: delen</span>
+        </button>
       );
     }
     return null;
@@ -250,7 +261,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
           return (
             <li key={naam} className={styles.stap} data-stand={stap}>
               <span className={styles.naam} data-stand={stap}>
-                {index === 5 && status.nietGedeeld ? "Niet gedeeld" : naam}
+                {index === 5 ? delenNaam(status) : naam}
                 {index === 6 && status.acties && ` · ${status.acties.length}`}
                 {stap === "nvt" && " · niet nodig"}
                 {stap === "klaar" && openen(index)}
@@ -264,6 +275,10 @@ export function Checklist({ meeting, status }: ChecklistProps) {
               {(stap === "nu" || stap === "vast") && (
                 <div className={styles.inhoud}>{inhoud(index)}</div>
               )}
+              {index === 1 &&
+                (status.stand !== "muted" || status.geenOpname) && (
+                  <Opname meeting={meeting} status={status} />
+                )}
             </li>
           );
         })}
@@ -276,6 +291,13 @@ export function Checklist({ meeting, status }: ChecklistProps) {
           onSluit={() => setNotulenOpen(false)}
         />
       )}
+      {delenOpen && (
+        <DelenDialoog
+          meeting={meeting}
+          status={status}
+          onSluit={() => setDelenOpen(false)}
+        />
+      )}
       {actiesOpen && status.acties && (
         <ActiepuntenDialoog
           meta={`${meeting.titel} · ${dagFormat.format(Date.parse(meeting.start))} · ${meeting.van}–${meeting.tot}`}
@@ -285,6 +307,121 @@ export function Checklist({ meeting, status }: ChecklistProps) {
       )}
     </>
   );
+}
+
+const tijdFormat = new Intl.DateTimeFormat("nl-NL", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Amsterdam",
+});
+
+const opnameTekst = (opname: OpnameInfo) =>
+  `${tijdFormat.format(opname.start)}, ${Math.round(opname.duurMs / 60_000)} min · ${opname.naam}`;
+
+/** De gekoppelde Plaud-opname, met links om hem te wisselen, los te koppelen of te verversen. */
+function Opname({ meeting, status }: ChecklistProps) {
+  const [keuzes, setKeuzes] = useState<OpnameKeuzes | null>(null);
+  const [kiezen, setKiezen] = useState(false);
+  const [bezig, startTransition] = useTransition();
+
+  useEffect(() => {
+    let actueel = true;
+    opnameKeuzesAction(meeting.id).then((uit) => {
+      if (actueel) setKeuzes(uit);
+    });
+    return () => {
+      actueel = false;
+    };
+  }, [meeting.id, status.opnameId, status.geenOpname]);
+
+  function kies(opnameId: string | null) {
+    startTransition(async () => {
+      await kiesOpnameAction(meeting.id, opnameId);
+      setKiezen(false);
+    });
+  }
+
+  const info = keuzes && "gekoppeld" in keuzes ? keuzes : null;
+  return (
+    <div className={styles.inhoud}>
+      {status.opnameId && info?.gekoppeld && (
+        <p className={`nd-meta ${styles.regel}`}>
+          Plaud: {opnameTekst(info.gekoppeld)}
+        </p>
+      )}
+      {keuzes && "fout" in keuzes && (
+        <p className={`nd-meta ${styles.regel}`}>{keuzes.fout}</p>
+      )}
+      <div className={styles.links}>
+        <button
+          type="button"
+          className={styles.opnameLink}
+          aria-expanded={kiezen}
+          disabled={bezig}
+          onClick={() => setKiezen(!kiezen)}
+        >
+          Andere opname kiezen
+        </button>
+        {!status.geenOpname && (
+          <button
+            type="button"
+            className={styles.opnameLink}
+            disabled={bezig}
+            onClick={() => kies(null)}
+          >
+            Geen opname
+          </button>
+        )}
+        {status.stap <= 3 && !status.geenOpname && (
+          <button
+            type="button"
+            className={styles.opnameLink}
+            aria-busy={bezig}
+            disabled={bezig}
+            onClick={() =>
+              startTransition(() => verversMeetingAction(meeting.id))
+            }
+          >
+            Verversen
+          </button>
+        )}
+      </div>
+      {kiezen && (
+        <ul className={styles.opnames} aria-label="Opnames rond deze dag">
+          {info?.opties.length === 0 && (
+            <li className="nd-meta">Geen opnames gevonden rond deze dag.</li>
+          )}
+          {!keuzes && <li className="nd-meta">Opnames ophalen…</li>}
+          {info?.opties.map((opname) => (
+            <li key={opname.id}>
+              <button
+                type="button"
+                className={styles.opnameKeuze}
+                aria-current={opname.id === status.opnameId}
+                disabled={bezig}
+                onClick={() => kies(opname.id)}
+              >
+                {opnameTekst(opname)}
+                {opname.bezetDoor && (
+                  <span className="nd-meta">
+                    {" "}
+                    · hoort nu bij {opname.bezetDoor}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** De naam van de stap Gedeeld, ook als er niets via het dashboard ging. */
+function delenNaam(status: NotulenStatus): string {
+  if (status.nietGedeeld) return "Niet gedeeld";
+  if (status.elders) return "Gedeeld (elders)";
+  return "Gedeeld";
 }
 
 /** De stap die nu uitgelicht is; -1 als de meeting klaar of overgeslagen is. Privé slaat Gedeeld over. */

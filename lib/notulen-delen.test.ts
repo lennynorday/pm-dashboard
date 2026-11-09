@@ -2,12 +2,12 @@ import assert from "node:assert";
 import { test } from "node:test";
 import {
   conceptMail,
+  deelAfgerond,
   deelKanaal,
   externeGenodigden,
   isEmail,
   poAdressen,
   slackKanaal,
-  threadStand,
   voegToe,
 } from "./notulen-delen.ts";
 import type { Regel } from "./meetings.ts";
@@ -121,15 +121,12 @@ test("kanaal: Team uit de serie, een platform uit Slack intern, anders een meldi
   );
 });
 
-test("verzonden herkennen aan SENT in de thread; weg als het concept weg is", () => {
-  const thread = (...labels: string[][]) => ({
-    messages: labels.map((labelIds) => ({ labelIds })),
-  });
-  assert.strictEqual(threadStand(thread(["DRAFT"])), "concept");
-  assert.strictEqual(threadStand(thread(["SENT", "INBOX"])), "verstuurd");
-  assert.strictEqual(threadStand(thread(["SENT"], ["INBOX"])), "verstuurd");
-  assert.strictEqual(threadStand(thread()), "weg");
-  assert.strictEqual(threadStand(null), "weg");
+test("Delen is klaar als elk onderdeel verstuurd of overgeslagen is", () => {
+  assert.strictEqual(deelAfgerond(["open", "verstuurd"]), "open");
+  assert.strictEqual(deelAfgerond(["verstuurd", "overgeslagen"]), "gedeeld");
+  assert.strictEqual(deelAfgerond(["verstuurd"]), "gedeeld");
+  assert.strictEqual(deelAfgerond(["overgeslagen", "overgeslagen"]), "niet");
+  assert.strictEqual(deelAfgerond(["overgeslagen"]), "niet");
 });
 
 test("de mail heeft titel en datum in het onderwerp en de link in de tekst", () => {
@@ -137,10 +134,19 @@ test("de mail heeft titel en datum in het onderwerp en de link in de tekst", () 
     { titel: "Kunsthal | Planning", start: "2026-11-04T13:00:00+01:00" },
     "https://docs.superhuman.com/p",
     "Lennart",
+    [{ eigenaar: "Jos", wat: "docentenoproep schrijven" }],
   );
   assert.strictEqual(
     mail.onderwerp,
     "Notulen Kunsthal | Planning 4 november 2026",
   );
   assert.ok(mail.tekst.includes("https://docs.superhuman.com/p"));
+  assert.ok(mail.tekst.includes("• Jos: docentenoproep schrijven"));
+  const zonder = conceptMail(
+    { titel: "Kunsthal | Planning", start: "2026-11-04T13:00:00+01:00" },
+    "https://docs.superhuman.com/p",
+    "Lennart",
+    [],
+  );
+  assert.ok(!zonder.tekst.includes("Acties:"));
 });

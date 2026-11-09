@@ -72,7 +72,7 @@ export const gmailGet = (
 ) => gmailVraag(email, pad, params, { signal }, false);
 
 /**
- * Eén POST met een JSON-body. Alleen voor concepten: vraagt de compose-scope en
+ * Eén POST met een JSON-body, voor concepten en versturen: vraagt de compose-scope en
  * geeft GmailComposeOntbreektError (en niet GmailNietVerbondenError) als die ontbreekt.
  */
 export const gmailPost = (email: string, pad: string, body: unknown) =>
