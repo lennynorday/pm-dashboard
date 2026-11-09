@@ -1,5 +1,5 @@
 import { haalActiesUit } from "./actiepunten";
-import { TIMEOUT_MS, draaiClaude } from "./claude/run";
+import { NOTULEN_TIMEOUT_MS, draaiClaude } from "./claude/run";
 import {
   NOTULEN_SYSTEEMPROMPT,
   SLACK_SYSTEEMPROMPT,
@@ -74,7 +74,7 @@ export const alsNotulenPlatform = (platform: {
 
 const DAG_MS = 24 * 60 * 60 * 1000;
 // Een run die langer bezig staat dan de time-out van Claude plus marge, is verloren gegaan.
-const VERLOREN_MS = TIMEOUT_MS + 60_000;
+const VERLOREN_MS = NOTULEN_TIMEOUT_MS + 60_000;
 const tekst = (waarde: unknown) => (typeof waarde === "string" ? waarde : null);
 
 /**
@@ -637,6 +637,7 @@ async function maakNotulen(
       transcript,
     }),
     NOTULEN_SYSTEEMPROMPT,
+    NOTULEN_TIMEOUT_MS,
   );
   return "fout" in run ? run : parseNotulen(run.stdout);
 }
