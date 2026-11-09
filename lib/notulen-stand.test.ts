@@ -22,6 +22,7 @@ const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   conceptUrl: null,
   slackTekst: null,
   gedeeldUrl: null,
+  actiesUit: false,
   ...extra,
 });
 const stand = (
@@ -73,7 +74,7 @@ test("dashboard bezig, klaar, fout en overgeslagen", () => {
   assert.strictEqual(stand(rij(3)), "open Claude maakt notulen");
   assert.strictEqual(stand(rij(4)), "open Naar Superhuman");
   assert.strictEqual(
-    stand(rij(5), eind, { ...meeting, hoort: "prive" }),
+    stand(rij(5, { actiesUit: true }), eind, { ...meeting, hoort: "prive" }),
     "ok Klaar",
   );
   assert.strictEqual(
@@ -98,7 +99,10 @@ test("delen: intern wacht op Claude, dan op jou; extern op jou, dan op Gmail", (
     stand(rij(5, { conceptUrl: "https://mail.google.com/x" }), eind, extern),
     "jij Wacht op jou: verstuur in Gmail",
   );
-  assert.strictEqual(stand(rij(6, { gedeeldUrl: "https://x" })), "ok Klaar");
+  assert.strictEqual(
+    stand(rij(6, { gedeeldUrl: "https://x", actiesUit: true })),
+    "ok Klaar",
+  );
   assert.strictEqual(
     stand(rij(5, { fout: "Claude reageerde niet" })),
     "warn Delen mislukt",
@@ -115,7 +119,28 @@ test("delen: na 4 uur nog niet gedeeld is vastgelopen, privé nooit", () => {
     "jij Wacht op jou: delen",
   );
   assert.strictEqual(
-    stand(rij(5), eind + 5 * UUR, { ...meeting, hoort: "prive" }),
+    stand(rij(5, { actiesUit: true }), eind + 5 * UUR, {
+      ...meeting,
+      hoort: "prive",
+    }),
     "ok Klaar",
+  );
+});
+
+test("actiepunten: klaar pas als de acties uitgelezen zijn, ook bij nul acties", () => {
+  const prive = { ...meeting, hoort: "prive" };
+  assert.strictEqual(stand(rij(6)), "open Actiepunten uitlezen");
+  assert.strictEqual(stand(rij(5), eind, prive), "open Actiepunten uitlezen");
+  const klaar = notulenStatus(meeting, rij(6, { actiesUit: true }), null, eind);
+  assert.strictEqual(klaar?.stand, "ok");
+  assert.strictEqual(klaar?.stap, 7);
+  assert.strictEqual(
+    notulenStatus(prive, rij(5, { actiesUit: true }), null, eind)?.stap,
+    7,
+  );
+  // Nog niet gedeeld: uitgelezen acties maken een meeting niet klaar.
+  assert.strictEqual(
+    stand(rij(5, { actiesUit: true })),
+    "open Claude schrijft het Slack-bericht",
   );
 });

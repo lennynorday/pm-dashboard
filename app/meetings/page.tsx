@@ -1,5 +1,6 @@
 import { after, connection } from "next/server";
 import { ExternalLink } from "@/components/ExternalLink";
+import { leesVanMeetings } from "@/lib/actiepunten";
 import { Meetings } from "@/components/Meetings";
 import { Melding } from "@/components/Melding";
 import { PageHeading } from "@/components/PageHeading";
@@ -110,6 +111,14 @@ export default async function MeetingsPage({
     if ("melding" in doel) return doel;
     return { soort: "slack", naam: doel.naam, magSchrijven };
   };
+  const acties = Map.groupBy(
+    leesVanMeetings(
+      user.email,
+      user.voornaam,
+      alle.map((meeting) => meeting.id),
+    ),
+    (actie) => actie.meetingId,
+  );
   const statussen: Record<string, NotulenStatus> = {};
   for (const meeting of alle) {
     const status = notulenStatus(
@@ -120,9 +129,11 @@ export default async function MeetingsPage({
     );
     if (!status) continue;
     const delen = status.stap === 5 && meeting.hoort !== PRIVE;
-    statussen[meeting.id] = delen
-      ? { ...status, delen: deelInfo(meeting) }
-      : status;
+    statussen[meeting.id] = {
+      ...status,
+      delen: delen ? deelInfo(meeting) : null,
+      acties: status.stap === 7 ? (acties.get(meeting.id) ?? []) : null,
+    };
   }
   const teDoen: Meeting[] = notulenMeetings
     .filter((meeting) => nogTeDoen(statussen[meeting.id] ?? null))

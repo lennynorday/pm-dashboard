@@ -1,5 +1,5 @@
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
-import { heeftSchrijfScope } from "./oauth";
+import { heeftDmScope, heeftSchrijfScope } from "./oauth";
 import { platteTekst } from "./tekst";
 
 export type SlackTodo = {
@@ -52,6 +52,34 @@ export async function slackMagSchrijven(email: string): Promise<boolean> {
     Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
   );
   return token !== null && heeftSchrijfScope(token);
+}
+
+/** Mag het dashboard namens de gebruiker een DM openen en erin schrijven? */
+export async function slackMagDm(email: string): Promise<boolean> {
+  const token = await validToken(email, "slack", parseStoredToken, () =>
+    Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
+  );
+  return token !== null && heeftDmScope(token);
+}
+
+/**
+ * Stuurt een DM onder de naam van de gebruiker. Met een gebruikerstoken zet
+ * chat.postMessage naar een user-id het bericht niet gegarandeerd in de DM
+ * tussen die twee; conversations.open (im:write) geeft het DM-kanaal wel.
+ */
+export async function stuurDm(
+  email: string,
+  slackId: string,
+  tekst: string,
+): Promise<void> {
+  if (!(await slackMagDm(email))) throw new SlackSchrijvenOntbreektError();
+  const gesprek = await slackPost(email, "conversations.open", {
+    users: slackId,
+  });
+  const kanaal = record(gesprek.channel).id;
+  if (typeof kanaal !== "string")
+    throw new Error("Slack gaf geen DM-gesprek terug");
+  await plaatsBericht(email, kanaal, tekst);
 }
 
 /**

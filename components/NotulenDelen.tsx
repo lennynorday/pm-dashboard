@@ -49,7 +49,7 @@ export function Delen({ meeting, status }: Props) {
   );
 }
 
-function SlackVerbinden() {
+export function SlackVerbinden() {
   return (
     <p className={styles.regel}>
       Het dashboard mag nog geen berichten in Slack plaatsen. Verbind opnieuw en

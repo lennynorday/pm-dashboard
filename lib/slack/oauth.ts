@@ -8,13 +8,24 @@ export const SLACK_REDIRECT_URI = appUrl("/api/slack/callback");
 
 /**
  * Lezen: zoeken in berichten (ook is:dm), namen van gebruikers en je eigen
- * emoji-reacties. Schrijven: alleen de notulen, na een klik op Verstuur.
+ * emoji-reacties. Schrijven: de notulen en herinneringen (een DM openen met
+ * im:write), alleen na een klik op Verstuur.
  */
-const USER_SCOPES = "search:read users:read reactions:read chat:write";
+const USER_SCOPES = "search:read users:read reactions:read chat:write im:write";
 
-/** Mag dit token berichten plaatsen? Tokens van vóór het bewaren van scopes: nee, tot hij opnieuw verbindt. */
+/** Heeft dit token deze scopes? Tokens van vóór het bewaren van scopes: nee, tot hij opnieuw verbindt. */
+const heeftScopes = (token: OAuthToken, scopes: string[]): boolean => {
+  const gegeven = token.scope?.split(/[\s,]+/) ?? [];
+  return scopes.every((scope) => gegeven.includes(scope));
+};
+
+/** Mag dit token berichten plaatsen? */
 export const heeftSchrijfScope = (token: OAuthToken): boolean =>
-  token.scope?.split(/[\s,]+/).includes("chat:write") ?? false;
+  heeftScopes(token, ["chat:write"]);
+
+/** Mag dit token een DM openen en erin schrijven? */
+export const heeftDmScope = (token: OAuthToken): boolean =>
+  heeftScopes(token, ["chat:write", "im:write"]);
 
 function setting(name: "SLACK_CLIENT_ID" | "SLACK_CLIENT_SECRET"): string {
   const value = process.env[name];

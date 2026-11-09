@@ -1,4 +1,5 @@
 /** Waar een meeting in de notulen-flow staat. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
+import type { Actiepunt } from "./actiepunt.ts";
 import { FOCUS, type Meeting, PRIVE } from "./meetings.ts";
 import type { DeelInfo } from "./notulen-delen.ts";
 
@@ -29,6 +30,8 @@ export type NotulenRij = {
   slackTekst: string | null;
   /** De verzonden mail of het Slack-bericht. */
   gedeeldUrl: string | null;
+  /** Zijn de actiepunten uit de notulen gehaald? */
+  actiesUit: boolean;
 };
 
 export type NotulenStatus = {
@@ -46,6 +49,8 @@ export type NotulenStatus = {
   gedeeldUrl: string | null;
   /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
   delen: DeelInfo | null;
+  /** De actiepunten van deze meeting, als ze uitgelezen zijn; de pagina vult dit in. */
+  acties: Actiepunt[] | null;
 };
 
 /** De opname in Plaud web; de URL gebruikt het id zonder "of_". */
@@ -88,6 +93,7 @@ export function notulenStatus(
     slackTekst: rij?.slackTekst ?? null,
     gedeeldUrl: rij?.gedeeldUrl ?? null,
     delen: null,
+    acties: null,
   };
   if (meeting.overgeslagen) {
     return {
@@ -122,9 +128,12 @@ export function notulenStatus(
   if (stap === 3)
     return { ...basis, stand: "open", tekst: "Claude maakt notulen" };
   if (stap === 4) return { ...basis, stand: "open", tekst: "Naar Superhuman" };
-  // shortcut: Actiepunten komt in een latere PR; tot dan is een meeting klaar na Gedeeld.
-  if (stap >= 6 || meeting.hoort === PRIVE)
-    return { ...basis, stand: "ok", tekst: "Klaar" };
+  // Na Gedeeld, of na Superhuman bij Privé: klaar zodra de actiepunten eruit zijn.
+  if (stap >= 6 || meeting.hoort === PRIVE) {
+    return rij?.actiesUit
+      ? { ...basis, stap: 7, stand: "ok", tekst: "Klaar" }
+      : { ...basis, stand: "open", tekst: "Actiepunten uitlezen" };
+  }
   if (nu - eind > VASTGELOPEN_MS)
     return { ...basis, vast: true, stand: "warn", tekst: "Nog niet gedeeld" };
   if (basis.conceptUrl)

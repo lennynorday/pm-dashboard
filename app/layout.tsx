@@ -14,6 +14,7 @@ import {
 } from "@/lib/preferences";
 import { tellingen } from "@/lib/todos";
 import { leesVastgelopen } from "@/lib/notulen";
+import { openVanMij } from "@/lib/actiepunten";
 import { currentUser, LOGIN_MELDING_COOKIE, LoginMelding } from "@/lib/session";
 import "./globals.css";
 import styles from "./layout.module.css";
@@ -66,6 +67,7 @@ export default async function RootLayout({
   const telling = {
     ...taken,
     inbox: taken.inbox + leesVastgelopen(user.email).length,
+    acties: openVanMij(user.email, user.voornaam),
   };
 
   return (

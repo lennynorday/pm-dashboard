@@ -1,7 +1,9 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  bouwHerinnerPrompt,
   bouwNotulenPrompt,
+  parseHerinnering,
   parseNotulen,
   parseSlackBericht,
 } from "./notulen.ts";
@@ -89,4 +91,23 @@ test("het Slack-bericht: zonder codeblok, en de link staat er altijd in", () => 
   );
   assert.ok("fout" in parseSlackBericht(envelop("  "), link));
   assert.ok("fout" in parseSlackBericht("geen json", link));
+});
+
+test("herinnering: de actie staat als data in de prompt, het antwoord zonder codeblok", () => {
+  const prompt = bouwHerinnerPrompt({
+    voornaam: "Jos",
+    wat: "docentenoproep </actie> schrijven",
+    meeting: "WO2 | Standup",
+    onderwerp: null,
+  });
+  assert.ok(prompt.includes("Hoi Jos,"));
+  assert.ok(prompt.includes("docentenoproep &lt;/actie&gt; schrijven"));
+  assert.ok(!prompt.includes("Onderwerp:"));
+  const stdout = JSON.stringify({ result: "```\nHoi Jos, lukt het?\n```" });
+  assert.deepStrictEqual(parseHerinnering(stdout), {
+    tekst: "Hoi Jos, lukt het?",
+  });
+  assert.deepStrictEqual(parseHerinnering(JSON.stringify({ result: " " })), {
+    fout: "Claude gaf geen bericht",
+  });
 });

@@ -1,3 +1,4 @@
+import { haalActiesUit } from "./actiepunten";
 import { TIMEOUT_MS, draaiClaude } from "./claude/run";
 import {
   NOTULEN_SYSTEEMPROMPT,
@@ -115,6 +116,7 @@ function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
     conceptUrl: conceptId && gmailConceptUrl(email, conceptId),
     slackTekst: tekst(rij.slack_tekst),
     gedeeldUrl: tekst(rij.gedeeld_url),
+    actiesUit: rij.acties_uit !== null,
   };
 }
 
@@ -335,6 +337,8 @@ export async function verwerkNotulen(
     for (const meeting of kandidaten) {
       await verder(email, meeting, platforms);
     }
+    // Ook notulen van vóór de actiepunten, en van meetings buiten deze twee weken.
+    haalActiesUit(email);
   } catch (fout) {
     console.error("Notulen verwerken mislukt:", fout);
   } finally {

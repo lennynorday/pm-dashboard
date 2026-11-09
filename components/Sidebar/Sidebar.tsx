@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   ChevronIcon,
   CloseIcon,
+  FlagIcon,
   HomeIcon,
   InboxIcon,
   MenuIcon,
@@ -31,7 +32,7 @@ type Props = {
   initialStand: MenuStand;
   initialOverige: GroepStand;
   user: Gebruiker;
-  telling: { inbox: number; open: number };
+  telling: { inbox: number; open: number; acties: number };
 };
 
 function currentPlatform(pathname: string): string | null {
@@ -275,6 +276,24 @@ export function Sidebar({
                 <span className={styles.label}>Meetings</span>
                 <span className={styles.tooltip} aria-hidden="true">
                   Meetings
+                </span>
+              </NextLink>
+            </li>
+            <li>
+              <NextLink
+                href="/actiepunten"
+                className={`nd-nav__item ${styles.item}`}
+                aria-current={pathname === "/actiepunten" ? "page" : undefined}
+              >
+                <FlagIcon />
+                <span className={styles.label}>Actiepunten</span>
+                {telling.acties > 0 && (
+                  <span className={`nd-badge ${styles.count}`}>
+                    {telling.acties}
+                  </span>
+                )}
+                <span className={styles.tooltip} aria-hidden="true">
+                  Actiepunten
                 </span>
               </NextLink>
             </li>

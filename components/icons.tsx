@@ -301,3 +301,20 @@ export function PersoonIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function FlagIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </Icon>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />
+      <path d="M10 21h4" />
+    </Icon>
+  );
+}

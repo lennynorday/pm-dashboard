@@ -142,6 +142,7 @@ function open(): DatabaseSync {
     );
     -- Notulen: waar een afgelopen meeting in de flow staat. stap = aantal afgeronde stappen
     -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman, 6 gedeeld).
+    -- acties_uit: wanneer (ms) de actiepunten uit de notulen zijn gehaald.
     -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
     -- Delen: extern via een Gmail-concept (concept_id = het conceptbericht, thread_id),
     -- intern en Team via Slack (slack_tekst van Claude, slack_ts); gedeeld_url = mail of bericht.
@@ -169,7 +170,32 @@ function open(): DatabaseSync {
       gedeeld_url TEXT,
       fout TEXT,
       bezig INTEGER,
+      acties_uit INTEGER,
       PRIMARY KEY (email, meeting_id)
+    );
+    -- Actiepunten uit de notulen (**Actie Naam:** wat), per meeting genummerd in volgorde.
+    -- status: open, herinnerd, todo, gedaan of genegeerd; herinnerd = wanneer (ms) de DM ging;
+    -- herinner_tekst = de DM die Claude schreef; taak_id = de to-do die ervan gemaakt is.
+    CREATE TABLE IF NOT EXISTS actiepunten (
+      id INTEGER PRIMARY KEY,
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      meeting_id TEXT NOT NULL,
+      volgnummer INTEGER NOT NULL,
+      eigenaar TEXT NOT NULL,
+      wat TEXT NOT NULL,
+      onderwerp TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      herinnerd INTEGER,
+      herinner_tekst TEXT,
+      taak_id INTEGER,
+      UNIQUE (email, meeting_id, volgnummer)
+    );
+    -- Per naam uit de notulen de Slack-gebruiker die de gebruiker koos.
+    CREATE TABLE IF NOT EXISTS slack_namen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      naam TEXT NOT NULL,
+      slack_id TEXT NOT NULL,
+      PRIMARY KEY (email, naam)
     );
     -- Vanaf wanneer (ms) het dashboard notulen maakt; eerdere meetings doen niet mee.
     CREATE TABLE IF NOT EXISTS notulen_start (

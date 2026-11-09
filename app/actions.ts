@@ -52,7 +52,15 @@ import {
 import {
   SlackNietVerbondenError,
   SlackSchrijvenOntbreektError,
+  slackMagDm,
 } from "@/lib/slack/api";
+import {
+  type HerinnerVoorstel,
+  actieNaarTodo,
+  herinner,
+  herinnerVoorstel,
+  zetActieStatus,
+} from "@/lib/actiepunten";
 import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
@@ -894,6 +902,84 @@ export async function deelInSlackAction(
       bericht.trim(),
       platforms,
     );
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    revalidatePath("/", "layout");
+    return { uitkomst: "gelukt", conceptUrl: null };
+  } catch (fout) {
+    if (
+      fout instanceof SlackSchrijvenOntbreektError ||
+      fout instanceof SlackNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
+  }
+}
+
+// ---------- Actiepunten ----------
+
+const geldigId = (id: unknown): id is number =>
+  typeof id === "number" && Number.isInteger(id) && id > 0;
+
+/** Gedaan, Negeer, of terug in de feed (ongedaan maken). */
+export async function actieStatusAction(
+  id: number,
+  status: string,
+): Promise<void> {
+  if (!geldigId(id)) return;
+  if (status !== "gedaan" && status !== "genegeerd" && status !== "terug")
+    return;
+  await bijTaken((email) => zetActieStatus(email, id, status));
+}
+
+/** Een eigen actie op de to-do's, met de titel en prioriteit uit de popup. */
+export async function actieNaarTodoAction(
+  id: number,
+  titel: string,
+  prio: number,
+): Promise<void> {
+  const user = await currentUser();
+  const schoon = schoneTitel(String(titel));
+  const nieuw = parsePrio(prio);
+  if (!user || !geldigId(id) || !schoon || !nieuw) return;
+  actieNaarTodo(user.email, user.voornaam, id, schoon, nieuw);
+  revalidatePath("/", "layout");
+}
+
+export type HerinnerUitkomst = HerinnerVoorstel | { soort: "verbinden" };
+
+/** Het herinnerbericht van Claude; vraagt eerst om de persoon als de naam niet eenduidig is. */
+export async function herinnerVoorstelAction(
+  id: number,
+  gekozen: string | null,
+): Promise<HerinnerUitkomst> {
+  const user = await currentUser();
+  if (!user || !geldigId(id)) return { soort: "fout", fout: "Niet ingelogd" };
+  if (gekozen !== null && (typeof gekozen !== "string" || gekozen.length > 50))
+    return { soort: "fout", fout: "Ongeldige keuze" };
+  try {
+    if (!(await slackMagDm(user.email))) return { soort: "verbinden" };
+    return await herinnerVoorstel(user.email, user.voornaam, id, gekozen);
+  } catch (fout) {
+    if (fout instanceof SlackNietVerbondenError) return { soort: "verbinden" };
+    return {
+      soort: "fout",
+      fout: `Het bericht maken mislukte: ${reden(fout)}`,
+    };
+  }
+}
+
+/** Stuurt de herinnering als Slack-DM, na een klik op Verstuur. */
+export async function herinnerAction(
+  id: number,
+  bericht: string,
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || !geldigId(id))
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  if (typeof bericht !== "string" || !bericht.trim() || bericht.length > 4000)
+    return { uitkomst: "fout", fout: "Het bericht is leeg of te lang" };
+  try {
+    const fout = await herinner(user.email, user.voornaam, id, bericht.trim());
     if (fout) return { uitkomst: "fout", fout: fout.fout };
     revalidatePath("/", "layout");
     return { uitkomst: "gelukt", conceptUrl: null };
