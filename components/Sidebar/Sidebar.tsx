@@ -267,6 +267,19 @@ export function Sidebar({
             </li>
             <li>
               <NextLink
+                href="/meetings"
+                className={`nd-nav__item ${styles.item}`}
+                aria-current={pathname === "/meetings" ? "page" : undefined}
+              >
+                <CalendarIcon />
+                <span className={styles.label}>Meetings</span>
+                <span className={styles.tooltip} aria-hidden="true">
+                  Meetings
+                </span>
+              </NextLink>
+            </li>
+            <li>
+              <NextLink
                 href="/weekplanner"
                 className={`nd-nav__item ${styles.item}`}
                 aria-current={pathname === "/weekplanner" ? "page" : undefined}

@@ -129,6 +129,33 @@
   height: 12px;
 }
 
+.series {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.serie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-02);
+}
+
+.kanaal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--space-02);
+}
+
+.kanaalLabel {
+  grid-column: 1 / -1;
+}
+
 .knoppen {
   display: flex;
   flex-wrap: wrap;

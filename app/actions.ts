@@ -29,6 +29,14 @@ import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import {
+  bewaarRegel,
+  slaOver,
+  verwijderMeetingRegel,
+  zetKanaal,
+  zetTerug,
+} from "@/lib/meeting-regels";
+import { titelWoord } from "@/lib/meetings";
 import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
@@ -668,4 +676,123 @@ export async function pasAanAction(
       after(() => draaiOpdracht(opdrachtId));
     }
   });
+}
+
+// ---------- Meetings ----------
+
+/** Wat de client van een meeting meestuurt; gecontroleerd voor het de database in gaat. */
+export type MeetingRef = {
+  id: string;
+  serieId: string | null;
+  titel: string;
+  start: string;
+};
+
+const DOEL = /^[a-z0-9-]{1,100}$/;
+const kortTekst = (waarde: unknown, max: number): waarde is string =>
+  typeof waarde === "string" && waarde !== "" && waarde.length <= max;
+
+function geldigeMeeting(meeting: MeetingRef): boolean {
+  return (
+    kortTekst(meeting.id, 1024) &&
+    (meeting.serieId === null || kortTekst(meeting.serieId, 1024)) &&
+    kortTekst(meeting.titel, 500) &&
+    !Number.isNaN(Date.parse(meeting.start))
+  );
+}
+
+async function bijMeetings(doe: (email: string) => void): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  doe(user.email);
+  revalidatePath("/meetings");
+  revalidatePath("/instellingen");
+}
+
+/** De pil: waar deze meeting, de rest van de serie of elke meeting met dit titelwoord bij hoort. */
+export async function koppelMeetingAction(
+  meeting: MeetingRef,
+  doel: string,
+  scope: string,
+): Promise<void> {
+  if (!geldigeMeeting(meeting) || typeof doel !== "string" || !DOEL.test(doel))
+    return;
+  await bijMeetings((email) => {
+    // De nieuwe keuze moet ook voor deze meeting gelden, dus een oude keuze voor alleen deze vervalt.
+    verwijderMeetingRegel(email, meeting.id);
+    if (scope === "serie" && meeting.serieId) {
+      bewaarRegel(email, {
+        soort: "serie",
+        sleutel: meeting.serieId,
+        doel,
+        titel: meeting.titel,
+        vanaf: Date.parse(meeting.start),
+      });
+      return;
+    }
+    if (scope === "titel" && titelWoord(meeting.titel)) {
+      const woord = titelWoord(meeting.titel);
+      bewaarRegel(email, {
+        soort: "titel",
+        sleutel: woord.toLowerCase(),
+        doel,
+        titel: woord,
+        vanaf: null,
+      });
+      return;
+    }
+    bewaarRegel(email, {
+      soort: "meeting",
+      sleutel: meeting.id,
+      doel,
+      titel: meeting.titel,
+      vanaf: null,
+    });
+  });
+}
+
+/** "Geen notulen": alleen deze meeting of de hele serie. */
+export async function slaMeetingOverAction(
+  meeting: MeetingRef,
+  serie: boolean,
+): Promise<void> {
+  if (!geldigeMeeting(meeting)) return;
+  await bijMeetings((email) =>
+    slaOver(
+      email,
+      serie && meeting.serieId
+        ? { soort: "serie", sleutel: meeting.serieId, titel: meeting.titel }
+        : { soort: "meeting", sleutel: meeting.id, titel: meeting.titel },
+    ),
+  );
+}
+
+/** Terugzetten in het paneel: de meeting en, als hij daardoor overgeslagen is, zijn serie. */
+export async function zetMeetingTerugAction(
+  meeting: MeetingRef,
+): Promise<void> {
+  if (!geldigeMeeting(meeting)) return;
+  await bijMeetings((email) => {
+    zetTerug(email, "meeting", meeting.id);
+    if (meeting.serieId) zetTerug(email, "serie", meeting.serieId);
+  });
+}
+
+/** Terugzetten van een overgeslagen serie op Instellingen. */
+export async function zetSerieTerugFormAction(
+  formData: FormData,
+): Promise<void> {
+  const serieId = formData.get("serie");
+  if (!kortTekst(serieId, 1024)) return;
+  await bijMeetings((email) => zetTerug(email, "serie", serieId));
+}
+
+/** Het Slack-kanaal van een Team-serie, op Instellingen. */
+export async function zetKanaalFormAction(formData: FormData): Promise<void> {
+  const serieId = formData.get("serie");
+  const kanaal = formData.get("kanaal");
+  if (!kortTekst(serieId, 1024) || typeof kanaal !== "string") return;
+  await bijMeetings((email) =>
+    zetKanaal(email, serieId, kanaal.trim().slice(0, 100)),
+  );
 }

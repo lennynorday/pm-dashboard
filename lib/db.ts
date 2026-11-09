@@ -120,6 +120,26 @@ function open(): DatabaseSync {
       feedback TEXT,
       aangemaakt INTEGER NOT NULL
     );
+    -- Meetings: waar een meeting, serie of titelwoord bij hoort (platform-slug, team of prive).
+    -- vanaf: een serieregel geldt vanaf die start (ms); kanaal: het Slack-kanaal van een Team-serie.
+    CREATE TABLE IF NOT EXISTS meeting_regels (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      soort TEXT NOT NULL,
+      sleutel TEXT NOT NULL,
+      doel TEXT NOT NULL,
+      titel TEXT NOT NULL,
+      vanaf INTEGER,
+      kanaal TEXT,
+      PRIMARY KEY (email, soort, sleutel)
+    );
+    -- Meetings en series zonder notulen.
+    CREATE TABLE IF NOT EXISTS meetings_overgeslagen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      soort TEXT NOT NULL,
+      sleutel TEXT NOT NULL,
+      titel TEXT NOT NULL,
+      PRIMARY KEY (email, soort, sleutel)
+    );
   `);
   // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
   const kolommen = db.prepare("PRAGMA table_info(taken)").all();

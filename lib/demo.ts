@@ -4,6 +4,7 @@ import type { AccountJira, Telling } from "./jira/overview";
 import type { ProjectBudget } from "./orbit/budget";
 import type { OrbitProject, ProjectFilter } from "./orbit/projects";
 import type { GoogleProfiel } from "./google/oauth";
+import type { AgendaItem } from "./meetings";
 import {
   dagPlus,
   isoDatum,
@@ -175,6 +176,50 @@ export function demoGegevens(): AlleAccountGegevens {
       },
     ]),
   );
+}
+
+// ---------- Agenda ----------
+
+const COLLEGA = "noor.bakker@norday.nl";
+const KLANT = "contact@klant.example";
+
+/** [werkdag, van, tot, titel, deelnemers, serie] */
+const AFSPRAKEN: [number, string, string, string, string[], string?][] = [
+  [0, "10:00", "11:00", "Loket Zuidervaart | Projectoverleg", [KLANT, COLLEGA]],
+  [0, "13:00", "15:00", "Focus: offertes", []],
+  [1, "09:30", "10:00", "Mijn Rivierland | Sprintreview", [KLANT]],
+  [1, "12:00", "12:30", "1-op-1 Noor", [COLLEGA], "demo-noor"],
+  [2, "10:00", "10:45", "Collectie online | Kick-off", [KLANT, COLLEGA]],
+  [2, "10:30", "11:00", "LHW | Contentplanning", [COLLEGA]],
+  [3, "15:30", "16:30", "Teamoverleg Client Services", [COLLEGA], "demo-team"],
+  [4, "11:00", "11:30", "Kadeklanken | Refinement", [KLANT]],
+  [4, "14:00", "15:00", "Kennismaking museum Arnhem", [KLANT]],
+  ...[0, 1, 2, 3, 4].map((dag): (typeof AFSPRAKEN)[number] => [
+    dag,
+    "09:00",
+    "09:15",
+    "Lichthuis website | Standup",
+    [COLLEGA],
+    "demo-standup",
+  ]),
+];
+
+/**
+ * Elke week dezelfde nepafspraken.
+ * shortcut: rekent in de tijdzone van de server; goed zolang die in Nederland staat.
+ */
+export function demoAgenda(maandag: string): AgendaItem[] {
+  return AFSPRAKEN.map(([dag, van, tot, titel, deelnemers, serie]) => {
+    const datum = dagPlus(maandag, dag);
+    return {
+      id: serie ? `${serie}_${datum}` : `demo-${datum}-${van}`,
+      serieId: serie ?? null,
+      titel,
+      start: new Date(`${datum}T${van}:00`).toISOString(),
+      eind: new Date(`${datum}T${tot}:00`).toISOString(),
+      deelnemers,
+    };
+  });
 }
 
 export function demoKlantIds(): Map<string, string> {
