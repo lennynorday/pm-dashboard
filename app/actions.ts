@@ -37,6 +37,11 @@ import {
   zetTerug,
 } from "@/lib/meeting-regels";
 import { titelWoord } from "@/lib/meetings";
+import {
+  herstelNotulen,
+  notulenPlatforms,
+  verwerkNotulen,
+} from "@/lib/notulen";
 import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
@@ -545,10 +550,13 @@ export async function feedTodoOngedaanAction(id: string): Promise<void> {
 export async function synchroniseerInboxAction(): Promise<void> {
   const user = await currentUser();
   if (!user) return;
-  await Promise.all([
+  const [platforms] = await Promise.all([
+    notulenPlatforms(),
     bronAan(user.email, "slack") && synchroniseerSlack(user.email),
     bronAan(user.email, "gmail") && synchroniseerGmail(user.email),
   ]);
+  // Notulen maken duurt minuten (Claude); de volgende ronde laat de stand zien.
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
 }
 
@@ -705,8 +713,8 @@ async function bijMeetings(doe: (email: string) => void): Promise<void> {
   const user = await currentUser();
   if (!user) return;
   doe(user.email);
-  revalidatePath("/meetings");
-  revalidatePath("/instellingen");
+  // De layout ook: een overgeslagen vastgelopen meeting telt niet meer mee in de Inbox.
+  revalidatePath("/", "layout");
 }
 
 /** De pil: waar deze meeting, de rest van de serie of elke meeting met dit titelwoord bij hoort. */
@@ -795,4 +803,14 @@ export async function zetKanaalFormAction(formData: FormData): Promise<void> {
   await bijMeetings((email) =>
     zetKanaal(email, serieId, kanaal.trim().slice(0, 100)),
   );
+}
+
+/** Opnieuw proberen na een mislukte stap: wat al gedaan is, blijft staan. */
+export async function opnieuwNotulenAction(meetingId: string): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  if (!herstelNotulen(user.email, meetingId)) return;
+  const platforms = await notulenPlatforms();
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
+  revalidatePath("/", "layout");
 }

@@ -25,17 +25,19 @@ const ARGS = [
   "",
   "--no-session-persistence",
   "--system-prompt",
-  SYSTEEMPROMPT,
 ];
 
 export type Run = { stdout: string } | { fout: string };
 
 /** Draait Claude Code met de prompt, in een lege tijdelijke map zodat de repo niet meeladen. */
-export async function draaiClaude(prompt: string): Promise<Run> {
+export async function draaiClaude(
+  prompt: string,
+  systeemprompt = SYSTEEMPROMPT,
+): Promise<Run> {
   const map = await mkdtemp(path.join(tmpdir(), "pm-claude-"));
   try {
     return await new Promise<Run>((klaar) => {
-      const proces = spawn(CLAUDE, ARGS, { cwd: map });
+      const proces = spawn(CLAUDE, [...ARGS, systeemprompt], { cwd: map });
       let verlopen = false;
       const timer = setTimeout(() => {
         verlopen = true;

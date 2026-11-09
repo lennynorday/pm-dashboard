@@ -13,6 +13,7 @@ import {
   parseMenuStand,
 } from "@/lib/preferences";
 import { tellingen } from "@/lib/todos";
+import { leesVastgelopen } from "@/lib/notulen";
 import { currentUser, LOGIN_MELDING_COOKIE, LoginMelding } from "@/lib/session";
 import "./globals.css";
 import styles from "./layout.module.css";
@@ -60,6 +61,13 @@ export default async function RootLayout({
   const platforms =
     dashboard.status === "ok" ? toNavPlatforms(dashboard.platforms) : [];
 
+  const taken = tellingen(user.email);
+  // Vastgelopen meetings staan ook in de Inbox.
+  const telling = {
+    ...taken,
+    inbox: taken.inbox + leesVastgelopen(user.email).length,
+  };
+
   return (
     <html lang="nl" className={barlow.variable}>
       <body>
@@ -73,7 +81,7 @@ export default async function RootLayout({
             initialStand={stand}
             initialOverige={overige}
             user={user}
-            telling={tellingen(user.email)}
+            telling={telling}
           />
           <main id="inhoud" className={styles.main}>
             {children}

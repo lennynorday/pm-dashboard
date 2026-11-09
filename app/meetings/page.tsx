@@ -1,4 +1,4 @@
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { ExternalLink } from "@/components/ExternalLink";
 import { Meetings } from "@/components/Meetings";
 import { Melding } from "@/components/Melding";
@@ -8,7 +8,18 @@ import { loadDashboard } from "@/lib/dashboard";
 import { leesAgenda } from "@/lib/google/agenda";
 import { NORDAY_DOMEIN } from "@/lib/google/oauth";
 import { leesOvergeslagen, leesRegels } from "@/lib/meeting-regels";
-import { bepaalMeetings, lokaal, weekVan } from "@/lib/meetings";
+import { bepaalMeetings, lokaal, type Meeting, weekVan } from "@/lib/meetings";
+import {
+  leesNotulen,
+  meetingsVoorNotulen,
+  notulenVanaf,
+  verwerkNotulen,
+} from "@/lib/notulen";
+import {
+  nogTeDoen,
+  notulenStatus,
+  type NotulenStatus,
+} from "@/lib/notulen-stand";
 import { currentUser } from "@/lib/session";
 
 const HOME = { label: "Overzicht", href: "/" };
@@ -23,7 +34,8 @@ export default async function MeetingsPage({
 
   const nu = new Date();
   const vandaag = lokaal(nu.toISOString());
-  const gevraagd = (await searchParams).week;
+  const params = await searchParams;
+  const gevraagd = params.week;
   const week = weekVan(
     typeof gevraagd === "string" &&
       /^\d{4}-\d{2}-\d{2}$/.test(gevraagd) &&
@@ -39,6 +51,15 @@ export default async function MeetingsPage({
     dashboard.status === "ok"
       ? dashboard.platforms.map(({ slug, naam }) => ({ slug, naam }))
       : [];
+  // Bij het openen een ronde notulen; zonder Orbit zou alles op Privé vallen.
+  if (dashboard.status === "ok") {
+    const metLinks = dashboard.platforms.map(({ slug, naam, gegevens }) => ({
+      slug,
+      naam,
+      links: gegevens.links,
+    }));
+    after(() => verwerkNotulen(user.email, metLinks));
+  }
   const meetings =
     "items" in agenda
       ? bepaalMeetings(
@@ -51,6 +72,31 @@ export default async function MeetingsPage({
           nu.getTime(),
         )
       : [];
+
+  const recent = await meetingsVoorNotulen(user.email, platforms, nu.getTime());
+  const notulenMeetings = "fout" in recent ? [] : recent;
+  const alle = [...meetings, ...notulenMeetings];
+  const rijen = new Map(
+    leesNotulen(
+      user.email,
+      alle.map((meeting) => meeting.id),
+    ).map((rij) => [rij.meetingId, rij]),
+  );
+  const vanaf = notulenVanaf(user.email);
+  const statussen: Record<string, NotulenStatus> = {};
+  for (const meeting of alle) {
+    const status = notulenStatus(
+      meeting,
+      rijen.get(meeting.id),
+      vanaf,
+      nu.getTime(),
+    );
+    if (status) statussen[meeting.id] = status;
+  }
+  const teDoen: Meeting[] = notulenMeetings
+    .filter((meeting) => nogTeDoen(statussen[meeting.id] ?? null))
+    .reverse();
+  const gekozen = typeof params.meeting === "string" ? params.meeting : null;
 
   return (
     <>
@@ -91,6 +137,9 @@ export default async function MeetingsPage({
         meetings={meetings}
         platforms={platforms}
         vandaag={vandaag}
+        statussen={statussen}
+        teDoen={teDoen}
+        gekozen={gekozen}
       />
     </>
   );

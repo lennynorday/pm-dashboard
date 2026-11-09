@@ -10,6 +10,7 @@
     "start": "next start",
     "serve": "PORT=3999 next start -H localhost",
     "lint": "eslint",
+    "test": "node --test",
     "format": "prettier --write .",
     "mcp": "NODE_ENV=production tsx mcp/server.ts"
   },

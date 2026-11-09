@@ -140,6 +140,40 @@ function open(): DatabaseSync {
       titel TEXT NOT NULL,
       PRIMARY KEY (email, soort, sleutel)
     );
+    -- Notulen: waar een afgelopen meeting in de flow staat. stap = aantal afgeronde stappen
+    -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman).
+    -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
+    CREATE TABLE IF NOT EXISTS notulen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      meeting_id TEXT NOT NULL,
+      serie_id TEXT,
+      titel TEXT NOT NULL,
+      label TEXT NOT NULL,
+      start TEXT NOT NULL,
+      eind TEXT NOT NULL,
+      stap INTEGER NOT NULL,
+      sinds INTEGER NOT NULL,
+      opname_id TEXT,
+      tekst TEXT,
+      pagina_doc TEXT,
+      pagina_id TEXT,
+      pagina_url TEXT,
+      fout TEXT,
+      bezig INTEGER,
+      PRIMARY KEY (email, meeting_id)
+    );
+    -- Vanaf wanneer (ms) het dashboard notulen maakt; eerdere meetings doen niet mee.
+    CREATE TABLE IF NOT EXISTS notulen_start (
+      email TEXT PRIMARY KEY REFERENCES gebruikers (email),
+      vanaf INTEGER NOT NULL
+    );
+    -- Per reeks de subpagina onder Notulen in Lennys Dashboard.
+    CREATE TABLE IF NOT EXISTS notulen_reeksen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      serie_id TEXT NOT NULL,
+      pagina_id TEXT NOT NULL,
+      PRIMARY KEY (email, serie_id)
+    );
   `);
   // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
   const kolommen = db.prepare("PRAGMA table_info(taken)").all();

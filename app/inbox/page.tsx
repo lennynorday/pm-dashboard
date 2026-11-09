@@ -10,6 +10,7 @@ import { synchroniseerGmail } from "@/lib/gmail/sync";
 import { bronAan } from "@/lib/inbox-bronnen";
 import { synchroniseerSlack } from "@/lib/slack/sync";
 import { leesGenegeerd, leesTaken, leesUpdates } from "@/lib/todos";
+import { leesVastgelopen } from "@/lib/notulen";
 import grid from "../grid.module.css";
 import styles from "./page.module.css";
 import { VerbindLink } from "@/components/VerbindLink";
@@ -24,8 +25,8 @@ export default async function InboxPage() {
       <PageHeading title="Inbox" crumbs={[HOME]} />
       <div className={styles.intro}>
         <p className={grid.muted}>
-          Wat om jouw aandacht vraagt in Slack en Gmail. Per bericht kies je:
-          direct afhandelen, een to-do maken, of negeren.
+          Wat om jouw aandacht vraagt in Slack, Gmail en je meetings. Per
+          bericht kies je: direct afhandelen, een to-do maken, of negeren.
         </p>
         <InboxVerversen />
       </div>
@@ -75,7 +76,12 @@ async function InboxInhoud() {
         </Melding>
       )}
 
-      <Inbox taken={taken} genegeerd={genegeerd} updates={updates} />
+      <Inbox
+        taken={taken}
+        genegeerd={genegeerd}
+        updates={updates}
+        vastgelopen={leesVastgelopen(user.email)}
+      />
     </>
   );
 }

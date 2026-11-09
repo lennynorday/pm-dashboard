@@ -46,6 +46,8 @@ export type Meeting = {
   serieId: string | null;
   titel: string;
   start: string;
+  /** ISO 8601, zoals in de agenda. */
+  einde: string;
   datum: string;
   van: string;
   tot: string;
@@ -56,6 +58,8 @@ export type Meeting = {
   hoort: string;
   label: string;
   extern: boolean;
+  /** E-mailadressen van de andere deelnemers. */
+  deelnemers: string[];
   overgeslagen: "meeting" | "serie" | null;
   afgelopen: boolean;
   /** Naast elkaar bij overlap: kolom (vanaf 0) van het aantal kolommen. */
@@ -252,6 +256,7 @@ export function bepaalMeetings(
         serieId: item.serieId,
         titel: item.titel,
         start: item.start,
+        einde: item.eind,
         datum: begin.datum,
         van: tijd(begin.minuten),
         tot: tijd(eind),
@@ -262,6 +267,7 @@ export function bepaalMeetings(
         extern: item.deelnemers.some(
           (email) => !email.toLowerCase().endsWith(`@${domein}`),
         ),
+        deelnemers: item.deelnemers,
         overgeslagen: overgeslagenAls(item, overgeslagen),
         afgelopen: Date.parse(item.eind) < nu,
       },

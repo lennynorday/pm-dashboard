@@ -17,10 +17,13 @@ import {
   TEAM,
   titelWoord,
   type Week,
+  weekVan,
 } from "@/lib/meetings";
+import type { NotulenStatus } from "@/lib/notulen-stand";
 import { dagPlus } from "@/lib/sprint";
 import { formatUren } from "@/lib/format";
-import { CheckIcon, ChevronIcon, CloseIcon, PencilIcon } from "./icons";
+import { CheckIcon, ChevronIcon, PencilIcon } from "./icons";
+import { Checklist, Dot, Legenda, StatusIcoon } from "./NotulenStappen";
 import { TodosMenu } from "./TodosMenu";
 import styles from "./Meetings.module.css";
 
@@ -29,6 +32,12 @@ type Props = {
   meetings: Meeting[];
   platforms: PlatformNaam[];
   vandaag: { datum: string; minuten: number };
+  /** De notulenstatus per meeting-id, ook van de meetings in Notulen te doen. */
+  statussen: Record<string, NotulenStatus>;
+  /** Afgelopen meetings van deze en vorige werkweek die nog niet klaar zijn, nieuwste eerst. */
+  teDoen: Meeting[];
+  /** Het id uit ?meeting=, bijvoorbeeld vanuit de inbox. */
+  gekozen: string | null;
 };
 
 const DAGNAMEN = ["Ma", "Di", "Wo", "Do", "Vr"];
@@ -42,8 +51,9 @@ const dagMaand = new Intl.DateTimeFormat("nl-NL", {
 const kort = (datum: string) =>
   dagMaand.format(Date.parse(`${datum}T00:00:00Z`)).replaceAll(".", "");
 
-function status(meeting: Meeting): string {
+function status(meeting: Meeting, notulen?: NotulenStatus): string {
   if (meeting.hoort === FOCUS) return "Focus";
+  if (notulen) return notulen.tekst;
   if (meeting.overgeslagen) return "Geen notulen";
   if (meeting.afgelopen) return "Afgelopen";
   return "Gepland";
@@ -63,11 +73,21 @@ const ref = ({ id, serieId, titel, start }: Meeting): MeetingRef => ({
 });
 
 /** De Meetings-pagina: werkweek of lijst, met rechts het paneel van de gekozen meeting. */
-export function Meetings({ week, meetings, platforms, vandaag }: Props) {
+export function Meetings({
+  week,
+  meetings,
+  platforms,
+  vandaag,
+  statussen,
+  teDoen,
+  gekozen: vooraf,
+}: Props) {
   const [weergave, setWeergave] = useState<"week" | "lijst">("week");
   const [filter, setFilter] = useState<string | null>(null);
-  const [gekozenId, setGekozenId] = useState<string | null>(null);
-  const gekozen = meetings.find((meeting) => meeting.id === gekozenId) ?? null;
+  const [gekozenId, setGekozenId] = useState<string | null>(vooraf);
+  const gekozen =
+    [...meetings, ...teDoen].find((meeting) => meeting.id === gekozenId) ??
+    null;
   const huidig = week.dagen.includes(vandaag.datum);
   const past = (meeting: Meeting) => !filter || meeting.hoort === filter;
   const kies = (meeting: Meeting) =>
@@ -167,6 +187,7 @@ export function Meetings({ week, meetings, platforms, vandaag }: Props) {
             <WeekGrid
               week={week}
               meetings={meetings}
+              statussen={statussen}
               vandaag={vandaag}
               gekozenId={gekozenId}
               past={past}
@@ -176,6 +197,7 @@ export function Meetings({ week, meetings, platforms, vandaag }: Props) {
             <Lijst
               week={week}
               meetings={meetings.filter(past)}
+              statussen={statussen}
               vandaag={vandaag.datum}
               gekozenId={gekozenId}
               kies={kies}
@@ -188,13 +210,15 @@ export function Meetings({ week, meetings, platforms, vandaag }: Props) {
               <Detail
                 key={gekozen.id}
                 meeting={gekozen}
+                status={statussen[gekozen.id]}
                 platforms={platforms}
                 terug={() => setGekozenId(null)}
               />
             ) : (
               <Overzicht
-                meetings={meetings.filter((m) => m.datum === vandaag.datum)}
-                huidig={huidig}
+                meetings={teDoen}
+                statussen={statussen}
+                vandaag={vandaag.datum}
                 kies={kies}
               />
             )}
@@ -208,6 +232,7 @@ export function Meetings({ week, meetings, platforms, vandaag }: Props) {
 type WeekProps = {
   week: Week;
   meetings: Meeting[];
+  statussen: Record<string, NotulenStatus>;
   vandaag: { datum: string; minuten: number };
   gekozenId: string | null;
   past: (meeting: Meeting) => boolean;
@@ -217,6 +242,7 @@ type WeekProps = {
 function WeekGrid({
   week,
   meetings,
+  statussen,
   vandaag,
   gekozenId,
   past,
@@ -264,6 +290,7 @@ function WeekGrid({
             .map((meeting) => {
               const begin = Math.max(meeting.begin, BEGIN);
               const duur = (Math.min(meeting.eind, EIND) - begin) / 60;
+              const notulen = statussen[meeting.id];
               return (
                 <button
                   key={meeting.id}
@@ -272,9 +299,10 @@ function WeekGrid({
                   data-soort={soort(meeting)}
                   data-kort={duur < 0.5 || undefined}
                   data-overgeslagen={meeting.overgeslagen !== null || undefined}
+                  data-stand={notulen?.stand}
                   data-vervaagd={!past(meeting) || undefined}
                   aria-pressed={gekozenId === meeting.id}
-                  title={`${meeting.titel}, ${meeting.label}`}
+                  title={`${meeting.titel}, ${meeting.label}${notulen ? `, ${notulen.tekst}` : ""}`}
                   style={
                     {
                       "--start": (begin - BEGIN) / 60,
@@ -295,12 +323,14 @@ function WeekGrid({
                   )}
                   <span className="nd-visually-hidden">
                     , {meeting.van}–{meeting.tot}, {meeting.label}
-                    {meeting.overgeslagen && ", geen notulen"}
+                    {notulen && `, ${notulen.tekst}`}
                   </span>
-                  {meeting.overgeslagen && (
-                    <span className={styles.icoon} aria-hidden="true">
-                      <CloseIcon className={styles.kruis} />
-                    </span>
+                  {notulen && (
+                    <Dot
+                      stand={notulen.stand}
+                      stap={notulen.stap}
+                      className={styles.icoon}
+                    />
                   )}
                 </button>
               );
@@ -318,6 +348,7 @@ function WeekGrid({
           )}
         </div>
       ))}
+      <Legenda />
     </div>
   );
 }
@@ -325,12 +356,20 @@ function WeekGrid({
 type LijstProps = {
   week: Week;
   meetings: Meeting[];
+  statussen: Record<string, NotulenStatus>;
   vandaag: string;
   gekozenId: string | null;
   kies: (meeting: Meeting) => void;
 };
 
-function Lijst({ week, meetings, vandaag, gekozenId, kies }: LijstProps) {
+function Lijst({
+  week,
+  meetings,
+  statussen,
+  vandaag,
+  gekozenId,
+  kies,
+}: LijstProps) {
   return (
     <div>
       {week.dagen.map((dag, index) => {
@@ -343,23 +382,33 @@ function Lijst({ week, meetings, vandaag, gekozenId, kies }: LijstProps) {
             </h2>
             <ul className={styles.rijen}>
               {rijen.length === 0 && <li className="nd-meta">Geen meetings</li>}
-              {rijen.map((meeting) => (
-                <li key={meeting.id}>
-                  <button
-                    type="button"
-                    className={styles.lijstRij}
-                    aria-pressed={gekozenId === meeting.id}
-                    onClick={() => kies(meeting)}
-                  >
-                    <span className={styles.tijd}>
-                      {meeting.van}–{meeting.tot}
-                    </span>
-                    <span className={styles.lijstTitel}>{meeting.titel}</span>
-                    <span className="nd-meta">{meeting.label}</span>
-                    <span className="nd-meta">{status(meeting)}</span>
-                  </button>
-                </li>
-              ))}
+              {rijen.map((meeting) => {
+                const notulen = statussen[meeting.id];
+                return (
+                  <li key={meeting.id}>
+                    <button
+                      type="button"
+                      className={styles.lijstRij}
+                      aria-pressed={gekozenId === meeting.id}
+                      onClick={() => kies(meeting)}
+                    >
+                      <span className={styles.tijd}>
+                        {meeting.van}–{meeting.tot}
+                      </span>
+                      <span className={styles.lijstTitel}>{meeting.titel}</span>
+                      <span className="nd-meta">{meeting.label}</span>
+                      <span className={styles.lijstStatus}>
+                        {notulen && (
+                          <Dot stand={notulen.stand} stap={notulen.stap} />
+                        )}
+                        <span className="nd-meta">
+                          {status(meeting, notulen)}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         );
@@ -370,46 +419,60 @@ function Lijst({ week, meetings, vandaag, gekozenId, kies }: LijstProps) {
 
 type OverzichtProps = {
   meetings: Meeting[];
-  huidig: boolean;
+  statussen: Record<string, NotulenStatus>;
+  vandaag: string;
   kies: (meeting: Meeting) => void;
 };
 
-function Overzicht({ meetings, huidig, kies }: OverzichtProps) {
-  if (!huidig) {
-    return (
-      <>
-        <h2 className="nd-title">Meetings</h2>
-        <p className={styles.uitleg}>
-          Kies een meeting om te zien waar hij bij hoort. Met Vandaag ga je
-          terug naar deze week.
-        </p>
-      </>
-    );
-  }
+/** Notulen te doen: deze en vorige werkweek, wat nog niet klaar is. */
+function Overzicht({ meetings, statussen, vandaag, kies }: OverzichtProps) {
+  const maandag = weekVan(vandaag).maandag;
   return (
     <>
       <div className="nd-card__head">
-        <h2 className="nd-title">Vandaag</h2>
+        <h2 className="nd-title">Notulen te doen</h2>
         <span className="nd-badge">{meetings.length}</span>
       </div>
-      {meetings.length === 0 && (
-        <p className={styles.uitleg}>Vandaag geen meetings.</p>
-      )}
+      <p className={`nd-meta ${styles.teDoenUitleg}`}>
+        Deze en vorige werkweek
+      </p>
       <ul className={styles.rijen}>
-        {meetings.map((meeting) => (
-          <li key={meeting.id}>
-            <button
-              type="button"
-              className={styles.vandaagRij}
-              onClick={() => kies(meeting)}
-            >
-              <span className="nd-row__title">{meeting.titel}</span>
-              <span className="nd-meta">
-                {meeting.van}–{meeting.tot} · {meeting.label}
-              </span>
-            </button>
-          </li>
-        ))}
+        {meetings.length === 0 && (
+          <li className="nd-meta">Niets meer te doen.</li>
+        )}
+        {meetings.map((meeting) => {
+          const notulen = statussen[meeting.id];
+          if (!notulen) return null;
+          const dag =
+            DAGNAMEN[new Date(`${meeting.datum}T00:00:00Z`).getUTCDay() - 1];
+          return (
+            <li key={meeting.id}>
+              <button
+                type="button"
+                className={styles.teDoenRij}
+                onClick={() => kies(meeting)}
+              >
+                <span className="nd-row__title">{meeting.titel}</span>
+                <span className={styles.teDoenMeta}>
+                  <span
+                    className="nd-status"
+                    data-status={
+                      notulen.stand === "jij" ? "open" : notulen.stand
+                    }
+                  >
+                    <StatusIcoon stand={notulen.stand} stap={notulen.stap} />
+                    {notulen.tekst}
+                  </span>
+                  <span className="nd-meta">
+                    {meeting.datum < maandag
+                      ? "vorige week"
+                      : `${dag} ${meeting.van}`}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </>
   );
@@ -417,11 +480,12 @@ function Overzicht({ meetings, huidig, kies }: OverzichtProps) {
 
 type DetailProps = {
   meeting: Meeting;
+  status: NotulenStatus | undefined;
   platforms: PlatformNaam[];
   terug: () => void;
 };
 
-function Detail({ meeting, platforms, terug }: DetailProps) {
+function Detail({ meeting, status, platforms, terug }: DetailProps) {
   const [bezig, startTransition] = useTransition();
   const dag = DAGNAMEN[new Date(`${meeting.datum}T00:00:00Z`).getUTCDay() - 1];
   const doe = (actie: () => Promise<void>) => startTransition(actie);
@@ -467,6 +531,15 @@ function Detail({ meeting, platforms, terug }: DetailProps) {
         <p className={styles.uitleg}>
           Geen andere deelnemers. Hier worden geen notulen voor gemaakt.
         </p>
+      )}
+      {status && meeting.overgeslagen && (
+        <p className={styles.statuskop}>
+          <Dot stand={status.stand} stap={status.stap} />
+          {status.tekst}
+        </p>
+      )}
+      {status && !meeting.overgeslagen && (
+        <Checklist meeting={meeting} status={status} />
       )}
       {meeting.hoort !== FOCUS && meeting.overgeslagen && (
         <>
