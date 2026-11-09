@@ -21,6 +21,7 @@ import { ExternalLink } from "./ExternalLink";
 import {
   BellIcon,
   CheckIcon,
+  ChevronIcon,
   ClockIcon,
   CloseIcon,
   PlusIcon,
@@ -28,6 +29,7 @@ import {
 } from "./icons";
 import { SlackVerbinden } from "./NotulenDelen";
 import { TodoDialoog } from "./TodoDialoog";
+import { TodosMenu } from "./TodosMenu";
 import { useToast } from "./Toast";
 import inbox from "./Inbox.module.css";
 import styles from "./Actiepunten.module.css";
@@ -122,16 +124,47 @@ function useActies() {
   return { statusVan, zet, afhandelen, setKiezen, dialoog, toon, element };
 }
 
-type Props = { acties: Actiepunt[]; wie: Wie; herinner: number | null };
+export type Filters = {
+  wie: Wie;
+  /** De eigenaar of het platform (label); null is iedereen of alle platforms. */
+  persoon: string | null;
+  platform: string | null;
+};
+
+type Props = {
+  acties: Actiepunt[];
+  filters: Filters;
+  herinner: number | null;
+};
+
+const uniek = (waarden: string[]) =>
+  [...new Set(waarden)].sort((a, b) => a.localeCompare(b, "nl"));
 
 /** De feed: open acties uit de notulen, zoals de inbox. */
-export function Actiepunten({ acties, wie: begin, herinner }: Props) {
-  const [wie, setWie] = useState<Wie>(begin);
+export function Actiepunten({ acties, filters: begin, herinner }: Props) {
+  const [filters, setFilters] = useState<Filters>(begin);
   const [open, setOpen] = useState<number | null>(herinner);
   const { statusVan, zet, afhandelen, setKiezen, dialoog, toon, element } =
     useActies();
+  const { wie, persoon, platform } = filters;
+  const personen = uniek(acties.map((actie) => actie.eigenaar));
+  const platforms = uniek(acties.map((actie) => actie.label));
+
+  // De keuze staat in de URL, zodat terugkomen of een link dezelfde lijst geeft.
+  function filter(nieuw: Partial<Filters>) {
+    const volgende = { ...filters, ...nieuw };
+    setFilters(volgende);
+    const url = new URL(window.location.href);
+    for (const [sleutel, waarde] of Object.entries(volgende)) {
+      if (waarde) url.searchParams.set(sleutel, waarde);
+      else url.searchParams.delete(sleutel);
+    }
+    window.history.replaceState(null, "", url);
+  }
 
   const getoond = acties.filter((actie) => {
+    if (persoon && actie.eigenaar !== persoon) return false;
+    if (platform && actie.label !== platform) return false;
     if (wie === "mij") return actie.vanMij;
     if (wie === "collega") return !actie.vanMij;
     return true;
@@ -145,22 +178,58 @@ export function Actiepunten({ acties, wie: begin, herinner }: Props) {
 
   return (
     <>
-      <div
-        className={`nd-filters ${styles.filters}`}
-        role="group"
-        aria-label="Van wie"
-      >
-        {WIE.map(([waarde, label]) => (
-          <button
-            key={waarde}
-            type="button"
-            className="nd-filter"
-            aria-pressed={wie === waarde}
-            onClick={() => setWie(waarde)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className={styles.balk}>
+        <div className="nd-filters" role="group" aria-label="Van wie">
+          {WIE.map(([waarde, label]) => (
+            <button
+              key={waarde}
+              type="button"
+              className="nd-filter"
+              aria-pressed={wie === waarde}
+              onClick={() => filter({ wie: waarde })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <TodosMenu
+          knopClass={`nd-button nd-button--small nd-button--quiet ${persoon ? styles.filterActief : ""}`}
+          ariaLabel={`Persoon: ${persoon ?? "Iedereen"}`}
+          items={[
+            {
+              label: "Iedereen",
+              gekozen: persoon === null,
+              kies: () => filter({ persoon: null }),
+            },
+            ...personen.map((naam) => ({
+              label: naam,
+              gekozen: persoon === naam,
+              kies: () => filter({ persoon: naam }),
+            })),
+          ]}
+        >
+          {persoon ?? "Iedereen"}
+          <ChevronIcon className={styles.filterPijl} />
+        </TodosMenu>
+        <TodosMenu
+          knopClass={`nd-button nd-button--small nd-button--quiet ${platform ? styles.filterActief : ""}`}
+          ariaLabel={`Platform: ${platform ?? "Alle platforms"}`}
+          items={[
+            {
+              label: "Alle platforms",
+              gekozen: platform === null,
+              kies: () => filter({ platform: null }),
+            },
+            ...platforms.map((naam) => ({
+              label: naam,
+              gekozen: platform === naam,
+              kies: () => filter({ platform: naam }),
+            })),
+          ]}
+        >
+          {platform ?? "Alle platforms"}
+          <ChevronIcon className={styles.filterPijl} />
+        </TodosMenu>
       </div>
 
       <section className={inbox.paneel} aria-label="Actiepunten">

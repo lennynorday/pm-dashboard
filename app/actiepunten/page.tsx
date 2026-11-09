@@ -8,6 +8,8 @@ const HOME = { label: "Overzicht", href: "/" };
 
 const parseWie = (waarde: unknown): Wie =>
   waarde === "collega" || waarde === "alles" ? waarde : "mij";
+const tekst = (waarde: unknown) =>
+  typeof waarde === "string" && waarde ? waarde : null;
 
 /** Acties uit de notulen: die van jou naar je to-do's, die van collega's volgen en herinneren. */
 export default async function ActiepuntenPage({
@@ -27,7 +29,11 @@ export default async function ActiepuntenPage({
       <PageHeading title="Actiepunten" crumbs={[HOME]} />
       <Actiepunten
         acties={leesFeed(user.email, user.voornaam)}
-        wie={parseWie(params.wie)}
+        filters={{
+          wie: parseWie(params.wie),
+          persoon: tekst(params.persoon),
+          platform: tekst(params.platform),
+        }}
         herinner={Number.isInteger(herinner) && herinner > 0 ? herinner : null}
       />
     </>

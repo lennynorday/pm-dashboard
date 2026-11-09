@@ -1,5 +1,18 @@
-.filters {
+.balk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03);
   margin-bottom: var(--space-04);
+}
+
+.filterActief {
+  background: var(--norday-lilac);
+}
+
+.filterPijl {
+  width: 14px;
+  height: 14px;
 }
 
 /* Het herinnerbericht klapt onder de rij uit, over de volle breedte. */
