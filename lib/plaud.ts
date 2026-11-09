@@ -88,7 +88,11 @@ type Uitkomst = { stdout: string } | { fout: string };
 /** Draait de Plaud CLI (alleen lezende commando's); fouten staan op stderr. */
 function plaud(args: string[]): Promise<Uitkomst> {
   return new Promise((klaar) => {
-    const proces = spawn(PLAUD, args, { stdio: ["ignore", "pipe", "pipe"] });
+    // next dev zet FORCE_COLOR=1; met kleurcodes in de uitvoer herkennen de parsers niets.
+    const proces = spawn(PLAUD, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
+    });
     let verlopen = false;
     const timer = setTimeout(() => {
       verlopen = true;
