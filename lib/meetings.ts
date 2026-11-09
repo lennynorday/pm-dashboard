@@ -59,7 +59,8 @@ export type Meeting = {
   extern: boolean;
   /** E-mailadressen van de andere deelnemers. */
   deelnemers: string[];
-  overgeslagen: "meeting" | "serie" | null;
+  /** "prive": niet aan een platform of Team gekoppeld, dus standaard zonder notulen. */
+  overgeslagen: "meeting" | "serie" | "prive" | null;
   afgelopen: boolean;
   /** Naast elkaar bij overlap: kolom (vanaf 0) van het aantal kolommen. */
   kolom: number;
@@ -156,6 +157,15 @@ export function hoortBij(
   platforms: PlatformNaam[],
   regels: Regel[],
 ): string {
+  return koppeling(item, platforms, regels).doel;
+}
+
+/** Als hoortBij, plus of het door een handmatige regel komt of door de terugvalregel (Privé). */
+function koppeling(
+  item: AgendaItem,
+  platforms: PlatformNaam[],
+  regels: Regel[],
+): { doel: string; terugval: boolean } {
   const start = Date.parse(item.start);
   const bestaat = (regel: Regel) =>
     regel.doel === TEAM ||
@@ -173,7 +183,7 @@ export function hoortBij(
     geldig.find(
       (r) => r.soort === "titel" && alsWoordIn(item.titel, r.sleutel),
     );
-  if (handmatig) return handmatig.doel;
+  if (handmatig) return { doel: handmatig.doel, terugval: false };
   // De langste naam eerst, zodat "Kunsthal Kids" wint van "Kunsthal".
   const kandidaat = platforms
     .flatMap((platform) =>
@@ -184,7 +194,8 @@ export function hoortBij(
     )
     .sort((a, b) => b.naam.length - a.naam.length)
     .find(({ naam }) => alsWoordIn(item.titel, naam));
-  return kandidaat?.slug ?? PRIVE;
+  if (kandidaat) return { doel: kandidaat.slug, terugval: false };
+  return { doel: PRIVE, terugval: true };
 }
 
 export function labelVan(hoort: string, platforms: PlatformNaam[]): string {
@@ -196,6 +207,7 @@ export function labelVan(hoort: string, platforms: PlatformNaam[]): string {
 function overgeslagenAls(
   item: AgendaItem,
   overgeslagen: Overslaan[],
+  terugval: boolean,
 ): Meeting["overgeslagen"] {
   if (
     overgeslagen.some((o) => o.soort === "serie" && o.sleutel === item.serieId)
@@ -203,7 +215,7 @@ function overgeslagenAls(
     return "serie";
   if (overgeslagen.some((o) => o.soort === "meeting" && o.sleutel === item.id))
     return "meeting";
-  return null;
+  return terugval ? "prive" : null;
 }
 
 /** Zet overlappende meetings van één dag naast elkaar. */
@@ -235,7 +247,10 @@ export function naastElkaar<T extends { begin: number; eind: number }>(
   return uit;
 }
 
-/** De meetings van deze werkweek, gesorteerd op dag en tijd. Afspraken zonder andere deelnemers (focusblokken) vallen weg. */
+/**
+ * De meetings van deze werkweek, gesorteerd op dag en tijd. Afspraken zonder andere deelnemers (focusblokken) vallen weg.
+ * Wat via de terugvalregel op Privé valt, krijgt standaard geen notulen, tenzij er al een notulen-run voor is (`metNotulen`).
+ */
 export function bepaalMeetings(
   items: AgendaItem[],
   week: Week,
@@ -244,6 +259,7 @@ export function bepaalMeetings(
   overgeslagen: Overslaan[],
   domein: string,
   nu: number,
+  metNotulen: ReadonlySet<string> = new Set(),
 ): Meeting[] {
   const basis = items.flatMap((item) => {
     const begin = lokaal(item.start);
@@ -252,7 +268,7 @@ export function bepaalMeetings(
     const einde = lokaal(item.eind);
     // Loopt hij door na middernacht, dan eindigt hij voor de week om 24:00.
     const eind = einde.datum === begin.datum ? einde.minuten : 24 * 60;
-    const hoort = hoortBij(item, platforms, regels);
+    const { doel: hoort, terugval } = koppeling(item, platforms, regels);
     return [
       {
         id: item.id,
@@ -271,7 +287,11 @@ export function bepaalMeetings(
           (email) => !email.toLowerCase().endsWith(`@${domein}`),
         ),
         deelnemers: item.deelnemers,
-        overgeslagen: overgeslagenAls(item, overgeslagen),
+        overgeslagen: overgeslagenAls(
+          item,
+          overgeslagen,
+          terugval && !metNotulen.has(item.id),
+        ),
         afgelopen: Date.parse(item.eind) < nu,
       },
     ];

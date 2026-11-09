@@ -1,6 +1,7 @@
 "use client";
 
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import {
   koppelMeetingAction,
@@ -21,7 +22,9 @@ import {
 import type { NotulenStatus } from "@/lib/notulen-stand";
 import { dagPlus } from "@/lib/sprint";
 import { formatUren } from "@/lib/format";
-import { CheckIcon, ChevronIcon, PencilIcon } from "./icons";
+import { CheckIcon, ChevronIcon, PencilIcon, RefreshIcon } from "./icons";
+import verversen from "./InboxVerversen.module.css";
+import orbit from "./OrbitStatus.module.css";
 import { Checklist, Dot, Legenda, StatusIcoon } from "./NotulenStappen";
 import { TodosMenu } from "./TodosMenu";
 import styles from "./Meetings.module.css";
@@ -81,6 +84,8 @@ export function Meetings({
 }: Props) {
   const [weergave, setWeergave] = useState<"week" | "lijst">("week");
   const [filter, setFilter] = useState<string | null>(null);
+  const router = useRouter();
+  const [ophalen, startOphalen] = useTransition();
   const [gekozenId, setGekozenId] = useState<string | null>(vooraf);
   const gekozen =
     [...meetings, ...teDoen].find((meeting) => meeting.id === gekozenId) ??
@@ -175,6 +180,18 @@ export function Meetings({
             <ChevronIcon className={styles.filterPijl} />
           </TodosMenu>
         </div>
+        <button
+          className={verversen.knop}
+          type="button"
+          disabled={ophalen}
+          aria-busy={ophalen}
+          onClick={() => startOphalen(() => router.refresh())}
+        >
+          <RefreshIcon
+            className={`${orbit.icoon} ${ophalen ? orbit.draait : ""}`}
+          />
+          {ophalen ? "Ophalen…" : "Verversen"}
+        </button>
       </div>
 
       <div className={styles.indeling}>
@@ -531,20 +548,27 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
       {meeting.overgeslagen && (
         <>
           <p className={styles.uitleg}>
-            {meeting.overgeslagen === "serie"
-              ? "Deze serie sla je over."
-              : "Deze meeting sla je over."}
+            {UITLEG[meeting.overgeslagen]}
           </p>
           <div className={styles.linkKnoppen}>
-            <button
-              type="button"
-              className={styles.linkKnop}
-              onClick={() => doe(() => zetMeetingTerugAction(ref(meeting)))}
-            >
-              {meeting.overgeslagen === "serie"
-                ? "Serie terugzetten"
-                : "Terugzetten"}
-            </button>
+            {meeting.overgeslagen === "prive" ? (
+              <AanzetKnop
+                meeting={meeting}
+                kies={(scope) =>
+                  doe(() => koppelMeetingAction(ref(meeting), PRIVE, scope))
+                }
+              />
+            ) : (
+              <button
+                type="button"
+                className={styles.linkKnop}
+                onClick={() => doe(() => zetMeetingTerugAction(ref(meeting)))}
+              >
+                {meeting.overgeslagen === "serie"
+                  ? "Serie terugzetten"
+                  : "Terugzetten"}
+              </button>
+            )}
           </div>
         </>
       )}
@@ -583,6 +607,45 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
         </div>
       )}
     </div>
+  );
+}
+
+const UITLEG = {
+  meeting: "Deze meeting sla je over.",
+  serie: "Deze serie sla je over.",
+  prive: "Overgeslagen: niet aan een platform gekoppeld.",
+};
+
+/** "Toch notulen maken": een handmatige Privé-regel, die het automatisch overslaan opheft. */
+function AanzetKnop({
+  meeting,
+  kies,
+}: {
+  meeting: Meeting;
+  kies: (scope: Scope) => void;
+}) {
+  if (!meeting.serieId) {
+    return (
+      <button
+        type="button"
+        className={styles.linkKnop}
+        onClick={() => kies("deze")}
+      >
+        Toch notulen maken
+      </button>
+    );
+  }
+  return (
+    <TodosMenu
+      knopClass={styles.linkKnop}
+      ariaLabel="Toch notulen maken"
+      items={[
+        { label: "Alleen deze meeting", kies: () => kies("deze") },
+        { label: "Hele serie", kies: () => kies("serie") },
+      ]}
+    >
+      Toch notulen maken
+    </TodosMenu>
   );
 }
 

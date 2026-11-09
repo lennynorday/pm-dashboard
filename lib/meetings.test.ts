@@ -192,3 +192,33 @@ test("bepaalMeetings: extern, overgeslagen, buiten de week en focusblokken", () 
     ],
   );
 });
+
+test("bepaalMeetings: wat op Privé terugvalt is standaard overgeslagen", () => {
+  const week = weekVan("2026-11-09");
+  const nu = Date.parse("2026-11-10T10:30:00+01:00");
+  const maak = (regels: Regel[], metNotulen = new Set<string>()) =>
+    bepaalMeetings(
+      [
+        item({ id: "los" }),
+        item({ id: "kh", titel: "Kunsthal sprint" }),
+        item({ id: "gezet" }),
+        item({ id: "run" }),
+      ],
+      week,
+      PLATFORMS,
+      regels,
+      [],
+      "norday.nl",
+      nu,
+      metNotulen,
+    ).map((m) => [m.id, m.hoort, m.overgeslagen]);
+  assert.deepStrictEqual(
+    maak([regel({ sleutel: "gezet", doel: "prive" })], new Set(["run"])),
+    [
+      ["los", "prive", "prive"],
+      ["kh", "kunsthal", null],
+      ["gezet", "prive", null],
+      ["run", "prive", null],
+    ],
+  );
+});
