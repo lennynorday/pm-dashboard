@@ -61,26 +61,39 @@ export function parseTranscript(tekst: string): string {
     .join("\n");
 }
 
+const overlap = (
+  meeting: { start: number; eind: number },
+  opname: OpnameDetails,
+) =>
+  Math.min(meeting.eind, opname.start + opname.duurMs) -
+  Math.max(meeting.start, opname.start);
+
 /**
- * De opname die het langst overlapt met de meeting; null als er geen overlapt.
+ * Welke opname bij welke meeting hoort (meeting-id naar opname-id). Een opname hoort
+ * bij één meeting: die waarmee hij het langst overlapt. Heeft een meeting er meer, dan
+ * wint de langste overlap. Opnames in `bezet` zijn al gekoppeld en doen niet mee.
  * Het account is gedeeld, dus alleen tijd telt, niet de naam.
  */
-export function kiesOpname(
-  meeting: { start: number; eind: number },
+export function verdeelOpnames(
+  meetings: { id: string; start: number; eind: number }[],
   opnames: OpnameDetails[],
-): OpnameDetails | null {
-  let beste: OpnameDetails | null = null;
-  let meeste = 0;
+  bezet: Set<string>,
+): Map<string, string> {
+  const gekozen = new Map<string, { id: string; overlap: number }>();
   for (const opname of opnames) {
-    const overlap =
-      Math.min(meeting.eind, opname.start + opname.duurMs) -
-      Math.max(meeting.start, opname.start);
-    if (overlap > meeste) {
-      beste = opname;
-      meeste = overlap;
+    if (bezet.has(opname.id)) continue;
+    let beste: { id: string; overlap: number } | null = null;
+    for (const meeting of meetings) {
+      const lengte = overlap(meeting, opname);
+      if (lengte > (beste?.overlap ?? 0))
+        beste = { id: meeting.id, overlap: lengte };
     }
+    if (!beste) continue;
+    const huidig = gekozen.get(beste.id);
+    if (!huidig || beste.overlap > huidig.overlap)
+      gekozen.set(beste.id, { id: opname.id, overlap: beste.overlap });
   }
-  return beste;
+  return new Map([...gekozen].map(([meeting, { id }]) => [meeting, id]));
 }
 
 type Uitkomst = { stdout: string } | { fout: string };

@@ -1,11 +1,11 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
-  kiesOpname,
   parseDuur,
   parseFile,
   parseRecent,
   parseTranscript,
+  verdeelOpnames,
 } from "./plaud.ts";
 import { plaudWebUrl } from "./notulen-stand.ts";
 
@@ -96,22 +96,52 @@ test("parseTranscript houdt alleen de gesproken regels over", () => {
   );
 });
 
-test("kiesOpname koppelt op overlap in UTC, de langste overlap wint", () => {
+test("verdeelOpnames koppelt op overlap in UTC, de langste overlap wint", () => {
   // Meeting 16:30–17:15 Nederlandse tijd (UTC+1) = 15:30–16:15 UTC.
   const meeting = {
+    id: "m",
     start: Date.parse("2026-11-05T16:30:00+01:00"),
     eind: Date.parse("2026-11-05T17:15:00+01:00"),
   };
   const opname = parseFile(FILE);
   assert.ok(opname);
-  assert.strictEqual(kiesOpname(meeting, [opname])?.id, opname.id);
+  const geen = new Set<string>();
+  assert.strictEqual(
+    verdeelOpnames([meeting], [opname], geen).get("m"),
+    opname.id,
+  );
 
   const kort = { ...opname, id: "kort", start: meeting.start, duurMs: 60_000 };
-  assert.strictEqual(kiesOpname(meeting, [kort, opname])?.id, opname.id);
+  assert.strictEqual(
+    verdeelOpnames([meeting], [kort, opname], geen).get("m"),
+    opname.id,
+  );
 
   // Als start_at lokale tijd zou zijn, lag hij een uur later en buiten de meeting.
   const later = { ...opname, start: meeting.eind };
-  assert.strictEqual(kiesOpname(meeting, [later]), null);
+  assert.strictEqual(verdeelOpnames([meeting], [later], geen).size, 0);
+});
+
+test("verdeelOpnames: een opname hoort bij één meeting, de langste overlap", () => {
+  const ms = (tijd: string) => Date.parse(`2026-11-04T${tijd}:00+01:00`);
+  const kickoff = { id: "kickoff", start: ms("13:30"), eind: ms("16:00") };
+  const theo = { id: "theo", start: ms("16:00"), eind: ms("16:30") };
+  const opname = {
+    id: "of_wo2",
+    start: ms("13:33"),
+    duurMs: ms("16:11") - ms("13:33"),
+    transcript: true,
+  };
+  const geen = new Set<string>();
+  assert.deepStrictEqual(
+    [...verdeelOpnames([kickoff, theo], [opname], geen)],
+    [["kickoff", "of_wo2"]],
+  );
+  // Al gekoppeld aan de kick-off: Theo blijft wachten op een opname.
+  assert.strictEqual(
+    verdeelOpnames([kickoff, theo], [opname], new Set(["of_wo2"])).size,
+    0,
+  );
 });
 
 test("plaudWebUrl laat of_ weg", () => {

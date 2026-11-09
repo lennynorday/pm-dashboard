@@ -39,10 +39,10 @@ import {
 import { type NotulenRij, VASTGELOPEN_MS } from "./notulen-stand";
 import {
   type OpnameDetails,
-  kiesOpname,
   leesTranscript,
   opnameDetails,
   recenteOpnames,
+  verdeelOpnames,
 } from "./plaud";
 import { plaatsBericht } from "./slack/api";
 import { dagPlus } from "./sprint";
@@ -334,7 +334,12 @@ export async function verwerkNotulen(
         (Date.parse(m.einde) >= vanaf || bekendeIds.has(m.id)),
     );
     for (const meeting of kandidaten) bewaarMeeting(email, meeting);
-    await zoekOpnames(email, kandidaten, nu);
+    await zoekOpnames(
+      email,
+      kandidaten,
+      meetings.filter((m) => m.hoort !== FOCUS),
+      nu,
+    );
     for (const meeting of kandidaten) {
       await verder(email, meeting, platforms);
     }
@@ -347,10 +352,15 @@ export async function verwerkNotulen(
   }
 }
 
-/** Koppelt een opname aan meetings op stap 1 die er in tijd mee overlappen. */
+/**
+ * Koppelt opnames aan meetings op stap 1. Een opname hoort bij de meeting waarmee
+ * hij het langst overlapt, dus alle meetings tellen mee (`alle`), en een opname die
+ * al aan een meeting hangt, gaat niet naar een tweede.
+ */
 async function zoekOpnames(
   email: string,
   meetings: Meeting[],
+  alle: Meeting[],
   nu: number,
 ): Promise<void> {
   const zoeken = meetings.filter((m) => {
@@ -366,6 +376,8 @@ async function zoekOpnames(
     for (const m of zoeken) zetFout(email, m.id, recent.fout);
     return;
   }
+  const details = new Map<string, OpnameDetails>();
+  const gelukt: Meeting[] = [];
   for (const meeting of zoeken) {
     // Alleen opnames van rond die dag; de datum in de lijst kan in UTC staan.
     const dagen = [
@@ -373,7 +385,6 @@ async function zoekOpnames(
       meeting.datum,
       dagPlus(meeting.datum, 1),
     ];
-    const details: OpnameDetails[] = [];
     let fout: string | null = null;
     for (const opname of recent.filter((o) => dagen.includes(o.datum))) {
       const gelezen = bekend.get(opname.id) ?? (await opnameDetails(opname.id));
@@ -382,17 +393,31 @@ async function zoekOpnames(
         break;
       }
       bekend.set(opname.id, gelezen);
-      details.push(gelezen);
+      details.set(opname.id, gelezen);
     }
-    if (fout) {
-      zetFout(email, meeting.id, fout);
-      continue;
-    }
-    const gekozen = kiesOpname(
-      { start: Date.parse(meeting.start), eind: Date.parse(meeting.einde) },
-      details,
-    );
-    if (gekozen) zetStap(email, meeting.id, 2, { opname_id: gekozen.id });
+    if (fout) zetFout(email, meeting.id, fout);
+    else gelukt.push(meeting);
+  }
+  const bezet = new Set(
+    database()
+      .prepare(
+        "SELECT opname_id FROM notulen WHERE email = ? AND opname_id IS NOT NULL",
+      )
+      .all(email)
+      .map((rij) => String(rij.opname_id)),
+  );
+  const verdeeld = verdeelOpnames(
+    alle.map((m) => ({
+      id: m.id,
+      start: Date.parse(m.start),
+      eind: Date.parse(m.einde),
+    })),
+    [...details.values()],
+    bezet,
+  );
+  for (const meeting of gelukt) {
+    const opnameId = verdeeld.get(meeting.id);
+    if (opnameId) zetStap(email, meeting.id, 2, { opname_id: opnameId });
   }
 }
 
