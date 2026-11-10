@@ -84,7 +84,9 @@ const naamSleutel = (naam: string) => naam.trim().toLowerCase();
 function leesLeden(email: string): Leden {
   const db = database();
   const personen = db
-    .prepare("SELECT id, naam FROM slack_leden WHERE email = ?")
+    .prepare(
+      "SELECT id, naam FROM slack_leden WHERE email = ? ORDER BY naam COLLATE NOCASE",
+    )
     .all(email)
     .map((rij) => ({ id: String(rij.id), naam: String(rij.naam) }));
   const gekozen = db
@@ -124,6 +126,12 @@ export async function ververLeden(email: string): Promise<void> {
     // Geen Slack of een rate limit: de vorige lijst blijft staan.
     opgehaald.delete(email);
   }
+}
+
+/** De Slack-leden uit de database, hooguit elk uur ververst, in plaats van bij elke herinnering users.list. */
+async function bewaardeLeden(email: string): Promise<SlackPersoon[]> {
+  await ververLeden(email);
+  return leesLeden(email).personen ?? [];
 }
 
 function parseActiepunt(
@@ -294,7 +302,9 @@ export async function herinnerVoorstel(
   const actie = leesVanId(email, voornaam, id);
   if (!actie?.teHerinneren || !inFeed(actie.status))
     return { soort: "fout", fout: "Deze actie staat niet meer open" };
-  const personen = await slackPersonen(email);
+  const personen = await bewaardeLeden(email);
+  if (personen.length === 0)
+    return { soort: "fout", fout: "De Slack-leden zijn niet op te halen" };
   const keuze = personen.find((p) => p.id === gekozen);
   if (keuze) {
     database()
@@ -340,7 +350,7 @@ export async function herinner(
   const actie = leesVanId(email, voornaam, id);
   if (!actie?.teHerinneren || !inFeed(actie.status))
     return { fout: "Deze actie staat niet meer open" };
-  const persoon = persoonVan(email, actie.eigenaar, await slackPersonen(email));
+  const persoon = persoonVan(email, actie.eigenaar, await bewaardeLeden(email));
   if (!persoon) return { fout: `Kies eerst wie ${actie.eigenaar} is in Slack` };
   // Tegen een dubbele klik: één DM tegelijk per actie.
   if (versturen.has(id)) return { fout: "Het bericht wordt al verstuurd" };
