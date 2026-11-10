@@ -149,6 +149,15 @@ export function titelWoord(titel: string): string {
 }
 
 /**
+ * De serie zonder het achtervoegsel "_R<datum>" dat Google geeft als je een reeks
+ * vanaf een bepaalde afspraak aanpast; zo houdt de aangepaste reeks zijn regels.
+ */
+export const serieSleutel = (id: string) => id.split("_R")[0];
+
+const zelfdeSerie = (sleutel: string, serieId: string | null) =>
+  serieId !== null && serieSleutel(sleutel) === serieSleutel(serieId);
+
+/**
  * Waar een afspraak bij hoort. Volgorde: de handmatige regels (meeting, serie), dan de platformnaam of een roepnaam in de titel,
  * anders Privé. `terugval`: het komt door de terugvalregel (Privé).
  */
@@ -168,7 +177,7 @@ export function koppeling(
     geldig.find(
       (r) =>
         r.soort === "serie" &&
-        r.sleutel === item.serieId &&
+        zelfdeSerie(r.sleutel, item.serieId) &&
         (r.vanaf ?? 0) <= start,
     );
   if (handmatig) return { doel: handmatig.doel, terugval: false };
@@ -198,7 +207,9 @@ function overgeslagenAls(
   terugval: boolean,
 ): Meeting["overgeslagen"] {
   if (
-    overgeslagen.some((o) => o.soort === "serie" && o.sleutel === item.serieId)
+    overgeslagen.some(
+      (o) => o.soort === "serie" && zelfdeSerie(o.sleutel, item.serieId),
+    )
   )
     return "serie";
   if (overgeslagen.some((o) => o.soort === "meeting" && o.sleutel === item.id))
@@ -260,7 +271,8 @@ export function bepaalMeetings(
     return [
       {
         id: item.id,
-        serieId: item.serieId,
+        // Zo bewaart alles (regels, overslaan, notulen) de serie zonder "_R".
+        serieId: item.serieId && serieSleutel(item.serieId),
         titel: item.titel,
         start: item.start,
         einde: item.eind,

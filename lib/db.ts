@@ -326,6 +326,11 @@ function open(): DatabaseSync {
         WHERE extern = 0 AND stap >= 6 AND niet_gedeeld IS NULL AND gedeeld_url IS NOT NULL;
     `);
   }
+  // Series werden bewaard met Google's "_R<datum>" van een aangepaste reeks; nu zonder.
+  for (const tabel of ["meeting_regels", "meetings_overgeslagen"]) {
+    db.exec(`UPDATE OR IGNORE ${tabel} SET sleutel = substr(sleutel, 1, instr(sleutel, '_R') - 1)
+      WHERE soort = 'serie' AND instr(sleutel, '_R') > 0`);
+  }
   if (DEMO) vulDemo(db);
   return db;
 }

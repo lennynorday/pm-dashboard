@@ -1,7 +1,7 @@
 /** Delen van notulen: ontvangers, Slack-kanaal en wat er verstuurd is. Zonder database-import, zodat dit los te testen is en ook in client components mag. */
 import type { Contactpersoon } from "./accountgegevens.ts";
 import type { LinkUrls } from "./links.ts";
-import { type Meeting, type Regel, TEAM } from "./meetings.ts";
+import { type Meeting, type Regel, TEAM, serieSleutel } from "./meetings.ts";
 
 /** De mail aan de klant, zoals de overlay hem voorinvult. */
 export type MailInfo = {
@@ -138,7 +138,10 @@ export function deelKanaal(
 ): { kanaal: string; naam: string } | GeenKanaal {
   if (meeting.hoort === TEAM) {
     const ingesteld = regels.find(
-      (r) => r.soort === "serie" && r.sleutel === meeting.serieId,
+      (r) =>
+        r.soort === "serie" &&
+        meeting.serieId !== null &&
+        serieSleutel(r.sleutel) === serieSleutel(meeting.serieId),
     )?.kanaal;
     const kanaal = ingesteld ? slackKanaal(ingesteld) : null;
     if (kanaal)

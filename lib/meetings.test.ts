@@ -222,3 +222,32 @@ test("bepaalMeetings: wat op Privé terugvalt is standaard overgeslagen", () => 
     ],
   );
 });
+
+test("koppeling: een aangepaste reeks (_R) houdt zijn regel en overslaan", () => {
+  const serie = regel({ soort: "serie", sleutel: "s1", doel: "team" });
+  const aangepast = item({ serieId: "s1_R20261109T090000", titel: "Kunsthal" });
+  assert.strictEqual(koppeling(aangepast, PLATFORMS, [serie]).doel, "team");
+  // Een regel die bewaard is met "_R" geldt ook voor de serie zonder.
+  const oud = regel({
+    soort: "serie",
+    sleutel: "s1_R20260811T080000",
+    doel: "team",
+  });
+  assert.strictEqual(
+    koppeling(item({ serieId: "s1", titel: "Kunsthal" }), PLATFORMS, [oud])
+      .doel,
+    "team",
+  );
+  const [meeting] = bepaalMeetings(
+    [aangepast],
+    weekVan("2026-11-09"),
+    PLATFORMS,
+    [],
+    [{ soort: "serie", sleutel: "s1", titel: "Kunsthal" }],
+    "norday.nl",
+    Date.parse("2026-11-10T10:30:00+01:00"),
+  );
+  // Bewaren gaat op de serie zonder "_R".
+  assert.strictEqual(meeting.serieId, "s1");
+  assert.strictEqual(meeting.overgeslagen, "serie");
+});
