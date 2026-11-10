@@ -48,6 +48,11 @@ import {
   recenteOpnames,
   verdeelOpnames,
 } from "./plaud";
+import {
+  type Verwacht,
+  zetFout as foutIn,
+  zetStap as stapIn,
+} from "./notulen-stap";
 import { plaatsBericht } from "./slack/api";
 import { dagPlus } from "./sprint";
 import {
@@ -208,38 +213,20 @@ function leesRij(email: string, id: string): Rij | undefined {
     .get(email, id);
 }
 
-/** Zet de meeting een stap verder; `velden` zijn kolommen uit de vaste lijst hieronder. */
-function zetStap(
+const zetStap = (
   email: string,
   id: string,
   stap: number,
-  velden: Partial<Record<"opname_id" | "tekst" | "pagina_url", string>> = {},
-): void {
-  database()
-    .prepare(
-      `UPDATE notulen SET stap = ?, sinds = ?, bezig = NULL, fout = NULL,
-         opname_id = COALESCE(?, opname_id), tekst = COALESCE(?, tekst),
-         pagina_url = COALESCE(?, pagina_url)
-       WHERE email = ? AND meeting_id = ?`,
-    )
-    .run(
-      stap,
-      Date.now(),
-      velden.opname_id ?? null,
-      velden.tekst ?? null,
-      velden.pagina_url ?? null,
-      email,
-      id,
-    );
-}
+  verwacht: Verwacht,
+  velden?: Parameters<typeof stapIn>[5],
+) => stapIn(database(), email, id, stap, verwacht, velden);
 
-function zetFout(email: string, id: string, fout: string): void {
-  database()
-    .prepare(
-      "UPDATE notulen SET fout = ?, bezig = NULL WHERE email = ? AND meeting_id = ?",
-    )
-    .run(fout.slice(0, 500), email, id);
-}
+const zetFout = (
+  email: string,
+  id: string,
+  fout: string,
+  verwacht?: Verwacht,
+) => foutIn(database(), email, id, fout, verwacht);
 
 /** Claimt de meeting voor een run; false als er al een loopt. */
 function claim(email: string, id: string): boolean {
@@ -422,7 +409,14 @@ async function zoekOpnames(
   );
   for (const meeting of gelukt) {
     const opnameId = verdeeld.get(meeting.id);
-    if (opnameId) zetStap(email, meeting.id, 2, { opname_id: opnameId });
+    if (opnameId)
+      zetStap(
+        email,
+        meeting.id,
+        2,
+        { stap: 1, opnameId: null },
+        { opname_id: opnameId },
+      );
   }
 }
 
@@ -439,13 +433,21 @@ async function verder(
     const details = await opnameDetails(opnameId);
     if ("fout" in details) return zetFout(email, meeting.id, details.fout);
     if (!details.transcript) return;
-    zetStap(email, meeting.id, 3);
+    zetStap(email, meeting.id, 3, { stap: 2, opnameId });
   }
-  if (Number(leesRij(email, meeting.id)?.stap) === 3 && opnameId) {
+  if (Number(leesRij(email, meeting.id)?.stap) === 3) {
     if (!claim(email, meeting.id)) return;
-    const uitkomst = await maakNotulen(meeting, opnameId);
-    if ("fout" in uitkomst) return zetFout(email, meeting.id, uitkomst.fout);
-    zetStap(email, meeting.id, 4, { tekst: uitkomst.tekst });
+    // Na de claim opnieuw lezen: intussen kan er een andere opname gekozen zijn.
+    const verwacht: Verwacht = {
+      stap: 3,
+      opnameId: tekst(leesRij(email, meeting.id)?.opname_id),
+    };
+    if (!verwacht.opnameId) return laatLos(email, meeting.id);
+    const uitkomst = await maakNotulen(meeting, verwacht.opnameId);
+    // Is de rij tijdens de run teruggezet, dan telt dit resultaat niet.
+    if ("fout" in uitkomst)
+      return zetFout(email, meeting.id, uitkomst.fout, verwacht);
+    zetStap(email, meeting.id, 4, verwacht, { tekst: uitkomst.tekst });
   }
   const klaar = leesRij(email, meeting.id);
   if (Number(klaar?.stap) === 4 && typeof klaar?.tekst === "string") {
@@ -457,6 +459,7 @@ async function verder(
         email,
         meeting.id,
         fout instanceof Error ? fout.message : String(fout),
+        { stap: 4, opnameId: tekst(klaar.opname_id) },
       );
     }
   }
@@ -481,12 +484,15 @@ async function bijDelen(email: string, meeting: Meeting, rij: Rij) {
   );
   const bericht =
     "fout" in run ? run : parseSlackBericht(run.stdout, paginaUrl);
-  if ("fout" in bericht) return zetFout(email, meeting.id, bericht.fout);
+  const verwacht = { stap: 5, opnameId: tekst(rij.opname_id) };
+  if ("fout" in bericht)
+    return zetFout(email, meeting.id, bericht.fout, verwacht);
   database()
     .prepare(
-      "UPDATE notulen SET slack_tekst = ?, bezig = NULL WHERE email = ? AND meeting_id = ?",
+      `UPDATE notulen SET slack_tekst = ?, bezig = NULL
+       WHERE email = ? AND meeting_id = ? AND stap = 5 AND opname_id IS ?`,
     )
-    .run(bericht.tekst, email, meeting.id);
+    .run(bericht.tekst, email, meeting.id, verwacht.opnameId);
 }
 
 // ---------- Delen, na een klik ----------
@@ -795,6 +801,7 @@ async function naarSuperhuman(
   rij: Rij,
   platforms: NotulenPlatform[],
 ): Promise<void> {
+  const verwacht: Verwacht = { stap: 4, opnameId: tekst(rij.opname_id) };
   let docId = tekst(rij.pagina_doc);
   let paginaId = tekst(rij.pagina_id);
   if (!docId || !paginaId) {
@@ -810,16 +817,21 @@ async function naarSuperhuman(
     paginaId =
       bestaand?.id ??
       (await maakPagina(doel.docId, doel.ouder, naam, String(rij.tekst)));
-    database()
+    // Teruggezet tijdens het maken (andere opname): de pagina hoort niet meer bij deze rij.
+    const { changes } = database()
       .prepare(
-        "UPDATE notulen SET pagina_doc = ?, pagina_id = ? WHERE email = ? AND meeting_id = ?",
+        `UPDATE notulen SET pagina_doc = ?, pagina_id = ?
+         WHERE email = ? AND meeting_id = ? AND stap = 4 AND opname_id IS ?`,
       )
-      .run(docId, paginaId, email, meeting.id);
+      .run(docId, paginaId, email, meeting.id, verwacht.opnameId);
+    if (changes === 0) return;
   }
   for (let poging = 0; poging < 6; poging++) {
     const pagina = await leesPagina(docId, paginaId);
-    if (pagina?.link)
-      return zetStap(email, meeting.id, 5, { pagina_url: pagina.link });
+    if (pagina?.link) {
+      zetStap(email, meeting.id, 5, verwacht, { pagina_url: pagina.link });
+      return;
+    }
     await wacht(10_000);
   }
   laatLos(email, meeting.id);
