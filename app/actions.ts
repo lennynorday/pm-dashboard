@@ -773,6 +773,8 @@ async function bewaarRoepnaam(
   if (woord.includes(",")) {
     return `"${woord}" bevat een komma en kan geen roepnaam zijn.`;
   }
+  // Vers uit Superhuman: opslaan schrijft de hele rij terug, dus een oude cache zou wijzigingen wissen.
+  clearAccountGegevensCache();
   const dashboard = await loadDashboard();
   if (dashboard.status !== "ok") return "Orbit is niet bereikbaar.";
   // Zonder actuele gegevens zou opslaan wat er in Superhuman staat overschrijven.
