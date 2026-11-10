@@ -126,7 +126,7 @@ export function notulenVanaf(email: string, nu?: number): number | null {
   return typeof rij?.vanaf === "number" ? rij.vanaf : null;
 }
 
-function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
+function parseRij(rij: Record<string, unknown>): NotulenRij {
   return {
     meetingId: String(rij.meeting_id),
     stap: Number(rij.stap),
@@ -150,7 +150,7 @@ export function leesNotulen(email: string, ids: string[]): NotulenRij[] {
       "SELECT * FROM notulen WHERE email = ? AND meeting_id IN (SELECT value FROM json_each(?))",
     )
     .all(email, JSON.stringify(ids))
-    .map((rij) => parseRij(email, rij));
+    .map(parseRij);
 }
 
 /** Een vastgelopen of mislukte meeting zoals de inbox hem toont. */
@@ -558,7 +558,7 @@ function zetOnderdeel(
 function rondDeelAf(email: string, id: string): boolean {
   const rij = teDelen(email, id);
   if (!rij) return false;
-  const status = parseRij(email, rij);
+  const status = parseRij(rij);
   const uitkomst = deelAfgerond([
     status.slack.stand,
     ...(rij.extern === 1 ? [status.mail.stand] : []),
@@ -635,13 +635,8 @@ export async function deelInSlack(
   // Tegen een dubbele klik: één bericht per meeting.
   if (!claim(email, id, true)) return NOG_BEZIG;
   try {
-    const { ts, permalink } = await plaatsBericht(email, doel.kanaal, bericht);
-    database()
-      .prepare(
-        "UPDATE notulen SET slack_ts = ? WHERE email = ? AND meeting_id = ?",
-      )
-      .run(ts, email, id);
-    zetOnderdeel(email, id, "slack", "verstuurd", permalink ?? null);
+    const permalink = await plaatsBericht(email, doel.kanaal, bericht);
+    zetOnderdeel(email, id, "slack", "verstuurd", permalink);
     rondDeelAf(email, id);
     return null;
   } catch (fout) {
@@ -963,8 +958,7 @@ export function zetOpname(
     `UPDATE notulen SET opname_id = ?, opname_keuze = ?, stap = ?, sinds = ?,
        pagina_versie = COALESCE(pagina_versie, 0) + (pagina_id IS NOT NULL),
        tekst = NULL, pagina_doc = NULL, pagina_id = NULL, pagina_url = NULL,
-       concept_id = NULL, thread_id = NULL, slack_tekst = NULL, slack_ts = NULL,
-       gedeeld_url = NULL, niet_gedeeld = NULL, elders = NULL,
+       slack_tekst = NULL, niet_gedeeld = NULL, elders = NULL,
        mail_stand = NULL, mail_url = NULL, slack_stand = NULL, slack_url = NULL,
        fout = NULL, bezig = NULL, acties_uit = NULL
      WHERE email = ? AND meeting_id = ?`,

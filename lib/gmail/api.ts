@@ -8,10 +8,10 @@ export class GmailNietVerbondenError extends Error {
   }
 }
 
-/** Gmail is verbonden, maar het token mag geen concepten maken: opnieuw verbinden met Google. */
+/** Gmail is verbonden, maar het token mag geen mail maken of versturen (compose): opnieuw verbinden met Google. */
 export class GmailComposeOntbreektError extends Error {
   constructor() {
-    super("Geen toestemming om concepten in Gmail te maken");
+    super("Geen toestemming om mail te maken of te versturen in Gmail");
   }
 }
 

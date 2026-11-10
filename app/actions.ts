@@ -1008,7 +1008,7 @@ export async function deelTekstenAction(
 
 /** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */
 export type DeelUitkomst =
-  | { uitkomst: "gelukt"; conceptUrl: string | null }
+  | { uitkomst: "gelukt" }
   | { uitkomst: "verbinden" }
   | { uitkomst: "fout"; fout: string };
 
@@ -1053,7 +1053,7 @@ export async function stuurDeelMailAction(
     });
     revalidatePath("/", "layout");
     if (fout) return { uitkomst: "fout", fout: fout.fout };
-    return { uitkomst: "gelukt", conceptUrl: null };
+    return { uitkomst: "gelukt" };
   } catch (fout) {
     if (
       fout instanceof GmailComposeOntbreektError ||
@@ -1086,7 +1086,7 @@ export async function deelInSlackAction(
     );
     if (fout) return { uitkomst: "fout", fout: fout.fout };
     revalidatePath("/", "layout");
-    return { uitkomst: "gelukt", conceptUrl: null };
+    return { uitkomst: "gelukt" };
   } catch (fout) {
     if (
       fout instanceof SlackSchrijvenOntbreektError ||
@@ -1164,7 +1164,7 @@ export async function herinnerAction(
     const fout = await herinner(user.email, user.voornaam, id, bericht.trim());
     if (fout) return { uitkomst: "fout", fout: fout.fout };
     revalidatePath("/", "layout");
-    return { uitkomst: "gelukt", conceptUrl: null };
+    return { uitkomst: "gelukt" };
   } catch (fout) {
     if (
       fout instanceof SlackSchrijvenOntbreektError ||

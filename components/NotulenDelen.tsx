@@ -21,6 +21,7 @@ import type { Meeting } from "@/lib/meetings";
 import type { DeelTeksten } from "@/lib/notulen";
 import {
   type DeelInfo,
+  type DeelOnderdeel,
   type MailInfo,
   type Onderdeel,
   type SlackInfo,
@@ -131,8 +132,6 @@ function Uitkomst({ uitkomst }: { uitkomst: DeelUitkomst | null }) {
   return null;
 }
 
-type Onderdelen = "mail" | "slack";
-
 type KaderProps = {
   kop: string;
   klaar?: boolean;
@@ -163,7 +162,7 @@ function Kader({ kop, klaar, actie, children }: KaderProps) {
 type KlaarProps = {
   meeting: Meeting;
   onderdeel: Onderdeel;
-  welk: Onderdelen;
+  welk: DeelOnderdeel;
   kop: string;
   regel: string;
   openen: string;
@@ -202,7 +201,7 @@ function Klaar({ meeting, onderdeel, welk, kop, regel, openen }: KlaarProps) {
 
 type OnzekerProps = {
   meeting: Meeting;
-  welk: Onderdelen;
+  welk: DeelOnderdeel;
   kop: string;
   melding: string;
   dubbel: string;
@@ -243,7 +242,13 @@ function Onzeker({ meeting, welk, kop, melding, dubbel }: OnzekerProps) {
   );
 }
 
-function Overslaan({ meeting, welk }: { meeting: Meeting; welk: Onderdelen }) {
+function Overslaan({
+  meeting,
+  welk,
+}: {
+  meeting: Meeting;
+  welk: DeelOnderdeel;
+}) {
   const [bezig, startTransition] = useTransition();
   return (
     <button

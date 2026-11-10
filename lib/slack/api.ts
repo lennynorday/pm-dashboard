@@ -84,13 +84,13 @@ export async function stuurDm(
 
 /**
  * Plaatst een bericht onder de naam van de gebruiker (een gebruikerstoken
- * post altijd als de gebruiker). Alleen na een klik op Verstuur.
+ * post altijd als de gebruiker) en geeft de link ernaar. Alleen na een klik op Verstuur.
  */
 export async function plaatsBericht(
   email: string,
   kanaal: string,
   tekst: string,
-): Promise<{ ts: string; permalink: string | null }> {
+): Promise<string | null> {
   if (!(await slackMagSchrijven(email)))
     throw new SlackSchrijvenOntbreektError();
   const geplaatst = await slackPost(email, "chat.postMessage", {
@@ -103,10 +103,7 @@ export async function plaatsBericht(
     channel: String(geplaatst.channel),
     message_ts: ts,
   }).catch(() => null);
-  return {
-    ts,
-    permalink: typeof link?.permalink === "string" ? link.permalink : null,
-  };
+  return typeof link?.permalink === "string" ? link.permalink : null;
 }
 
 /** Eén aanroep van de Slack Web API met het token van de gebruiker. */
