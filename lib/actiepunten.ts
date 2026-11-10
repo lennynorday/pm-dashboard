@@ -7,6 +7,7 @@ import {
   isVanMij,
   koppelNaam,
   leesActies,
+  nieuweActies,
   parseActieStatus,
 } from "./actiepunt";
 import { draaiClaude } from "./claude/run";
@@ -26,7 +27,7 @@ const tekst = (waarde: unknown) => (typeof waarde === "string" ? waarde : null);
 
 /**
  * Haalt de acties uit notulen die nog niet uitgelezen zijn. Elke notulen maar
- * één keer (acties_uit), en een actie maar één keer (volgnummer per meeting).
+ * één keer (acties_uit), en een actie maar één keer (zelfde eigenaar en wat per meeting).
  */
 export function haalActiesUit(email: string): void {
   const db = database();
@@ -42,20 +43,28 @@ export function haalActiesUit(email: string): void {
   const klaar = db.prepare(
     "UPDATE notulen SET acties_uit = ? WHERE email = ? AND meeting_id = ?",
   );
+  // Na opnieuw notulen maken staan de afgehandelde acties er nog; die komen er niet dubbel bij.
+  const bestaand = db.prepare(
+    "SELECT eigenaar, wat, volgnummer FROM actiepunten WHERE email = ? AND meeting_id = ?",
+  );
   for (const rij of rijen) {
     const id = String(rij.meeting_id);
     db.exec("BEGIN");
     try {
-      leesActies(String(rij.tekst)).forEach((actie, volgnummer) =>
+      const al = bestaand.all(email, id).map((actie) => ({
+        eigenaar: String(actie.eigenaar),
+        wat: String(actie.wat),
+        volgnummer: Number(actie.volgnummer),
+      }));
+      for (const actie of nieuweActies(leesActies(String(rij.tekst)), al))
         voegToe.run(
           email,
           id,
-          volgnummer,
+          actie.volgnummer,
           actie.eigenaar,
           actie.wat,
           actie.onderwerp,
-        ),
-      );
+        );
       klaar.run(Date.now(), email, id);
       db.exec("COMMIT");
     } catch (fout) {

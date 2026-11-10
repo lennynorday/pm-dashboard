@@ -1,6 +1,12 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { isExtern, isVanMij, koppelNaam, leesActies } from "./actiepunt.ts";
+import {
+  isExtern,
+  isVanMij,
+  koppelNaam,
+  leesActies,
+  nieuweActies,
+} from "./actiepunt.ts";
 
 const NOTULEN = `**Aanwezig:** Lennart ter Haar (Norday), Theo (WO2)
 
@@ -85,4 +91,27 @@ test("extern is wie niet in de Slack-leden zit", () => {
   assert.strictEqual(isExtern("Jos", leden), false);
   assert.strictEqual(isExtern("Theo", null), false);
   assert.strictEqual(isExtern("Theo", []), false);
+});
+
+test("nieuweActies: bestaande acties blijven, nieuwe nummeren verder", () => {
+  const gelezen = [
+    { eigenaar: "Theo", wat: "Offerte sturen", onderwerp: null },
+    { eigenaar: "Kim", wat: "Planning maken", onderwerp: "Planning" },
+  ];
+  // Theo's actie staat al op gedaan (volgnummer 3); opnieuw uitlezen mag hem niet terugzetten.
+  const uit = nieuweActies(gelezen, [
+    { eigenaar: "theo", wat: "Offerte sturen ", volgnummer: 3 },
+  ]);
+  assert.deepStrictEqual(uit, [
+    {
+      eigenaar: "Kim",
+      wat: "Planning maken",
+      onderwerp: "Planning",
+      volgnummer: 4,
+    },
+  ]);
+  assert.deepStrictEqual(
+    nieuweActies(gelezen, []).map((a) => a.volgnummer),
+    [0, 1],
+  );
 });

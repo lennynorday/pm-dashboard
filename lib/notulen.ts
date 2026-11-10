@@ -883,9 +883,9 @@ export function zetOpname(
        fout = NULL, bezig = NULL, acties_uit = NULL
      WHERE email = ? AND meeting_id = ?`,
   );
-  // De acties komen opnieuw uit de nieuwe notulen; al gemaakte to-do's blijven bestaan.
+  // De open acties komen opnieuw uit de nieuwe notulen; afgehandelde (to-do, gedaan, genegeerd, herinnerd) blijven staan.
   const actiesWeg = db.prepare(
-    "DELETE FROM actiepunten WHERE email = ? AND meeting_id = ?",
+    "DELETE FROM actiepunten WHERE email = ? AND meeting_id = ? AND status = 'open'",
   );
   db.exec("BEGIN");
   try {

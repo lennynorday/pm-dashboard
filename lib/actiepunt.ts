@@ -79,6 +79,26 @@ const klein = (naam: string) =>
     .replace(/\s+/g, " ")
     .toLowerCase();
 
+/**
+ * De acties die bij opnieuw uitlezen nieuw zijn: wat al bestaat (zelfde eigenaar
+ * en wat) blijft staan met zijn status, de rest krijgt een nummer na het hoogste.
+ */
+export function nieuweActies(
+  gelezen: GelezenActie[],
+  bestaand: { eigenaar: string; wat: string; volgnummer: number }[],
+): (GelezenActie & { volgnummer: number })[] {
+  const sleutel = (actie: { eigenaar: string; wat: string }) =>
+    `${klein(actie.eigenaar)}\n${klein(actie.wat)}`;
+  const gezien = new Set(bestaand.map(sleutel));
+  let volgnummer = Math.max(-1, ...bestaand.map((a) => a.volgnummer));
+  return gelezen.flatMap((actie) => {
+    if (gezien.has(sleutel(actie))) return [];
+    gezien.add(sleutel(actie));
+    volgnummer += 1;
+    return [{ ...actie, volgnummer }];
+  });
+}
+
 /** Is de actie van Lenny: Lennart, Lenny, Lennart ter Haar of de voornaam uit de sessie. */
 export function isVanMij(eigenaar: string, voornaam: string): boolean {
   const namen = ["lennart", "lenny", "lennart ter haar", klein(voornaam)];
