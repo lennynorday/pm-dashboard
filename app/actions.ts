@@ -822,6 +822,7 @@ export async function koppelMeetingAction(
 ): Promise<string | null> {
   if (!geldigeMeeting(meeting) || typeof doel !== "string" || !DOEL.test(doel))
     return null;
+  if (scope !== "deze" && scope !== "serie" && scope !== "titel") return null;
   if (!(await currentUser())) return null;
   const alsRoepnaam = scope === "titel" && doel !== TEAM && doel !== PRIVE;
   if (alsRoepnaam) {
@@ -960,16 +961,17 @@ export async function verversMeetingAction(
  */
 export async function nietDelenAction(
   meetingId: string,
-  soort: "niet" | "elders" | "terug",
+  soort: string,
 ): Promise<void> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string") return;
+  if (soort !== "niet" && soort !== "elders" && soort !== "terug") return;
   const wijzig = {
     niet: nietDelen,
     elders: eldersGedeeld,
     terug: tochDelen,
   }[soort];
-  if (wijzig?.(user.email, meetingId)) revalidatePath("/", "layout");
+  if (wijzig(user.email, meetingId)) revalidatePath("/", "layout");
 }
 
 const ONDERDEEL_KEUZES = {

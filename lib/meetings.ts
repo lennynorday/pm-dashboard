@@ -150,18 +150,9 @@ export function titelWoord(titel: string): string {
 
 /**
  * Waar een afspraak bij hoort. Volgorde: de handmatige regels (meeting, serie), dan de platformnaam of een roepnaam in de titel,
- * anders Privé.
+ * anders Privé. `terugval`: het komt door de terugvalregel (Privé).
  */
-export function hoortBij(
-  item: AgendaItem,
-  platforms: PlatformNaam[],
-  regels: Regel[],
-): string {
-  return koppeling(item, platforms, regels).doel;
-}
-
-/** Als hoortBij, plus of het door een handmatige regel komt of door de terugvalregel (Privé). */
-function koppeling(
+export function koppeling(
   item: AgendaItem,
   platforms: PlatformNaam[],
   regels: Regel[],

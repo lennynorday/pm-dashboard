@@ -4,7 +4,7 @@ import {
   type AgendaItem,
   alsWoordIn,
   bepaalMeetings,
-  hoortBij,
+  koppeling,
   lokaal,
   naastElkaar,
   type Regel,
@@ -83,39 +83,42 @@ test("titelWoord: wat vóór de streep staat, anders de hele titel", () => {
   assert.strictEqual(titelWoord("Accountoverleg Zoie"), "Accountoverleg Zoie");
 });
 
-test("hoortBij: herkenning", () => {
+test("koppeling: herkenning", () => {
   assert.strictEqual(
-    hoortBij(item({ titel: "Kunsthal | Planning" }), PLATFORMS, []),
+    koppeling(item({ titel: "Kunsthal | Planning" }), PLATFORMS, []).doel,
     "kunsthal",
   );
   assert.strictEqual(
-    hoortBij(item({ titel: "Kunsthal Kids demo" }), PLATFORMS, []),
+    koppeling(item({ titel: "Kunsthal Kids demo" }), PLATFORMS, []).doel,
     "kunsthal-kids",
   );
   assert.strictEqual(
-    hoortBij(item({ titel: "KH | Planning" }), PLATFORMS, []),
+    koppeling(item({ titel: "KH | Planning" }), PLATFORMS, []).doel,
     "kunsthal",
   );
   assert.strictEqual(
-    hoortBij(item({ titel: "Kickoff two" }), PLATFORMS, []),
+    koppeling(item({ titel: "Kickoff two" }), PLATFORMS, []).doel,
     "wo2",
   );
   assert.strictEqual(
-    hoortBij(item({ titel: "1-op-1 Wade" }), PLATFORMS, []),
+    koppeling(item({ titel: "1-op-1 Wade" }), PLATFORMS, []).doel,
     "prive",
   );
 });
 
-test("hoortBij: meeting gaat voor serie, serie voor herkenning", () => {
+test("koppeling: meeting gaat voor serie, serie voor herkenning", () => {
   const afspraak = item({ titel: "Kunsthal | Sprintreview", serieId: "s1" });
   const serie = regel({ soort: "serie", sleutel: "s1", doel: "team" });
   const meeting = regel({ doel: "prive" });
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, []), "kunsthal");
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [serie]), "team");
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [serie, meeting]), "prive");
+  assert.strictEqual(koppeling(afspraak, PLATFORMS, []).doel, "kunsthal");
+  assert.strictEqual(koppeling(afspraak, PLATFORMS, [serie]).doel, "team");
+  assert.strictEqual(
+    koppeling(afspraak, PLATFORMS, [serie, meeting]).doel,
+    "prive",
+  );
 });
 
-test("hoortBij: een serieregel geldt pas vanaf zijn startmoment", () => {
+test("koppeling: een serieregel geldt pas vanaf zijn startmoment", () => {
   const afspraak = item({ serieId: "s1", titel: "Kunsthal" });
   const later = regel({
     soort: "serie",
@@ -123,12 +126,13 @@ test("hoortBij: een serieregel geldt pas vanaf zijn startmoment", () => {
     doel: "team",
     vanaf: Date.parse("2026-11-11T10:00:00+01:00"),
   });
-  assert.strictEqual(hoortBij(afspraak, PLATFORMS, [later]), "kunsthal");
+  assert.strictEqual(koppeling(afspraak, PLATFORMS, [later]).doel, "kunsthal");
 });
 
-test("hoortBij: een regel naar een verdwenen platform telt niet", () => {
+test("koppeling: een regel naar een verdwenen platform telt niet", () => {
   assert.strictEqual(
-    hoortBij(item({ titel: "Kunsthal" }), PLATFORMS, [regel({ doel: "weg" })]),
+    koppeling(item({ titel: "Kunsthal" }), PLATFORMS, [regel({ doel: "weg" })])
+      .doel,
     "kunsthal",
   );
 });
