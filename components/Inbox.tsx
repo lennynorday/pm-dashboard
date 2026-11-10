@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { useEffect, useState } from "react";
 import {
   gedaanAction,
+  nietDelenAction,
   slaMeetingOverAction,
   naarTodoAction,
   sluitUitAction,
@@ -224,6 +225,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
     });
   }
 
+  /** Geen notulen; staan ze al in Superhuman (stap 5), dan Niet delen. */
   function geenNotulen(meeting: VastgelopenMeeting) {
     const ref = {
       id: meeting.id,
@@ -231,16 +233,21 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
       titel: meeting.titel,
       start: meeting.start,
     };
+    const online = meeting.stap === 5;
     setWegMeetings((huidig) => new Set(huidig).add(meeting.id));
-    void slaMeetingOverAction(ref, false);
-    toon("Geen notulen voor deze meeting", {
+    void (online
+      ? nietDelenAction(meeting.id, "niet")
+      : slaMeetingOverAction(ref, false));
+    toon(online ? "Notulen niet gedeeld" : "Geen notulen voor deze meeting", {
       ongedaan: () => {
         setWegMeetings((huidig) => {
           const nieuw = new Set(huidig);
           nieuw.delete(meeting.id);
           return nieuw;
         });
-        void zetMeetingTerugAction(ref);
+        void (online
+          ? nietDelenAction(meeting.id, "terug")
+          : zetMeetingTerugAction(ref));
       },
     });
   }
@@ -299,7 +306,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
                         onClick={() => geenNotulen(meeting)}
                       >
                         <CloseIcon className={styles.icoon} />
-                        Geen notulen
+                        {meeting.stap === 5 ? "Niet delen" : "Geen notulen"}
                         <span className="nd-visually-hidden">
                           : {meeting.titel}
                         </span>
