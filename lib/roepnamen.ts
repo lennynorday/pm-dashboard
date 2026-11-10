@@ -14,7 +14,7 @@ export function normaliseerRoepnamen(waarde: string | string[]): string[] {
 
 type PlatformRoepnamen = { naam: string; roepnamen: string[] };
 
-/** De melding als een van deze roepnamen al bij een ander platform staat; anders null. */
+/** De melding als een van deze roepnamen al de naam of een roepnaam van een ander platform is; anders null. */
 export function roepnaamConflict(
   roepnamen: string[],
   anderen: PlatformRoepnamen[],
@@ -22,7 +22,9 @@ export function roepnaamConflict(
   for (const roepnaam of roepnamen) {
     const sleutel = roepnaam.toLowerCase();
     const platform = anderen.find((ander) =>
-      ander.roepnamen.some((naam) => naam.toLowerCase() === sleutel),
+      [ander.naam, ...ander.roepnamen].some(
+        (naam) => naam.toLowerCase() === sleutel,
+      ),
     );
     if (platform) return `${roepnaam} hoort al bij ${platform.naam}`;
   }

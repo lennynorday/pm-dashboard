@@ -18,5 +18,10 @@ test("roepnaamConflict: hoofdletterongevoelig, met de naam van het andere platfo
     "kh hoort al bij Kunsthal",
   );
   assert.strictEqual(roepnaamConflict(["TWO"], anderen), null);
+  // Ook de platformnaam zelf: anders wint de herkenning op naam van het andere platform.
+  assert.strictEqual(
+    roepnaamConflict(["kunsthal"], anderen),
+    "kunsthal hoort al bij Kunsthal",
+  );
   assert.strictEqual(roepnaamConflict([], anderen), null);
 });
