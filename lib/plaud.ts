@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
 
 /** Een opname in het gedeelde Plaud-account, zoals `plaud recent` hem toont. */
 export type Opname = { id: string; naam: string; datum: string };
@@ -115,13 +116,36 @@ export function verdeelOpnames(
 
 type Uitkomst = { stdout: string } | { fout: string };
 
+/**
+ * Alleen wat de CLI nodig heeft, geen tokens van het dashboard. PATH krijgt de map
+ * van deze node erbij, zodat `#!/usr/bin/env node` ook onder launchd werkt. Zonder
+ * kleurcodes (next dev zet FORCE_COLOR=1), want dan herkennen de parsers niets.
+ */
+function plaudOmgeving(): NodeJS.ProcessEnv {
+  const plaud = Object.entries(process.env).filter(([naam]) =>
+    naam.startsWith("PLAUD_"),
+  );
+  return {
+    ...Object.fromEntries(plaud),
+    PATH: [path.dirname(process.execPath), process.env.PATH]
+      .filter(Boolean)
+      .join(path.delimiter),
+    HOME: process.env.HOME,
+    // Verplicht in het type van Next.js; de CLI kreeg hem al.
+    NODE_ENV: process.env.NODE_ENV,
+    FORCE_COLOR: "0",
+    NO_COLOR: "1",
+    PLAUD_TELEMETRY_DISABLED: "1",
+    PLAUD_NO_UPDATE_NOTIFIER: "1",
+  };
+}
+
 /** Draait de Plaud CLI (alleen lezende commando's); fouten staan op stderr. */
 function plaud(args: string[]): Promise<Uitkomst> {
   return new Promise((klaar) => {
-    // next dev zet FORCE_COLOR=1; met kleurcodes in de uitvoer herkennen de parsers niets.
     const proces = spawn(PLAUD, args, {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
+      env: plaudOmgeving(),
     });
     let verlopen = false;
     const timer = setTimeout(() => {
