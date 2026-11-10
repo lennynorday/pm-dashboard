@@ -285,7 +285,13 @@ function persoonVan(
 
 export type HerinnerVoorstel =
   | { soort: "kiezen"; personen: SlackPersoon[] }
-  | { soort: "bericht"; persoon: SlackPersoon; tekst: string }
+  | {
+      soort: "bericht";
+      persoon: SlackPersoon;
+      tekst: string;
+      /** Voor "Andere persoon". */
+      personen: SlackPersoon[];
+    }
   | { soort: "fout"; fout: string };
 
 /**
@@ -307,18 +313,25 @@ export async function herinnerVoorstel(
     return { soort: "fout", fout: "De Slack-leden zijn niet op te halen" };
   const keuze = personen.find((p) => p.id === gekozen);
   if (keuze) {
+    // Een (andere) persoon gekozen: de koppeling vervangt de vorige, en Claude schrijft opnieuw.
     database()
       .prepare(
         "INSERT OR REPLACE INTO slack_namen (email, naam, slack_id) VALUES (?, ?, ?)",
       )
       .run(email, naamSleutel(actie.eigenaar), keuze.id);
+    database()
+      .prepare(
+        "UPDATE actiepunten SET herinner_tekst = NULL WHERE email = ? AND id = ?",
+      )
+      .run(email, id);
   }
-  const persoon = keuze ?? persoonVan(email, actie.eigenaar, personen);
   // Bij een groep ("Theo en Kim") kies je uit de collega's in de groep.
-  if (!persoon)
-    return { soort: "kiezen", personen: kandidaten(actie.eigenaar, personen) };
+  const keuzes = kandidaten(actie.eigenaar, personen);
+  const persoon = keuze ?? persoonVan(email, actie.eigenaar, personen);
+  if (!persoon) return { soort: "kiezen", personen: keuzes };
   const bewaard = tekst(leesActie(email, id)?.herinner_tekst);
-  if (bewaard) return { soort: "bericht", persoon, tekst: bewaard };
+  if (bewaard)
+    return { soort: "bericht", persoon, tekst: bewaard, personen: keuzes };
   const run = await draaiClaude(
     bouwHerinnerPrompt({
       voornaam: persoon.naam.split(" ")[0],
@@ -335,7 +348,7 @@ export async function herinnerVoorstel(
       "UPDATE actiepunten SET herinner_tekst = ? WHERE email = ? AND id = ?",
     )
     .run(bericht.tekst, email, id);
-  return { soort: "bericht", persoon, tekst: bericht.tekst };
+  return { soort: "bericht", persoon, tekst: bericht.tekst, personen: keuzes };
 }
 
 const versturen = new Set<number>();

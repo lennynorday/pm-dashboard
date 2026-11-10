@@ -366,6 +366,7 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
   const id = useId();
   const [voorstel, setVoorstel] = useState<HerinnerUitkomst | null>(null);
   const [gekozen, setGekozen] = useState("");
+  const [anders, setAnders] = useState(false);
   const [bericht, setBericht] = useState("");
   const [uitkomst, setUitkomst] = useState<DeelUitkomst | null>(null);
   const [bezig, startTransition] = useTransition();
@@ -375,6 +376,7 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
     startTransition(async () => {
       const nieuw = await herinnerVoorstelAction(actie.id, persoon);
       setVoorstel(nieuw);
+      setAnders(false);
       if (nieuw.soort === "bericht") setBericht(nieuw.tekst);
     });
   }
@@ -422,7 +424,8 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
           {voorstel.fout}
         </p>
       )}
-      {voorstel?.soort === "kiezen" && (
+      {(voorstel?.soort === "kiezen" ||
+        (voorstel?.soort === "bericht" && anders)) && (
         <>
           <label className="nd-label" htmlFor={`${id}-wie`}>
             {delenVan(actie.eigenaar).length > 1
@@ -456,14 +459,14 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
             <button
               type="button"
               className="nd-button nd-button--small nd-button--quiet"
-              onClick={onSluit}
+              onClick={anders ? () => setAnders(false) : onSluit}
             >
               Annuleren
             </button>
           </div>
         </>
       )}
-      {voorstel?.soort === "bericht" && (
+      {voorstel?.soort === "bericht" && !anders && (
         <>
           <label className="nd-label" htmlFor={`${id}-bericht`}>
             Slack-bericht aan {voorstel.persoon.naam} (geschreven door Claude,
@@ -484,6 +487,13 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
               onClick={verstuur}
             >
               Verstuur aan {actie.eigenaar}
+            </button>
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              onClick={() => setAnders(true)}
+            >
+              Andere persoon
             </button>
             <button
               type="button"
