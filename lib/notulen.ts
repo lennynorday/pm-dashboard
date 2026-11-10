@@ -1,3 +1,4 @@
+import { leesActies } from "./actiepunt";
 import { haalActiesUit } from "./actiepunten";
 import { NOTULEN_TIMEOUT_MS, draaiClaude } from "./claude/run";
 import {
@@ -30,10 +31,12 @@ import {
 import {
   type DeelOnderdeel,
   type OnderdeelStand,
+  conceptMail,
   deelAfgerond,
   deelKanaal,
   gmailThreadUrl,
   isNetwerkFout,
+  metActies,
   parseOnderdeel,
 } from "./notulen-delen";
 import {
@@ -61,6 +64,7 @@ import {
   LENNYS_DASHBOARD,
   type Pagina,
   docIdUitLink,
+  leesInhoud,
   leesPagina,
   leesPaginas,
   maakPagina,
@@ -682,6 +686,37 @@ export function heropenOnderdeel(
     )
     .run(Date.now(), email, id);
   return true;
+}
+
+/** De mail- en Slack-tekst bij Delen, met de acties zoals ze nu in Superhuman staan. */
+export type DeelTeksten = { mail: string; slack: string | null };
+
+/**
+ * De notulen kunnen na het maken in Superhuman zijn aangepast: lees de pagina en
+ * zet de acties daaruit in de mail en het Slack-bericht. Null als dat niet lukt.
+ */
+export async function actueleDeelteksten(
+  email: string,
+  id: string,
+  voornaam: string,
+): Promise<DeelTeksten | null> {
+  const rij = teDelen(email, id);
+  const docId = tekst(rij?.pagina_doc);
+  const paginaId = tekst(rij?.pagina_id);
+  const url = tekst(rij?.pagina_url);
+  if (DEMO || !rij || !docId || !paginaId || !url) return null;
+  try {
+    const acties = leesActies(await leesInhoud(docId, paginaId));
+    const slack = tekst(rij.slack_tekst);
+    const meeting = { titel: String(rij.titel), start: String(rij.start) };
+    return {
+      mail: conceptMail(meeting, url, voornaam, acties).tekst,
+      slack: slack && metActies(slack, acties),
+    };
+  } catch (fout) {
+    console.error("Superhuman: notulen lezen voor Delen mislukt:", fout);
+    return null;
+  }
 }
 
 /** Al gedeeld na een onzekere verzending: de gebruiker zag hem in Gmail of Slack staan. */

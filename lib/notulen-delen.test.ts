@@ -4,6 +4,7 @@ import {
   conceptMail,
   deelAfgerond,
   isNetwerkFout,
+  metActies,
   parseOnderdeel,
   deelKanaal,
   externeGenodigden,
@@ -165,4 +166,28 @@ test("isNetwerkFout: time-out en netwerkfout wel, een HTTP-fout niet", () => {
   assert.ok(isNetwerkFout(new DOMException("weg", "AbortError")));
   assert.ok(isNetwerkFout(new TypeError("fetch failed")));
   assert.ok(!isNetwerkFout(new Error("Gmail gaf status 500")));
+});
+
+test("metActies: de acties uit de actuele notulen in het Slack-bericht", () => {
+  const nieuw = [{ eigenaar: "Kim", wat: "planning maken" }];
+  assert.strictEqual(
+    metActies(
+      "Notulen staan klaar: url\n\nActies:\n• Theo: offerte\n• Jos: x",
+      nieuw,
+    ),
+    "Notulen staan klaar: url\n\nActies:\n• Kim: planning maken",
+  );
+  // De link die parseSlackBericht erachter zette, blijft staan.
+  assert.strictEqual(
+    metActies("Klaar.\n\nActies:\n• Theo: offerte\nurl", nieuw),
+    "Klaar.\n\nActies:\n• Kim: planning maken\nurl",
+  );
+  assert.strictEqual(
+    metActies("Klaar: url", nieuw),
+    "Klaar: url\n\nActies:\n• Kim: planning maken",
+  );
+  assert.strictEqual(
+    metActies("Klaar: url\n\nActies:\n• Theo: offerte", []),
+    "Klaar: url",
+  );
 });

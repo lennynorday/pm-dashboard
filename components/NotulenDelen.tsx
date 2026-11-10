@@ -11,12 +11,14 @@ import {
 } from "react";
 import {
   deelInSlackAction,
+  deelTekstenAction,
   type DeelUitkomst,
   nietDelenAction,
   stuurDeelMailAction,
   zetDeelOnderdeelAction,
 } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
+import type { DeelTeksten } from "@/lib/notulen";
 import {
   type DeelInfo,
   type MailInfo,
@@ -568,9 +570,25 @@ type DialoogProps = {
 export function DelenDialoog({ meeting, status, onSluit }: DialoogProps) {
   const id = useId();
   const dialoog = useRef<HTMLDialogElement>(null);
+  const teVersturen =
+    status.mail.stand === "open" || status.slack.stand === "open";
+  // undefined zolang de actuele acties uit Superhuman nog komen; null als dat mislukte.
+  const [teksten, setTeksten] = useState<DeelTeksten | null | undefined>(
+    teVersturen ? undefined : null,
+  );
   useEffect(() => {
     dialoog.current?.showModal();
   }, []);
+  useEffect(() => {
+    if (!teVersturen) return;
+    let actueel = true;
+    deelTekstenAction(meeting.id).then((uit) => {
+      if (actueel) setTeksten(uit);
+    });
+    return () => {
+      actueel = false;
+    };
+  }, [meeting.id, teVersturen]);
   const delen = status.delen;
   if (!delen) return null;
 
@@ -593,22 +611,36 @@ export function DelenDialoog({ meeting, status, onSluit }: DialoogProps) {
         <h2 className="nd-title" id={`${id}-kop`}>
           Notulen delen · {meeting.titel}
         </h2>
-        <div className={delenStyles.onderdelen}>
-          {delen.mail && (
-            <MailOnderdeel
+        {teksten === undefined && (
+          <p className={`nd-meta ${styles.regel}`} role="status">
+            Actuele acties ophalen uit Superhuman…
+          </p>
+        )}
+        {teksten === null && teVersturen && (
+          <p className={`nd-meta ${styles.regel}`}>
+            Acties uit de eerste versie van de notulen
+          </p>
+        )}
+        {teksten !== undefined && (
+          <div className={delenStyles.onderdelen}>
+            {delen.mail && (
+              <MailOnderdeel
+                meeting={meeting}
+                info={
+                  teksten ? { ...delen.mail, tekst: teksten.mail } : delen.mail
+                }
+                onderdeel={status.mail}
+              />
+            )}
+            <SlackOnderdeel
               meeting={meeting}
-              info={delen.mail}
-              onderdeel={status.mail}
+              info={delen.slack}
+              tekst={teksten?.slack ?? status.slackTekst}
+              mislukt={status.fout !== null}
+              onderdeel={status.slack}
             />
-          )}
-          <SlackOnderdeel
-            meeting={meeting}
-            info={delen.slack}
-            tekst={status.slackTekst}
-            mislukt={status.fout !== null}
-            onderdeel={status.slack}
-          />
-        </div>
+          </div>
+        )}
         <div className="nd-dialog__foot">
           {status.paginaUrl && (
             <ExternalLink

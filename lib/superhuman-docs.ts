@@ -100,6 +100,40 @@ export async function leesPagina(
   return parsePagina(await json(response));
 }
 
+/**
+ * De inhoud van een pagina als Markdown. De API maakt daar op de achtergrond een
+ * export van; dit vraagt hem aan en wacht tot hij klaar is.
+ */
+export async function leesInhoud(docId: string, id: string): Promise<string> {
+  const pad = `/docs/${encodeURIComponent(docId)}/pages/${encodeURIComponent(id)}/export`;
+  const gestart = await json(
+    await request(pad, {
+      method: "POST",
+      body: JSON.stringify({ outputFormat: "markdown" }),
+    }),
+  );
+  const exportId = tekst(gestart.id);
+  if (!exportId) throw new Error("Superhuman gaf geen export terug.");
+  for (let poging = 0; poging < 10; poging++) {
+    const stand = await json(
+      await request(`${pad}/${encodeURIComponent(exportId)}`),
+    );
+    const link = tekst(stand.downloadLink);
+    if (stand.status === "complete" && link) {
+      const response = await fetch(link, {
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok)
+        throw new Error(`Superhuman gaf een fout (${response.status}).`);
+      return response.text();
+    }
+    if (stand.status === "failed")
+      throw new Error("Superhuman kon de pagina niet exporteren.");
+    await new Promise((klaar) => setTimeout(klaar, 1000));
+  }
+  throw new Error("De export uit Superhuman duurde te lang.");
+}
+
 /** Maakt een subpagina, met Markdown-inhoud als die er is, en geeft het id terug. */
 export async function maakPagina(
   docId: string,

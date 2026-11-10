@@ -195,3 +195,17 @@ export function conceptMail(
     tekst: `Hoi,\n\nDe notulen van ${meeting.titel} van ${datum} staan klaar:\n${paginaUrl}\n\n${actieBlok}Laat het weten als er iets niet klopt of ontbreekt.\n\nGroet,\n${voornaam}`,
   };
 }
+
+/**
+ * Vervangt het blok "Acties:" (regels "• Naam: wat") door deze acties, of zet het
+ * erachter; zonder acties valt het blok weg. Voor het Slack-bericht van Claude.
+ */
+export function metActies(
+  tekst: string,
+  acties: { eigenaar: string; wat: string }[],
+): string {
+  const lijst = acties.map((a) => `• ${a.eigenaar}: ${a.wat}`).join("\n");
+  const blok = lijst ? `\n\nActies:\n${lijst}\n` : "\n";
+  const oud = /\n*Acties:\n(?:•[^\n]*(?:\n|$))*/;
+  return (oud.test(tekst) ? tekst.replace(oud, blok) : tekst + blok).trim();
+}

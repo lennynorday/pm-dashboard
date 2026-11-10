@@ -39,6 +39,8 @@ import {
 import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
 import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
 import {
+  actueleDeelteksten,
+  type DeelTeksten,
   deelInSlack,
   eldersGedeeld,
   herstelNotulen,
@@ -993,6 +995,15 @@ export async function zetDeelOnderdeelAction(
     return;
   if (ONDERDEEL_KEUZES[keuze](user.email, meetingId, onderdeel))
     revalidatePath("/", "layout");
+}
+
+/** De mail- en Slack-tekst met de actuele acties uit Superhuman, bij het openen van Delen; null als dat niet lukt. */
+export async function deelTekstenAction(
+  meetingId: string,
+): Promise<DeelTeksten | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  return actueleDeelteksten(user.email, meetingId, user.voornaam);
 }
 
 /** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */
