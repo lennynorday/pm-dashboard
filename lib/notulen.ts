@@ -240,17 +240,24 @@ const zetFout = (
   verwacht?: Verwacht,
 ) => foutIn(database(), email, id, fout, verwacht);
 
-/** Claimt de meeting voor een run; false als er al een loopt. */
-function claim(email: string, id: string): boolean {
+/**
+ * Claimt de meeting voor een run; false als er al een loopt. Delen (`ookBijFout`)
+ * mag ook als het Slack-bericht van Claude mislukte: dat blokkeert de mail niet.
+ */
+function claim(email: string, id: string, ookBijFout = false): boolean {
   const nu = Date.now();
   const { changes } = database()
     .prepare(
-      `UPDATE notulen SET bezig = ? WHERE email = ? AND meeting_id = ? AND fout IS NULL
-         AND (bezig IS NULL OR bezig < ?)`,
+      `UPDATE notulen SET bezig = ? WHERE email = ? AND meeting_id = ?
+         AND (fout IS NULL OR ?) AND (bezig IS NULL OR bezig < ?)`,
     )
-    .run(nu, email, id, nu - VERLOREN_MS);
+    .run(nu, email, id, ookBijFout ? 1 : 0, nu - VERLOREN_MS);
   return changes === 1;
 }
+
+const NOG_BEZIG = {
+  fout: "Even wachten, er loopt nog iets voor deze meeting.",
+};
 
 function laatLos(email: string, id: string): void {
   database()
@@ -576,7 +583,7 @@ export async function stuurDeelMail(
   if (!rij || rij.extern !== 1 || rij.mail_stand !== null)
     return { fout: "Deze meeting staat niet klaar om te mailen" };
   // Tegen een dubbele klik: één mail per meeting.
-  if (!claim(email, id)) return { fout: "De mail wordt al verstuurd" };
+  if (!claim(email, id, true)) return NOG_BEZIG;
   try {
     const { threadId } = await stuurMail(email, mail);
     zetOnderdeel(
@@ -622,7 +629,7 @@ export async function deelInSlack(
   );
   if ("melding" in doel) return { fout: doel.melding };
   // Tegen een dubbele klik: één bericht per meeting.
-  if (!claim(email, id)) return { fout: "Het bericht wordt al geplaatst" };
+  if (!claim(email, id, true)) return NOG_BEZIG;
   try {
     const { ts, permalink } = await plaatsBericht(email, doel.kanaal, bericht);
     database()
