@@ -250,16 +250,21 @@ export function actieNaarTodo(
   prio: Prio,
 ): void {
   const actie = leesVanId(email, voornaam, id);
-  if (!actie || actie.status !== "open") return;
+  if (!actie) return;
+  // Eerst de status: bij een dubbele klik komt er maar één to-do.
+  const { changes } = database()
+    .prepare(
+      "UPDATE actiepunten SET status = 'todo' WHERE email = ? AND id = ? AND status = 'open'",
+    )
+    .run(email, id);
+  if (changes !== 1) return;
   const taakId = voegActieToe(email, titel, prio, {
     bericht: actie.wat,
     plek: actie.label,
     url: actie.paginaUrl,
   });
   database()
-    .prepare(
-      "UPDATE actiepunten SET status = 'todo', taak_id = ? WHERE email = ? AND id = ?",
-    )
+    .prepare("UPDATE actiepunten SET taak_id = ? WHERE email = ? AND id = ?")
     .run(taakId, email, id);
 }
 
