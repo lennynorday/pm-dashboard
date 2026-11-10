@@ -49,6 +49,8 @@ export type Actiepunt = GelezenActie & {
   vanMij: boolean;
   /** Geen Norday-collega (niet in Slack): geen herinnering mogelijk. */
   extern: boolean;
+  /** Een collega of een groep met collega's; niet "allen" of "iedereen". */
+  teHerinneren: boolean;
 };
 
 const ACTIE = /\*\*Actie\s+([^*:]+?)\s*:\s*\*\*\s*(.+)$/i;
@@ -99,10 +101,23 @@ export function nieuweActies(
   });
 }
 
-/** Is de actie van Lenny: Lennart, Lenny, Lennart ter Haar of de voornaam uit de sessie. */
+/** De personen in een eigenaar als "Theo en Kim", "Theo, Kim" of "Theo & Kim". */
+export const delenVan = (eigenaar: string) =>
+  eigenaar
+    .split(/\s*(?:,|&|\/|\ben\b)\s*/i)
+    .map((deel) => deel.trim())
+    .filter(Boolean);
+
+const IEDEREEN = ["allen", "iedereen", "team"];
+
+/** "Allen", "iedereen" of "team": intern, maar niet één persoon om te herinneren. */
+export const isIedereen = (eigenaar: string) =>
+  delenVan(eigenaar).some((deel) => IEDEREEN.includes(klein(deel)));
+
+/** Is de actie (ook) van Lenny: Lennart, Lenny, Lennart ter Haar of de voornaam uit de sessie. */
 export function isVanMij(eigenaar: string, voornaam: string): boolean {
   const namen = ["lennart", "lenny", "lennart ter haar", klein(voornaam)];
-  return namen.includes(klein(eigenaar));
+  return delenVan(eigenaar).some((deel) => namen.includes(klein(deel)));
 }
 
 /** Een Slack-gebruiker om een herinnering naar te sturen. */
@@ -128,18 +143,34 @@ export function koppelNaam(
 }
 
 /**
- * Extern: de naam komt niet voor in de Norday-Slack, op volledige naam of
+ * Extern: geen van de namen komt voor in de Norday-Slack, op volledige naam of
  * voornaam. Meerdere treffers (niet eenduidig) telt als collega, dan kiest de
- * gebruiker. Zonder bekende Slack-leden (null of leeg) is niemand extern.
+ * gebruiker. "Allen" en "iedereen" zijn intern. Zonder bekende Slack-leden
+ * (null of leeg) is niemand extern.
  */
 export function isExtern(
   eigenaar: string,
   personen: SlackPersoon[] | null,
 ): boolean {
-  const gezocht = klein(eigenaar);
-  if (!gezocht || !personen?.length) return false;
-  return !personen.some((p) => {
-    const naam = klein(p.naam);
-    return naam === gezocht || naam.split(" ")[0] === gezocht;
-  });
+  const delen = delenVan(eigenaar).map(klein);
+  if (delen.length === 0 || !personen?.length || isIedereen(eigenaar))
+    return false;
+  return !delen.some((gezocht) =>
+    personen.some((p) => {
+      const naam = klein(p.naam);
+      return naam === gezocht || naam.split(" ")[0] === gezocht;
+    }),
+  );
+}
+
+/** Wie je bij deze eigenaar kunt kiezen: bij een groep de collega's eruit, anders (of als er geen past) iedereen. */
+export function kandidaten(
+  eigenaar: string,
+  personen: SlackPersoon[],
+): SlackPersoon[] {
+  const delen = delenVan(eigenaar);
+  if (delen.length < 2) return personen;
+  const gevonden = delen.flatMap((deel) => koppelNaam(deel, personen) ?? []);
+  const uniek = personen.filter((p) => gevonden.includes(p));
+  return uniek.length > 0 ? uniek : personen;
 }

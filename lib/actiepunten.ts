@@ -4,7 +4,9 @@ import {
   type SlackPersoon,
   inFeed,
   isExtern,
+  isIedereen,
   isVanMij,
+  kandidaten,
   koppelNaam,
   leesActies,
   nieuweActies,
@@ -133,6 +135,10 @@ function parseActiepunt(
   if (!status || typeof rij.id !== "number") return null;
   const eigenaar = String(rij.eigenaar);
   const vanMij = isVanMij(eigenaar, voornaam);
+  const extern =
+    !vanMij &&
+    !leden.gekozen.has(naamSleutel(eigenaar)) &&
+    isExtern(eigenaar, leden.personen);
   return {
     id: rij.id,
     meetingId: String(rij.meeting_id),
@@ -146,10 +152,8 @@ function parseActiepunt(
     status,
     herinnerd: typeof rij.herinnerd === "number" ? rij.herinnerd : null,
     vanMij,
-    extern:
-      !vanMij &&
-      !leden.gekozen.has(naamSleutel(eigenaar)) &&
-      isExtern(eigenaar, leden.personen),
+    extern,
+    teHerinneren: !vanMij && !extern && !isIedereen(eigenaar),
   };
 }
 
@@ -288,7 +292,7 @@ export async function herinnerVoorstel(
   gekozen: string | null,
 ): Promise<HerinnerVoorstel> {
   const actie = leesVanId(email, voornaam, id);
-  if (!actie || actie.vanMij || actie.extern || !inFeed(actie.status))
+  if (!actie?.teHerinneren || !inFeed(actie.status))
     return { soort: "fout", fout: "Deze actie staat niet meer open" };
   const personen = await slackPersonen(email);
   const keuze = personen.find((p) => p.id === gekozen);
@@ -300,7 +304,9 @@ export async function herinnerVoorstel(
       .run(email, naamSleutel(actie.eigenaar), keuze.id);
   }
   const persoon = keuze ?? persoonVan(email, actie.eigenaar, personen);
-  if (!persoon) return { soort: "kiezen", personen };
+  // Bij een groep ("Theo en Kim") kies je uit de collega's in de groep.
+  if (!persoon)
+    return { soort: "kiezen", personen: kandidaten(actie.eigenaar, personen) };
   const bewaard = tekst(leesActie(email, id)?.herinner_tekst);
   if (bewaard) return { soort: "bericht", persoon, tekst: bewaard };
   const run = await draaiClaude(
@@ -332,7 +338,7 @@ export async function herinner(
   bericht: string,
 ): Promise<{ fout: string } | null> {
   const actie = leesVanId(email, voornaam, id);
-  if (!actie || actie.vanMij || actie.extern || !inFeed(actie.status))
+  if (!actie?.teHerinneren || !inFeed(actie.status))
     return { fout: "Deze actie staat niet meer open" };
   const persoon = persoonVan(email, actie.eigenaar, await slackPersonen(email));
   if (!persoon) return { fout: `Kies eerst wie ${actie.eigenaar} is in Slack` };

@@ -1,8 +1,11 @@
 import assert from "node:assert";
 import { test } from "node:test";
 import {
+  delenVan,
   isExtern,
+  isIedereen,
   isVanMij,
+  kandidaten,
   koppelNaam,
   leesActies,
   nieuweActies,
@@ -56,7 +59,7 @@ test("van Lenny: Lennart, Lenny, volledige naam of de voornaam uit de sessie", (
   assert.ok(isVanMij(" Lennart  ter Haar ", "Lennart"));
   assert.ok(isVanMij("Len", "Len"));
   assert.ok(!isVanMij("Theo", "Lennart"));
-  assert.ok(!isVanMij("Lennart en Theo", "Lennart"));
+  assert.ok(isVanMij("Lennart en Theo", "Lennart"));
 });
 
 const PERSONEN = [
@@ -114,4 +117,40 @@ test("nieuweActies: bestaande acties blijven, nieuwe nummeren verder", () => {
     nieuweActies(gelezen, []).map((a) => a.volgnummer),
     [0, 1],
   );
+});
+
+test("groepen: van mij als één deel van mij is, extern als niemand een collega is", () => {
+  const leden = [
+    { id: "U1", naam: "Lisanne de Vries" },
+    { id: "U2", naam: "Kim Jansen" },
+  ];
+  assert.deepStrictEqual(delenVan("Theo, Kim & Jos/Ans en Henk"), [
+    "Theo",
+    "Kim",
+    "Jos",
+    "Ans",
+    "Henk",
+  ]);
+  assert.strictEqual(isVanMij("Theo en Lennart", "Lennart"), true);
+  assert.strictEqual(isVanMij("Theo en Kim", "Lennart"), false);
+  assert.strictEqual(isExtern("Theo en Kim", leden), false);
+  assert.strictEqual(isExtern("Theo & Ans", leden), true);
+  // Allen en iedereen zijn intern, maar niet te herinneren.
+  assert.strictEqual(isExtern("Allen", leden), false);
+  assert.strictEqual(isIedereen("iedereen"), true);
+  assert.strictEqual(isIedereen("Kim"), false);
+});
+
+test("kandidaten: bij een groep alleen de collega's eruit", () => {
+  const leden = [
+    { id: "U1", naam: "Lisanne de Vries" },
+    { id: "U2", naam: "Kim Jansen" },
+    { id: "U3", naam: "Jos Smit" },
+  ];
+  assert.deepStrictEqual(
+    kandidaten("Theo, Kim en Jos", leden).map((p) => p.id),
+    ["U2", "U3"],
+  );
+  assert.strictEqual(kandidaten("Kim", leden).length, 3);
+  assert.strictEqual(kandidaten("Theo en Ans", leden).length, 3);
 });

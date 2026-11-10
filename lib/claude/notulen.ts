@@ -46,6 +46,7 @@ Regels:
 - Nummer de onderwerpen: "## 1. Onderwerp", "## 2. Onderwerp", enzovoort. Kies korte, inhoudelijke koppen.
 - Zet zoveel bullets als nodig is; er is geen maximum. Kort en feitelijk, in het Nederlands.
 - Zet acties in de tekst bij het onderwerp als "**Actie Naam:** wat". Gebruik de voornaam van wie de actie heeft.
+- Hebben meer mensen dezelfde actie, schrijf dan per persoon een eigen regel "**Actie Naam:** wat", niet "**Actie Theo en Kim:**".
 - Lennart heet in het transcript soms Lenny of Lennie. Sprekers heten in het transcript "Speaker 1", "Speaker 2": leid de namen af uit de inhoud en de genodigden. Weet je een naam niet, schrijf dan wat iemand doet of vertegenwoordigt.
 - Gebruik geen gedachtestreepjes (geen "–" of "—" als zinsdeel-scheiding).
 - Verzin niets dat niet in het transcript staat. Laat small talk weg.

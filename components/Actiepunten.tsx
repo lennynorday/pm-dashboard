@@ -14,6 +14,7 @@ import {
   ACTIE_STATUS_LABELS,
   type Actiepunt,
   type ActieStatus,
+  delenVan,
   inFeed,
 } from "@/lib/actiepunt";
 import type { Prio } from "@/lib/taak";
@@ -290,7 +291,7 @@ export function Actiepunten({ acties, filters: begin, herinner }: Props) {
                             </span>
                           </button>
                         ) : (
-                          !actie.extern && (
+                          actie.teHerinneren && (
                             <button
                               type="button"
                               className="nd-action nd-action--main"
@@ -424,7 +425,10 @@ function Herinner({ actie, onVerstuurd, onSluit }: HerinnerProps) {
       {voorstel?.soort === "kiezen" && (
         <>
           <label className="nd-label" htmlFor={`${id}-wie`}>
-            Wie is {actie.eigenaar} in Slack? Het dashboard onthoudt je keuze.
+            {delenVan(actie.eigenaar).length > 1
+              ? `Wie van ${actie.eigenaar} wil je herinneren?`
+              : `Wie is ${actie.eigenaar} in Slack?`}{" "}
+            Het dashboard onthoudt je keuze.
           </label>
           <select
             id={`${id}-wie`}
@@ -589,7 +593,7 @@ export function ActiepuntenDialoog({ meta, acties, onSluit }: DialoogProps) {
                           </span>
                         </button>
                       ) : (
-                        !actie.extern && (
+                        actie.teHerinneren && (
                           <NextLink
                             href={`/actiepunten?wie=collega&herinner=${actie.id}`}
                             className="nd-button nd-button--small nd-button--quiet"
