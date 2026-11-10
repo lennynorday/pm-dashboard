@@ -96,7 +96,7 @@ export async function haalNamenOp(
   return { namen, bots };
 }
 
-/** Alle echte mensen in de workspace (geen apps, geen gedeactiveerde accounts), op naam. */
+/** Alle collega's in de workspace (geen apps, gasten of gedeactiveerde accounts), op naam. */
 export async function slackPersonen(email: string): Promise<SlackPersoon[]> {
   const personen: SlackPersoon[] = [];
   let cursor = "";
@@ -108,7 +108,10 @@ export async function slackPersonen(email: string): Promise<SlackPersoon[]> {
     const leden = Array.isArray(body.members) ? body.members.map(record) : [];
     for (const lid of leden) {
       const gebruiker = parseGebruiker({ user: lid });
-      if (!gebruiker || gebruiker.bot || lid.deleted === true) continue;
+      // Gasten (is_restricted, is_ultra_restricted) zijn geen collega's: hun acties zijn extern.
+      const gast =
+        lid.is_restricted === true || lid.is_ultra_restricted === true;
+      if (!gebruiker || gebruiker.bot || lid.deleted === true || gast) continue;
       if (typeof lid.id === "string")
         personen.push({ id: lid.id, naam: gebruiker.naam });
     }
