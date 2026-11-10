@@ -14,7 +14,7 @@ import { loadDashboard } from "./dashboard";
 import { database } from "./db";
 import { DEMO } from "./demo";
 import { stuurMail } from "./gmail/concept";
-import { leesAgenda } from "./google/agenda";
+import { type AgendaUitkomst, leesAgenda } from "./google/agenda";
 import { NORDAY_DOMEIN } from "./google/oauth";
 import type { LinkUrls } from "./links";
 import { leesOvergeslagen, leesRegels } from "./meeting-regels";
@@ -283,16 +283,21 @@ export function herstelNotulen(email: string, id: string): boolean {
 
 // ---------- Meetings ----------
 
-/** De meetings van deze en vorige werkweek, met waar ze bij horen. */
+/** De meetings van deze en vorige werkweek, met waar ze bij horen. Een week in `bekend` is al opgehaald. */
 export async function meetingsVoorNotulen(
   email: string,
   platforms: PlatformNaam[],
   nu: number,
+  bekend?: { maandag: string; agenda: AgendaUitkomst },
 ): Promise<Meeting[] | { fout: string }> {
   const deze = weekVan(lokaal(new Date(nu).toISOString()).datum);
   const weken = [weekVan(dagPlus(deze.maandag, -7)), deze];
   const agendas = await Promise.all(
-    weken.map((week) => leesAgenda(email, week.maandag)),
+    weken.map((week) =>
+      bekend?.maandag === week.maandag
+        ? bekend.agenda
+        : leesAgenda(email, week.maandag),
+    ),
   );
   const regels = leesRegels(email);
   const overgeslagen = leesOvergeslagen(email);

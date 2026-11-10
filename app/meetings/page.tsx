@@ -97,7 +97,16 @@ export default async function MeetingsPage({
         )
       : [];
 
-  const recent = await meetingsVoorNotulen(user.email, platforms, nu.getTime());
+  // De getoonde week is al opgehaald; die hoeft niet nog een keer.
+  const recent = await meetingsVoorNotulen(
+    user.email,
+    platforms,
+    nu.getTime(),
+    {
+      maandag: week.maandag,
+      agenda,
+    },
+  );
   const notulenMeetings = "fout" in recent ? [] : recent;
   const alle = [...meetings, ...notulenMeetings];
   const rijen = new Map(
