@@ -82,7 +82,8 @@ const overlap = (
 
 /**
  * Welke opname bij welke meeting hoort (meeting-id naar opname-id). Een opname hoort
- * bij één meeting: die waarmee hij het langst overlapt. Heeft een meeting er meer, dan
+ * bij één meeting: die waarmee hij het langst overlapt, en minstens de helft van de
+ * meeting én van de opname. Heeft een meeting er meer, dan
  * wint de langste overlap. Opnames in `bezet` zijn al gekoppeld en doen niet mee.
  * Het account is gedeeld, dus alleen tijd telt, niet de naam.
  */
@@ -97,7 +98,11 @@ export function verdeelOpnames(
     let beste: { id: string; overlap: number } | null = null;
     for (const meeting of meetings) {
       const lengte = overlap(meeting, opname);
-      if (lengte > (beste?.overlap ?? 0))
+      // Een opname die er maar half overheen valt (een collega na je eigen meeting) hoort er niet bij.
+      const genoeg =
+        lengte >= (meeting.eind - meeting.start) / 2 &&
+        lengte >= opname.duurMs / 2;
+      if (genoeg && lengte > (beste?.overlap ?? 0))
         beste = { id: meeting.id, overlap: lengte };
     }
     if (!beste) continue;

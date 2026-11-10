@@ -145,6 +145,32 @@ test("verdeelOpnames: een opname hoort bij één meeting, de langste overlap", (
   );
 });
 
+test("verdeelOpnames: zonder de helft van meeting en opname geen koppeling", () => {
+  const ms = (tijd: string) => Date.parse(`2026-11-04T${tijd}:00+01:00`);
+  const meeting = { id: "m", start: ms("10:00"), eind: ms("11:00") };
+  const opname = (van: string, tot: string) => ({
+    id: `of_${van}`,
+    start: ms(van),
+    duurMs: ms(tot) - ms(van),
+    transcript: true,
+  });
+  const geen = new Set<string>();
+  // Een collega neemt op van 10:45 tot 11:30: een kwart van de meeting.
+  assert.strictEqual(
+    verdeelOpnames([meeting], [opname("10:45", "11:30")], geen).size,
+    0,
+  );
+  // Een opname van de hele dag: de meeting is maar een klein deel ervan.
+  assert.strictEqual(
+    verdeelOpnames([meeting], [opname("08:00", "17:00")], geen).size,
+    0,
+  );
+  assert.strictEqual(
+    verdeelOpnames([meeting], [opname("10:05", "11:10")], geen).get("m"),
+    "of_10:05",
+  );
+});
+
 test("plaudWebUrl laat of_ weg", () => {
   assert.strictEqual(
     plaudWebUrl("of_9e7c39949756c4b78019c878b249d9f3"),
