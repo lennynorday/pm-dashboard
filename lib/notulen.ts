@@ -92,7 +92,7 @@ export const notulenAan = () => process.env.NOTULEN_AAN === "1";
 export const NOTULEN_UIT =
   "Notulen maken staat uit in deze omgeving. Zet NOTULEN_AAN=1 in .env.local om het aan te zetten.";
 // Een run die langer bezig staat dan de time-out van Claude plus marge, is verloren gegaan.
-const VERLOREN_MS = NOTULEN_TIMEOUT_MS + 60_000;
+const VERLOREN_MS = NOTULEN_TIMEOUT_MS + 3 * 60_000;
 const tekst = (waarde: unknown) => (typeof waarde === "string" ? waarde : null);
 
 /**
