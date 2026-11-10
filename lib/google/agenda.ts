@@ -23,6 +23,7 @@ type GoogleEvent = {
   start?: { dateTime?: string };
   end?: { dateTime?: string };
   attendees?: Deelnemer[];
+  organizer?: { email?: string; self?: boolean };
 };
 
 function naarItem(event: GoogleEvent): AgendaItem[] {
@@ -34,6 +35,13 @@ function naarItem(event: GoogleEvent): AgendaItem[] {
   // Afspraken die ik heb afgeslagen, tellen niet mee.
   if (deelnemers.some((d) => d.self && d.responseStatus === "declined"))
     return [];
+  const anderen = deelnemers.flatMap((d) =>
+    d.email && !d.self && !d.resource ? [d.email] : [],
+  );
+  // Een verborgen gastenlijst lijkt leeg; is iemand anders de organisator, dan is het geen focusblok.
+  const organisator = event.organizer;
+  if (anderen.length === 0 && organisator?.email && !organisator.self)
+    anderen.push(organisator.email);
   return [
     {
       id: event.id,
@@ -41,9 +49,7 @@ function naarItem(event: GoogleEvent): AgendaItem[] {
       titel: event.summary?.trim() || "(geen titel)",
       start,
       eind,
-      deelnemers: deelnemers.flatMap((d) =>
-        d.email && !d.self && !d.resource ? [d.email] : [],
-      ),
+      deelnemers: anderen,
     },
   ];
 }
