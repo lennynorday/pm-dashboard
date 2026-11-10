@@ -54,7 +54,8 @@ export function Delen({ meeting, status, onOpen }: PaneelProps) {
   const kies = (soort: "niet" | "elders") =>
     startTransition(() => nietDelenAction(meeting.id, soort));
   const alleenGeenKanaal = !delen.mail && delen.slack.soort === "geen-kanaal";
-  const wachtOpClaude = !status.slackTekst && status.slack.stand === "open";
+  const wachtOpClaude =
+    !status.fout && !status.slackTekst && status.slack.stand === "open";
 
   return (
     <>
@@ -436,10 +437,18 @@ type SlackProps = {
   meeting: Meeting;
   info: SlackInfo;
   tekst: string | null;
+  /** Claude kon het bericht niet schrijven. */
+  mislukt: boolean;
   onderdeel: Onderdeel;
 };
 
-function SlackOnderdeel({ meeting, info, tekst, onderdeel }: SlackProps) {
+function SlackOnderdeel({
+  meeting,
+  info,
+  tekst,
+  mislukt,
+  onderdeel,
+}: SlackProps) {
   const kop = info.soort === "slack" ? `Slack in ${info.naam}` : "Slack";
   if (onderdeel.stand === "onzeker") {
     return (
@@ -485,7 +494,9 @@ function SlackOnderdeel({ meeting, info, tekst, onderdeel }: SlackProps) {
     return (
       <Kader kop={kop} actie={actie}>
         <p className={`nd-meta ${styles.regel}`}>
-          Claude schrijft het Slack-bericht, 1 tot 3 minuten.
+          {mislukt
+            ? "Claude kon het Slack-bericht niet schrijven. Probeer het opnieuw bij de stap Gedeeld, of sla Slack over."
+            : "Claude schrijft het Slack-bericht, 1 tot 3 minuten."}
         </p>
       </Kader>
     );
@@ -594,6 +605,7 @@ export function DelenDialoog({ meeting, status, onSluit }: DialoogProps) {
             meeting={meeting}
             info={delen.slack}
             tekst={status.slackTekst}
+            mislukt={status.fout !== null}
             onderdeel={status.slack}
           />
         </div>

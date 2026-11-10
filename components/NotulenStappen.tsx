@@ -98,6 +98,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
 
   function inhoud(index: number) {
     if (status.fout) {
+      // Mislukte het Slack-bericht, dan kan de mail nog wel: Delen blijft erbij staan.
       return (
         <>
           <p className={styles.regel} role="alert">
@@ -122,6 +123,13 @@ export function Checklist({ meeting, status }: ChecklistProps) {
             <p className={`nd-meta ${styles.regel}`} role="status">
               {melding}
             </p>
+          )}
+          {index === 5 && (
+            <Delen
+              meeting={meeting}
+              status={status}
+              onOpen={() => setDelenOpen(true)}
+            />
           )}
         </>
       );
