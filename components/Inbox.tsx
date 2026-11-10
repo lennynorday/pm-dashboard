@@ -68,7 +68,7 @@ type Props = {
   taken: Taak[];
   genegeerd: Taak[];
   updates: Taak[];
-  /** Meetings zonder opname of transcript, 4 uur na afloop. */
+  /** Meetings waarbij de notulen mislukten, of zonder opname of transcript 4 uur na afloop. */
   vastgelopen: VastgelopenMeeting[];
 };
 
@@ -81,8 +81,12 @@ const meetingTijd = new Intl.DateTimeFormat("nl-NL", {
   timeZone: "Europe/Amsterdam",
 });
 
-/** Waarom een meeting vastzit en wat je kunt doen, per stap. */
-function vastTekst(stap: number): { wat: string; hulp: string } {
+/** Waarom een meeting vastzit en wat je kunt doen: de fout, of per stap. */
+function vastTekst({ stap, fout }: VastgelopenMeeting): {
+  wat: string;
+  hulp: string;
+} {
+  if (fout) return { wat: "Notulen mislukt", hulp: fout };
   if (stap <= 1)
     return { wat: "Geen opname gevonden", hulp: "Stond Plaud Desktop aan?" };
   if (stap === 2) {
@@ -257,7 +261,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
         )}
         <ul className={styles.lijst}>
           {meetings.map((meeting) => {
-            const { wat, hulp } = vastTekst(meeting.stap);
+            const { wat, hulp } = vastTekst(meeting);
             const datum = meeting.start.slice(0, 10);
             return (
               <li key={meeting.id} className={styles.rij}>

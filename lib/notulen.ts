@@ -149,7 +149,7 @@ export function leesNotulen(email: string, ids: string[]): NotulenRij[] {
     .map((rij) => parseRij(email, rij));
 }
 
-/** Een vastgelopen meeting zoals de inbox hem toont. */
+/** Een vastgelopen of mislukte meeting zoals de inbox hem toont. */
 export type VastgelopenMeeting = {
   id: string;
   serieId: string | null;
@@ -157,15 +157,19 @@ export type VastgelopenMeeting = {
   label: string;
   start: string;
   stap: number;
+  fout: string | null;
 };
 
-/** Geen opname, transcript of gedeelde notulen, 4 uur na de meeting; zonder overgeslagen meetings en series. */
+/**
+ * Een fout bij het maken (meteen), of geen opname, transcript of gedeelde notulen 4 uur
+ * na de meeting; zonder overgeslagen meetings en series.
+ */
 export function leesVastgelopen(email: string): VastgelopenMeeting[] {
   const nu = Date.now();
   return database()
     .prepare(
       `SELECT * FROM notulen n
-       WHERE email = ? AND (stap <= 2 OR (stap = 5 AND hoort IS NOT 'prive')) AND fout IS NULL
+       WHERE email = ? AND (fout IS NOT NULL OR stap <= 2 OR (stap = 5 AND hoort IS NOT 'prive'))
          AND opname_keuze IS NOT 'geen'
          AND NOT EXISTS (SELECT 1 FROM meetings_overgeslagen o WHERE o.email = n.email
            AND ((o.soort = 'meeting' AND o.sleutel = n.meeting_id)
@@ -173,7 +177,10 @@ export function leesVastgelopen(email: string): VastgelopenMeeting[] {
        ORDER BY start DESC`,
     )
     .all(email)
-    .filter((rij) => nu - Date.parse(String(rij.eind)) > VASTGELOPEN_MS)
+    .filter(
+      (rij) =>
+        rij.fout !== null || nu - Date.parse(String(rij.eind)) > VASTGELOPEN_MS,
+    )
     .map((rij) => ({
       id: String(rij.meeting_id),
       serieId: tekst(rij.serie_id),
@@ -181,6 +188,7 @@ export function leesVastgelopen(email: string): VastgelopenMeeting[] {
       label: String(rij.label),
       start: String(rij.start),
       stap: Number(rij.stap),
+      fout: tekst(rij.fout),
     }));
 }
 
@@ -373,10 +381,9 @@ async function zoekOpnames(
   // Het account is gedeeld: lees niet verder terug dan nodig, en nooit meer dan 14 dagen.
   const dagen = Math.min(14, Math.ceil((nu - oudste) / DAG_MS) + 1);
   const recent = await recenteOpnames(dagen);
-  if ("fout" in recent) {
-    for (const m of zoeken) zetFout(email, m.id, recent.fout);
-    return;
-  }
+  // Een storing bij Plaud zet geen meeting vast: de volgende ronde probeert het opnieuw.
+  if ("fout" in recent)
+    return console.error("Plaud: opnames zoeken mislukt:", recent.fout);
   const details = new Map<string, OpnameDetails>();
   const gelukt: Meeting[] = [];
   for (const meeting of zoeken) {
@@ -390,7 +397,7 @@ async function zoekOpnames(
       bekend.set(opname.id, gelezen);
       details.set(opname.id, gelezen);
     }
-    if (fout) zetFout(email, meeting.id, fout);
+    if (fout) console.error("Plaud: opname lezen mislukt:", fout);
     else gelukt.push(meeting);
   }
   const bezet = new Set(
@@ -435,7 +442,11 @@ async function verder(
   const opnameId = tekst(rij.opname_id);
   if (rij.stap === 2 && opnameId) {
     const details = await opnameDetails(opnameId);
-    if ("fout" in details) return zetFout(email, meeting.id, details.fout);
+    if ("fout" in details)
+      return console.error(
+        "Plaud: transcript controleren mislukt:",
+        details.fout,
+      );
     if (!details.transcript) return;
     zetStap(email, meeting.id, 3, { stap: 2, opnameId });
   }
