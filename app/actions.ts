@@ -45,6 +45,8 @@ import {
   heropenOnderdeel,
   isDeelOnderdeel,
   nietDelen,
+  NOTULEN_UIT,
+  notulenAan,
   notulenPlatforms,
   opnameKeuzes,
   slaOnderdeelOver,
@@ -896,14 +898,18 @@ export async function zetKanaalFormAction(formData: FormData): Promise<void> {
   );
 }
 
-/** Opnieuw proberen na een mislukte stap: wat al gedaan is, blijft staan. */
-export async function opnieuwNotulenAction(meetingId: string): Promise<void> {
+/** Opnieuw proberen na een mislukte stap: wat al gedaan is, blijft staan. Geeft een melding als notulen maken hier uitstaat. */
+export async function opnieuwNotulenAction(
+  meetingId: string,
+): Promise<string | null> {
   const user = await currentUser();
-  if (!user || typeof meetingId !== "string") return;
-  if (!herstelNotulen(user.email, meetingId)) return;
+  if (!user || typeof meetingId !== "string") return null;
+  if (!notulenAan()) return NOTULEN_UIT;
+  if (!herstelNotulen(user.email, meetingId)) return null;
   const platforms = await notulenPlatforms();
   if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
+  return null;
 }
 
 /** De gekoppelde Plaud-opname en de opnames rond de dag van de meeting. */
@@ -919,25 +925,31 @@ export async function opnameKeuzesAction(
 export async function kiesOpnameAction(
   meetingId: string,
   opnameId: string | null,
-): Promise<void> {
+): Promise<string | null> {
   const user = await currentUser();
-  if (!user || typeof meetingId !== "string") return;
-  if (opnameId !== null && !/^of_[0-9a-f]{32}$/.test(opnameId)) return;
-  if (!zetOpname(user.email, meetingId, opnameId)) return;
+  if (!user || typeof meetingId !== "string") return null;
+  if (opnameId !== null && !/^of_[0-9a-f]{32}$/.test(opnameId)) return null;
+  if (!notulenAan()) return NOTULEN_UIT;
+  if (!zetOpname(user.email, meetingId, opnameId)) return null;
   const platforms = await notulenPlatforms();
   if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
+  return null;
 }
 
 /** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */
-export async function verversMeetingAction(meetingId: string): Promise<void> {
+export async function verversMeetingAction(
+  meetingId: string,
+): Promise<string | null> {
   const user = await currentUser();
-  if (!user || typeof meetingId !== "string") return;
+  if (!user || typeof meetingId !== "string") return null;
+  if (!notulenAan()) return NOTULEN_UIT;
   const platforms = await notulenPlatforms();
-  if (!platforms) return;
+  if (!platforms) return null;
   const vervolg = await ververs(user.email, meetingId, platforms);
   if (typeof vervolg === "function") after(vervolg);
   revalidatePath("/", "layout");
+  return null;
 }
 
 /**

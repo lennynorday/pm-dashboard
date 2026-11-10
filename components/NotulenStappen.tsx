@@ -86,6 +86,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   const [notulenOpen, setNotulenOpen] = useState(false);
   const [actiesOpen, setActiesOpen] = useState(false);
   const [delenOpen, setDelenOpen] = useState(false);
+  const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startTransition] = useTransition();
   const huidig = huidigeStap(status, meeting.hoort === PRIVE);
   const standVan = (index: number): Stap => {
@@ -109,12 +110,19 @@ export function Checklist({ meeting, status }: ChecklistProps) {
               aria-busy={bezig}
               disabled={bezig}
               onClick={() =>
-                startTransition(() => opnieuwNotulenAction(meeting.id))
+                startTransition(async () =>
+                  setMelding(await opnieuwNotulenAction(meeting.id)),
+                )
               }
             >
               Opnieuw proberen
             </button>
           </div>
+          {melding && (
+            <p className={`nd-meta ${styles.regel}`} role="status">
+              {melding}
+            </p>
+          )}
         </>
       );
     }
@@ -322,6 +330,7 @@ const opnameTekst = (opname: OpnameInfo) =>
 function Opname({ meeting, status }: ChecklistProps) {
   const [keuzes, setKeuzes] = useState<OpnameKeuzes | null>(null);
   const [kiezen, setKiezen] = useState(false);
+  const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startTransition] = useTransition();
 
   useEffect(() => {
@@ -336,7 +345,7 @@ function Opname({ meeting, status }: ChecklistProps) {
 
   function kies(opnameId: string | null) {
     startTransition(async () => {
-      await kiesOpnameAction(meeting.id, opnameId);
+      setMelding(await kiesOpnameAction(meeting.id, opnameId));
       setKiezen(false);
     });
   }
@@ -379,13 +388,20 @@ function Opname({ meeting, status }: ChecklistProps) {
             aria-busy={bezig}
             disabled={bezig}
             onClick={() =>
-              startTransition(() => verversMeetingAction(meeting.id))
+              startTransition(async () =>
+                setMelding(await verversMeetingAction(meeting.id)),
+              )
             }
           >
             Verversen
           </button>
         )}
       </div>
+      {melding && (
+        <p className={`nd-meta ${styles.regel}`} role="status">
+          {melding}
+        </p>
+      )}
       {kiezen && (
         <ul className={styles.opnames} aria-label="Opnames rond deze dag">
           {info?.opties.length === 0 && (

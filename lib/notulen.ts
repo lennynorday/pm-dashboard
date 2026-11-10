@@ -83,6 +83,12 @@ export const alsNotulenPlatform = (platform: {
 });
 
 const DAG_MS = 24 * 60 * 60 * 1000;
+
+/** Alleen met NOTULEN_AAN=1 maakt deze omgeving notulen; anders doen staging en productie het allebei. */
+export const notulenAan = () => process.env.NOTULEN_AAN === "1";
+
+export const NOTULEN_UIT =
+  "Notulen maken staat uit in deze omgeving. Zet NOTULEN_AAN=1 in .env.local om het aan te zetten.";
 // Een run die langer bezig staat dan de time-out van Claude plus marge, is verloren gegaan.
 const VERLOREN_MS = NOTULEN_TIMEOUT_MS + 60_000;
 const tekst = (waarde: unknown) => (typeof waarde === "string" ? waarde : null);
@@ -316,7 +322,7 @@ export async function verwerkNotulen(
   email: string,
   platforms: NotulenPlatform[],
 ): Promise<void> {
-  if (DEMO || lopend.has(email)) return;
+  if (DEMO || !notulenAan() || lopend.has(email)) return;
   lopend.add(email);
   try {
     const nu = Date.now();
