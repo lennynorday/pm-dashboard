@@ -16,6 +16,7 @@ import {
   parseHerinnering,
 } from "./claude/notulen";
 import { database } from "./db";
+import { isNetwerkFout } from "./notulen-delen";
 import { stuurDm } from "./slack/api";
 import { slackPersonen } from "./slack/namen";
 import type { Prio } from "./taak";
@@ -329,15 +330,21 @@ export async function herinner(
   // Tegen een dubbele klik: één DM tegelijk per actie.
   if (versturen.has(id)) return { fout: "Het bericht wordt al verstuurd" };
   versturen.add(id);
+  const herinnerd = database().prepare(
+    "UPDATE actiepunten SET status = 'herinnerd', herinnerd = ?, herinner_tekst = ? WHERE email = ? AND id = ?",
+  );
   try {
     await stuurDm(email, persoon.id, bericht);
+  } catch (fout) {
+    if (!isNetwerkFout(fout)) throw fout;
+    // Misschien is de DM toch aangekomen: op herinnerd, zodat er niet zomaar een tweede gaat.
+    herinnerd.run(Date.now(), bericht, email, id);
+    return {
+      fout: `Onzeker of het bericht is verstuurd. Kijk in Slack bij je DM met ${persoon.naam}.`,
+    };
   } finally {
     versturen.delete(id);
   }
-  database()
-    .prepare(
-      "UPDATE actiepunten SET status = 'herinnerd', herinnerd = ?, herinner_tekst = ? WHERE email = ? AND id = ?",
-    )
-    .run(Date.now(), bericht, email, id);
+  herinnerd.run(Date.now(), bericht, email, id);
   return null;
 }

@@ -28,11 +28,13 @@ import {
   weekVan,
 } from "./meetings";
 import {
-  type Onderdeel,
+  type DeelOnderdeel,
   type OnderdeelStand,
   deelAfgerond,
   deelKanaal,
   gmailThreadUrl,
+  isNetwerkFout,
+  parseOnderdeel,
 } from "./notulen-delen";
 import {
   type NotulenRij,
@@ -121,10 +123,6 @@ export function notulenVanaf(email: string, nu?: number): number | null {
 }
 
 function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
-  const onderdeel = (stand: unknown, url: unknown): Onderdeel => ({
-    stand: stand === "verstuurd" || stand === "overgeslagen" ? stand : "open",
-    url: tekst(url),
-  });
   return {
     meetingId: String(rij.meeting_id),
     stap: Number(rij.stap),
@@ -133,8 +131,8 @@ function parseRij(email: string, rij: Record<string, unknown>): NotulenRij {
     paginaUrl: tekst(rij.pagina_url),
     fout: tekst(rij.fout),
     slackTekst: tekst(rij.slack_tekst),
-    mail: onderdeel(rij.mail_stand, rij.mail_url),
-    slack: onderdeel(rij.slack_stand, rij.slack_url),
+    mail: parseOnderdeel(rij.mail_stand, rij.mail_url),
+    slack: parseOnderdeel(rij.slack_stand, rij.slack_url),
     actiesUit: rij.acties_uit !== null,
     nietGedeeld: rij.niet_gedeeld !== null,
     elders: rij.elders !== null,
@@ -510,16 +508,10 @@ function teDelen(email: string, id: string): Rij | null {
   return rij ?? null;
 }
 
-const KOLOMMEN = {
+const KOLOMMEN: Record<DeelOnderdeel, [string, string]> = {
   mail: ["mail_stand", "mail_url"],
   slack: ["slack_stand", "slack_url"],
-} as const;
-
-/** De onderdelen van Delen: de mail aan de klant (alleen extern) en Slack. */
-export type DeelOnderdeel = keyof typeof KOLOMMEN;
-
-export const isDeelOnderdeel = (waarde: unknown): waarde is DeelOnderdeel =>
-  waarde === "mail" || waarde === "slack";
+};
 
 /** Zet de stand van een onderdeel; null maakt het weer open. */
 function zetOnderdeel(
@@ -582,6 +574,11 @@ export async function stuurDeelMail(
     );
     rondDeelAf(email, id);
     return null;
+  } catch (fout) {
+    // Misschien is hij toch verstuurd: geen nieuwe verzendknop, de gebruiker kijkt in Gmail.
+    if (!isNetwerkFout(fout)) throw fout;
+    zetOnderdeel(email, id, "mail", "onzeker");
+    return null;
   } finally {
     laatLos(email, id);
   }
@@ -622,6 +619,11 @@ export async function deelInSlack(
     zetOnderdeel(email, id, "slack", "verstuurd", permalink ?? null);
     rondDeelAf(email, id);
     return null;
+  } catch (fout) {
+    // Misschien staat het bericht er toch: geen nieuwe verzendknop, de gebruiker kijkt in Slack.
+    if (!isNetwerkFout(fout)) throw fout;
+    zetOnderdeel(email, id, "slack", "onzeker");
+    return null;
   } finally {
     laatLos(email, id);
   }
@@ -641,7 +643,7 @@ export function slaOnderdeelOver(
   return true;
 }
 
-/** Toch versturen: een overgeslagen onderdeel is weer open, en Delen ook als het al afgerond was. */
+/** Toch versturen: een overgeslagen of onzeker onderdeel is weer open, en Delen ook als het al afgerond was. */
 export function heropenOnderdeel(
   email: string,
   id: string,
@@ -649,7 +651,8 @@ export function heropenOnderdeel(
 ): boolean {
   const rij = leesRij(email, id);
   if (!rij || rij.hoort === PRIVE || Number(rij.stap) < 5) return false;
-  if (rij[KOLOMMEN[onderdeel][0]] !== "overgeslagen") return false;
+  const stand = rij[KOLOMMEN[onderdeel][0]];
+  if (stand !== "overgeslagen" && stand !== "onzeker") return false;
   zetOnderdeel(email, id, onderdeel, null);
   database()
     .prepare(
@@ -657,6 +660,19 @@ export function heropenOnderdeel(
        WHERE email = ? AND meeting_id = ? AND stap = 6`,
     )
     .run(Date.now(), email, id);
+  return true;
+}
+
+/** Al gedeeld na een onzekere verzending: de gebruiker zag hem in Gmail of Slack staan. */
+export function bevestigVerstuurd(
+  email: string,
+  id: string,
+  onderdeel: DeelOnderdeel,
+): boolean {
+  const rij = teDelen(email, id);
+  if (!rij || rij[KOLOMMEN[onderdeel][0]] !== "onzeker") return false;
+  zetOnderdeel(email, id, onderdeel, "verstuurd");
+  rondDeelAf(email, id);
   return true;
 }
 

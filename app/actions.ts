@@ -42,8 +42,8 @@ import {
   deelInSlack,
   eldersGedeeld,
   herstelNotulen,
+  bevestigVerstuurd,
   heropenOnderdeel,
-  isDeelOnderdeel,
   nietDelen,
   NOTULEN_UIT,
   notulenAan,
@@ -56,7 +56,7 @@ import {
   ververs,
   zetOpname,
 } from "@/lib/notulen";
-import { isEmail } from "@/lib/notulen-delen";
+import { isDeelOnderdeel, isEmail } from "@/lib/notulen-delen";
 import type { OpnameKeuzes } from "@/lib/notulen-stand";
 import {
   GmailComposeOntbreektError,
@@ -970,19 +970,25 @@ export async function nietDelenAction(
   if (wijzig?.(user.email, meetingId)) revalidatePath("/", "layout");
 }
 
-/** Slaat de mail of het Slack-bericht over (`overslaan` true), of zet het weer open (Toch versturen). */
+const ONDERDEEL_KEUZES = {
+  overslaan: slaOnderdeelOver,
+  toch: heropenOnderdeel,
+  verstuurd: bevestigVerstuurd,
+};
+
+/** Slaat de mail of het Slack-bericht over, zet het weer open (Toch versturen), of bevestigt na een onzekere verzending dat het er staat. */
 export async function zetDeelOnderdeelAction(
   meetingId: string,
   onderdeel: string,
-  overslaan: boolean,
+  keuze: string,
 ): Promise<void> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string" || !isDeelOnderdeel(onderdeel))
     return;
-  const gelukt = overslaan
-    ? slaOnderdeelOver(user.email, meetingId, onderdeel)
-    : heropenOnderdeel(user.email, meetingId, onderdeel);
-  if (gelukt) revalidatePath("/", "layout");
+  if (keuze !== "overslaan" && keuze !== "toch" && keuze !== "verstuurd")
+    return;
+  if (ONDERDEEL_KEUZES[keuze](user.email, meetingId, onderdeel))
+    revalidatePath("/", "layout");
 }
 
 /** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */

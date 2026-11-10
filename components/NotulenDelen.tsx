@@ -181,7 +181,7 @@ function Klaar({ meeting, onderdeel, welk, kop, regel, openen }: KlaarProps) {
       className={styles.linkKnop}
       disabled={bezig}
       onClick={() =>
-        startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, false))
+        startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, "toch"))
       }
     >
       Toch versturen
@@ -197,6 +197,49 @@ function Klaar({ meeting, onderdeel, welk, kop, regel, openen }: KlaarProps) {
   );
 }
 
+type OnzekerProps = {
+  meeting: Meeting;
+  welk: Onderdelen;
+  kop: string;
+  melding: string;
+  dubbel: string;
+};
+
+/** Na een time-out of netwerkfout: misschien is het verstuurd. Geen verzendknop, wel Al gedeeld en Toch opnieuw versturen. */
+function Onzeker({ meeting, welk, kop, melding, dubbel }: OnzekerProps) {
+  const [bezig, startTransition] = useTransition();
+  const kies = (keuze: "verstuurd" | "toch") =>
+    startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, keuze));
+  return (
+    <Kader kop={kop} actie={null}>
+      <p className={styles.regel} role="status">
+        {melding}
+      </p>
+      <div className={delenStyles.acties}>
+        <button
+          type="button"
+          className="nd-button nd-button--small"
+          disabled={bezig}
+          onClick={() => kies("verstuurd")}
+        >
+          Al gedeeld
+        </button>
+        <button
+          type="button"
+          className="nd-button nd-button--small nd-button--quiet"
+          disabled={bezig}
+          onClick={() => {
+            if (window.confirm(`Toch opnieuw versturen? ${dubbel}`))
+              kies("toch");
+          }}
+        >
+          Toch opnieuw versturen
+        </button>
+      </div>
+    </Kader>
+  );
+}
+
 function Overslaan({ meeting, welk }: { meeting: Meeting; welk: Onderdelen }) {
   const [bezig, startTransition] = useTransition();
   return (
@@ -205,7 +248,9 @@ function Overslaan({ meeting, welk }: { meeting: Meeting; welk: Onderdelen }) {
       className={styles.linkKnop}
       disabled={bezig}
       onClick={() =>
-        startTransition(() => zetDeelOnderdeelAction(meeting.id, welk, true))
+        startTransition(() =>
+          zetDeelOnderdeelAction(meeting.id, welk, "overslaan"),
+        )
       }
     >
       Overslaan
@@ -226,6 +271,17 @@ function MailOnderdeel({ meeting, info, onderdeel }: MailProps) {
   const [bezig, startTransition] = useTransition();
   const kop = "Mail aan de klant";
 
+  if (onderdeel.stand === "onzeker") {
+    return (
+      <Onzeker
+        meeting={meeting}
+        welk="mail"
+        kop={kop}
+        melding="Onzeker of de mail is verstuurd. Kijk bij Verzonden in Gmail."
+        dubbel="Kwam de eerste mail wel aan, dan krijgt de klant hem twee keer."
+      />
+    );
+  }
   if (onderdeel.stand !== "open") {
     return (
       <Klaar
@@ -385,6 +441,17 @@ type SlackProps = {
 
 function SlackOnderdeel({ meeting, info, tekst, onderdeel }: SlackProps) {
   const kop = info.soort === "slack" ? `Slack in ${info.naam}` : "Slack";
+  if (onderdeel.stand === "onzeker") {
+    return (
+      <Onzeker
+        meeting={meeting}
+        welk="slack"
+        kop={kop}
+        melding="Onzeker of het bericht is geplaatst. Kijk in het kanaal in Slack."
+        dubbel="Staat het eerste bericht er wel, dan staat het er twee keer."
+      />
+    );
+  }
   if (onderdeel.stand !== "open") {
     return (
       <Klaar

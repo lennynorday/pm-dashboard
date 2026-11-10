@@ -3,6 +3,8 @@ import { test } from "node:test";
 import {
   conceptMail,
   deelAfgerond,
+  isNetwerkFout,
+  parseOnderdeel,
   deelKanaal,
   externeGenodigden,
   isEmail,
@@ -127,6 +129,13 @@ test("Delen is klaar als elk onderdeel verstuurd of overgeslagen is", () => {
   assert.strictEqual(deelAfgerond(["verstuurd"]), "gedeeld");
   assert.strictEqual(deelAfgerond(["overgeslagen", "overgeslagen"]), "niet");
   assert.strictEqual(deelAfgerond(["overgeslagen"]), "niet");
+  // Onzeker na een time-out: niet afgerond, en geen nieuwe verzendknop (geen open).
+  assert.strictEqual(deelAfgerond(["onzeker", "verstuurd"]), "open");
+  assert.deepStrictEqual(parseOnderdeel("onzeker", null), {
+    stand: "onzeker",
+    url: null,
+  });
+  assert.strictEqual(parseOnderdeel(null, null).stand, "open");
 });
 
 test("de mail heeft titel en datum in het onderwerp en de link in de tekst", () => {
@@ -149,4 +158,11 @@ test("de mail heeft titel en datum in het onderwerp en de link in de tekst", () 
     [],
   );
   assert.ok(!zonder.tekst.includes("Acties:"));
+});
+
+test("isNetwerkFout: time-out en netwerkfout wel, een HTTP-fout niet", () => {
+  assert.ok(isNetwerkFout(new DOMException("weg", "TimeoutError")));
+  assert.ok(isNetwerkFout(new DOMException("weg", "AbortError")));
+  assert.ok(isNetwerkFout(new TypeError("fetch failed")));
+  assert.ok(!isNetwerkFout(new Error("Gmail gaf status 500")));
 });

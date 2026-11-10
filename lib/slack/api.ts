@@ -124,6 +124,7 @@ export async function slackPost(
     method: "POST",
     headers: { Authorization: `Bearer ${token.accessToken}` },
     body: new URLSearchParams(params),
+    signal: AbortSignal.timeout(15_000),
   });
   const body = record(await response.json());
   if (body.ok === true) return body;

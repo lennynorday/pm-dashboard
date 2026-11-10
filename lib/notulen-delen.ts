@@ -33,18 +33,44 @@ export type SlackInfo =
 /** Wat de overlay nodig heeft om te delen: extern een mail en Slack, anders alleen Slack. */
 export type DeelInfo = { mail: MailInfo | null; slack: SlackInfo };
 
-export type OnderdeelStand = "open" | "verstuurd" | "overgeslagen";
+/** Onzeker: het versturen liep in een time-out of netwerkfout, misschien is het toch aangekomen. */
+export type OnderdeelStand = "open" | "verstuurd" | "overgeslagen" | "onzeker";
 
 /** Een onderdeel van Delen (mail of Slack) met de link naar wat er verstuurd is. */
 export type Onderdeel = { stand: OnderdeelStand; url: string | null };
 
-/** Hoe Delen eindigt: open zolang een onderdeel nog moet, gedeeld als er iets verstuurd is, anders niet gedeeld. */
+/** De onderdelen van Delen: de mail aan de klant (alleen extern) en Slack. */
+export type DeelOnderdeel = "mail" | "slack";
+
+export const isDeelOnderdeel = (waarde: unknown): waarde is DeelOnderdeel =>
+  waarde === "mail" || waarde === "slack";
+
+/** Een onderdeel uit de database; een lege of onbekende stand is open. */
+export const parseOnderdeel = (stand: unknown, url: unknown): Onderdeel => ({
+  stand:
+    stand === "verstuurd" || stand === "overgeslagen" || stand === "onzeker"
+      ? stand
+      : "open",
+  url: typeof url === "string" ? url : null,
+});
+
+/** Hoe Delen eindigt: open zolang een onderdeel nog moet (of onzeker is), gedeeld als er iets verstuurd is, anders niet gedeeld. */
 export function deelAfgerond(
   onderdelen: OnderdeelStand[],
 ): "open" | "gedeeld" | "niet" {
-  if (onderdelen.includes("open")) return "open";
+  if (onderdelen.some((stand) => stand === "open" || stand === "onzeker"))
+    return "open";
   return onderdelen.includes("verstuurd") ? "gedeeld" : "niet";
 }
+
+/**
+ * Een time-out of netwerkfout van fetch: het verzoek kan de server wel bereikt
+ * hebben, dus het is onzeker of het gelukt is. Een HTTP-fout is dat niet.
+ */
+export const isNetwerkFout = (fout: unknown) =>
+  fout instanceof TypeError ||
+  (fout instanceof Error &&
+    (fout.name === "AbortError" || fout.name === "TimeoutError"));
 
 // Eenvoudig, zoals een adresveld: iets@iets.tld zonder spaties.
 const EMAIL = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/i;
