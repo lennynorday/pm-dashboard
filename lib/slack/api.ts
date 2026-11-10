@@ -1,4 +1,5 @@
 import { parseStoredToken, validToken } from "@/lib/koppelingen";
+import { heeftDmScope, heeftSchrijfScope } from "./oauth";
 import { platteTekst } from "./tekst";
 
 export type SlackTodo = {
@@ -38,6 +39,73 @@ export function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
+/** Verbonden, maar het token mag geen berichten plaatsen (chat:write): opnieuw verbinden. */
+export class SlackSchrijvenOntbreektError extends Error {
+  constructor() {
+    super("Geen toestemming om berichten in Slack te plaatsen");
+  }
+}
+
+/** Mag het dashboard namens de gebruiker berichten plaatsen? */
+export async function slackMagSchrijven(email: string): Promise<boolean> {
+  const token = await validToken(email, "slack", parseStoredToken, () =>
+    Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
+  );
+  return token !== null && heeftSchrijfScope(token);
+}
+
+/** Mag het dashboard namens de gebruiker een DM openen en erin schrijven? */
+export async function slackMagDm(email: string): Promise<boolean> {
+  const token = await validToken(email, "slack", parseStoredToken, () =>
+    Promise.reject(new Error("Slack-tokens worden niet vernieuwd")),
+  );
+  return token !== null && heeftDmScope(token);
+}
+
+/**
+ * Stuurt een DM onder de naam van de gebruiker. Met een gebruikerstoken zet
+ * chat.postMessage naar een user-id het bericht niet gegarandeerd in de DM
+ * tussen die twee; conversations.open (im:write) geeft het DM-kanaal wel.
+ */
+export async function stuurDm(
+  email: string,
+  slackId: string,
+  tekst: string,
+): Promise<void> {
+  if (!(await slackMagDm(email))) throw new SlackSchrijvenOntbreektError();
+  const gesprek = await slackPost(email, "conversations.open", {
+    users: slackId,
+  });
+  const kanaal = record(gesprek.channel).id;
+  if (typeof kanaal !== "string")
+    throw new Error("Slack gaf geen DM-gesprek terug");
+  await plaatsBericht(email, kanaal, tekst);
+}
+
+/**
+ * Plaatst een bericht onder de naam van de gebruiker (een gebruikerstoken
+ * post altijd als de gebruiker) en geeft de link ernaar. Alleen na een klik op Verstuur.
+ */
+export async function plaatsBericht(
+  email: string,
+  kanaal: string,
+  tekst: string,
+): Promise<string | null> {
+  if (!(await slackMagSchrijven(email)))
+    throw new SlackSchrijvenOntbreektError();
+  const geplaatst = await slackPost(email, "chat.postMessage", {
+    channel: kanaal,
+    text: tekst,
+  });
+  const ts = String(geplaatst.ts);
+  // Het bericht staat er al: een mislukte permalink mag niet tot een tweede bericht leiden.
+  const link = await slackPost(email, "chat.getPermalink", {
+    channel: String(geplaatst.channel),
+    message_ts: ts,
+  }).catch(() => null);
+  return typeof link?.permalink === "string" ? link.permalink : null;
+}
+
 /** Eén aanroep van de Slack Web API met het token van de gebruiker. */
 export async function slackPost(
   email: string,
@@ -53,6 +121,7 @@ export async function slackPost(
     method: "POST",
     headers: { Authorization: `Bearer ${token.accessToken}` },
     body: new URLSearchParams(params),
+    signal: AbortSignal.timeout(15_000),
   });
   const body = record(await response.json());
   if (body.ok === true) return body;

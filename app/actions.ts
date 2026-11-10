@@ -29,6 +29,53 @@ import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
+import {
+  bewaarRegel,
+  slaOver,
+  verwijderMeetingRegel,
+  zetKanaal,
+  zetTerug,
+} from "@/lib/meeting-regels";
+import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
+import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
+import {
+  actueleDeelteksten,
+  type DeelTeksten,
+  deelInSlack,
+  eldersGedeeld,
+  herstelNotulen,
+  bevestigVerstuurd,
+  heropenOnderdeel,
+  nietDelen,
+  NOTULEN_UIT,
+  notulenAan,
+  notulenPlatforms,
+  opnameKeuzes,
+  slaOnderdeelOver,
+  stuurDeelMail,
+  tochDelen,
+  verwerkNotulen,
+  ververs,
+  zetOpname,
+} from "@/lib/notulen";
+import { isDeelOnderdeel, isEmail } from "@/lib/notulen-delen";
+import type { OpnameKeuzes } from "@/lib/notulen-stand";
+import {
+  GmailComposeOntbreektError,
+  GmailNietVerbondenError,
+} from "@/lib/gmail/api";
+import {
+  SlackNietVerbondenError,
+  SlackSchrijvenOntbreektError,
+  slackMagDm,
+} from "@/lib/slack/api";
+import {
+  type HerinnerVoorstel,
+  actieNaarTodo,
+  herinner,
+  herinnerVoorstel,
+  zetActieStatus,
+} from "@/lib/actiepunten";
 import { type AkkoordUitkomst, geefAkkoord } from "@/lib/akkoord";
 import { draaiOpdracht } from "@/lib/claude/draai";
 import { soortVoorBron } from "@/lib/claude/voorstel";
@@ -185,6 +232,17 @@ async function savePlatform(
       waarden,
     };
   }
+
+  const conflict = roepnaamConflict(
+    uitkomst.platform.roepnamen,
+    dashboard.platforms
+      .filter((item) => nieuw || item.slug !== slug)
+      .map((item) => ({
+        naam: item.naam,
+        roepnamen: item.gegevens.roepnamen,
+      })),
+  );
+  if (conflict) return { fouten: { roepnamen: conflict }, waarden };
 
   try {
     await savePlatformGegevens(
@@ -537,10 +595,13 @@ export async function feedTodoOngedaanAction(id: string): Promise<void> {
 export async function synchroniseerInboxAction(): Promise<void> {
   const user = await currentUser();
   if (!user) return;
-  await Promise.all([
+  const [platforms] = await Promise.all([
+    notulenPlatforms(),
     bronAan(user.email, "slack") && synchroniseerSlack(user.email),
     bronAan(user.email, "gmail") && synchroniseerGmail(user.email),
   ]);
+  // Notulen maken duurt minuten (Claude); de volgende ronde laat de stand zien.
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
 }
 
@@ -668,4 +729,448 @@ export async function pasAanAction(
       after(() => draaiOpdracht(opdrachtId));
     }
   });
+}
+
+// ---------- Meetings ----------
+
+/** Wat de client van een meeting meestuurt; gecontroleerd voor het de database in gaat. */
+export type MeetingRef = {
+  id: string;
+  serieId: string | null;
+  titel: string;
+  start: string;
+};
+
+const DOEL = /^[a-z0-9-]{1,100}$/;
+const kortTekst = (waarde: unknown, max: number): waarde is string =>
+  typeof waarde === "string" && waarde !== "" && waarde.length <= max;
+
+function geldigeMeeting(meeting: MeetingRef): boolean {
+  return (
+    kortTekst(meeting.id, 1024) &&
+    (meeting.serieId === null || kortTekst(meeting.serieId, 1024)) &&
+    kortTekst(meeting.titel, 500) &&
+    !Number.isNaN(Date.parse(meeting.start))
+  );
+}
+
+async function bijMeetings(doe: (email: string) => void): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  doe(user.email);
+  // De layout ook: een overgeslagen vastgelopen meeting telt niet meer mee in de Inbox.
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Voegt het titelwoord toe aan de roepnamen van een platform, in Superhuman en
+ * meteen in de cache. Een fout komt terug als tekst; bij succes null.
+ */
+async function bewaarRoepnaam(
+  meeting: MeetingRef,
+  slug: string,
+): Promise<string | null> {
+  const woord = titelWoord(meeting.titel);
+  if (!woord) return "Deze titel heeft geen woord om te onthouden.";
+  if (woord.includes(",")) {
+    return `"${woord}" bevat een komma en kan geen roepnaam zijn.`;
+  }
+  // Vers uit Superhuman: opslaan schrijft de hele rij terug, dus een oude cache zou wijzigingen wissen.
+  clearAccountGegevensCache();
+  const dashboard = await loadDashboard();
+  if (dashboard.status !== "ok") return "Orbit is niet bereikbaar.";
+  // Zonder actuele gegevens zou opslaan wat er in Superhuman staat overschrijven.
+  if (dashboard.gegevensFout) {
+    return `De accountgegevens konden niet uit Superhuman worden opgehaald. ${dashboard.gegevensFout}`;
+  }
+  const platform = dashboard.platforms.find((item) => item.slug === slug);
+  const orbitId = platform?.klant.orbitId;
+  if (!platform || !orbitId) return "Dit platform is niet in Orbit gevonden.";
+
+  const conflict = roepnaamConflict(
+    [woord],
+    dashboard.platforms
+      .filter((item) => item.slug !== slug)
+      .map((item) => ({ naam: item.naam, roepnamen: item.gegevens.roepnamen })),
+  );
+  if (conflict) return conflict;
+
+  const roepnamen = normaliseerRoepnamen([
+    ...platform.gegevens.roepnamen,
+    woord,
+  ]);
+  try {
+    await savePlatformGegevens(
+      orbitId,
+      platform.klant.orbitNaam,
+      platform.klant.velden,
+      { ...platform.gegevens, naam: platform.naam, roepnamen },
+      platform.gegevens.naam,
+    );
+  } catch (error) {
+    return `Opslaan in Superhuman is mislukt. ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return null;
+}
+
+/**
+ * De pil: waar deze meeting, de rest van de serie of elke meeting met dit titelwoord bij hoort.
+ * Een fout komt terug als tekst; bij succes null.
+ */
+export async function koppelMeetingAction(
+  meeting: MeetingRef,
+  doel: string,
+  scope: string,
+): Promise<string | null> {
+  if (!geldigeMeeting(meeting) || typeof doel !== "string" || !DOEL.test(doel))
+    return null;
+  if (scope !== "deze" && scope !== "serie" && scope !== "titel") return null;
+  if (!(await currentUser())) return null;
+  const alsRoepnaam = scope === "titel" && doel !== TEAM && doel !== PRIVE;
+  if (alsRoepnaam) {
+    const fout = await bewaarRoepnaam(meeting, doel);
+    if (fout) return fout;
+  }
+  await bijMeetings((email) => {
+    // De nieuwe keuze moet ook voor deze meeting gelden, dus een oude keuze voor alleen deze vervalt.
+    verwijderMeetingRegel(email, meeting.id);
+    if (scope === "serie" && meeting.serieId) {
+      bewaarRegel(email, {
+        soort: "serie",
+        sleutel: meeting.serieId,
+        doel,
+        titel: meeting.titel,
+        vanaf: Date.parse(meeting.start),
+      });
+      return;
+    }
+    // Bij een roepnaam herkent Meetings de meeting daaraan; een regel is dan niet nodig.
+    if (alsRoepnaam) return;
+    bewaarRegel(email, {
+      soort: "meeting",
+      sleutel: meeting.id,
+      doel,
+      titel: meeting.titel,
+      vanaf: null,
+    });
+  });
+  return null;
+}
+
+/** "Geen notulen": alleen deze meeting of de hele serie. */
+export async function slaMeetingOverAction(
+  meeting: MeetingRef,
+  serie: boolean,
+): Promise<void> {
+  if (!geldigeMeeting(meeting)) return;
+  await bijMeetings((email) =>
+    slaOver(
+      email,
+      serie && meeting.serieId
+        ? { soort: "serie", sleutel: meeting.serieId, titel: meeting.titel }
+        : { soort: "meeting", sleutel: meeting.id, titel: meeting.titel },
+    ),
+  );
+}
+
+/** Terugzetten in het paneel: de meeting en, als hij daardoor overgeslagen is, zijn serie. */
+export async function zetMeetingTerugAction(
+  meeting: MeetingRef,
+): Promise<void> {
+  if (!geldigeMeeting(meeting)) return;
+  await bijMeetings((email) => {
+    zetTerug(email, "meeting", meeting.id);
+    if (meeting.serieId) zetTerug(email, "serie", meeting.serieId);
+  });
+}
+
+/** Terugzetten van een overgeslagen serie op Instellingen. */
+export async function zetSerieTerugFormAction(
+  formData: FormData,
+): Promise<void> {
+  const serieId = formData.get("serie");
+  if (!kortTekst(serieId, 1024)) return;
+  await bijMeetings((email) => zetTerug(email, "serie", serieId));
+}
+
+/** Het Slack-kanaal van een Team-serie, op Instellingen. */
+export async function zetKanaalFormAction(formData: FormData): Promise<void> {
+  const serieId = formData.get("serie");
+  const kanaal = formData.get("kanaal");
+  if (!kortTekst(serieId, 1024) || typeof kanaal !== "string") return;
+  await bijMeetings((email) =>
+    zetKanaal(email, serieId, kanaal.trim().slice(0, 100)),
+  );
+}
+
+/** Opnieuw proberen na een mislukte stap: wat al gedaan is, blijft staan. Geeft een melding als notulen maken hier uitstaat. */
+export async function opnieuwNotulenAction(
+  meetingId: string,
+): Promise<string | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  if (!notulenAan()) return NOTULEN_UIT;
+  if (!herstelNotulen(user.email, meetingId)) return null;
+  const platforms = await notulenPlatforms();
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
+  revalidatePath("/", "layout");
+  return null;
+}
+
+/** De gekoppelde Plaud-opname en de opnames rond de dag van de meeting. */
+export async function opnameKeuzesAction(
+  meetingId: string,
+): Promise<OpnameKeuzes> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return { fout: "Niet ingelogd" };
+  return opnameKeuzes(user.email, meetingId);
+}
+
+/** Een andere opname koppelen, of null voor Geen opname; de notulen worden opnieuw gemaakt. */
+export async function kiesOpnameAction(
+  meetingId: string,
+  opnameId: string | null,
+): Promise<string | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  if (opnameId !== null && !/^of_[0-9a-f]{32}$/.test(opnameId)) return null;
+  if (!notulenAan()) return NOTULEN_UIT;
+  if (!zetOpname(user.email, meetingId, opnameId)) return null;
+  const platforms = await notulenPlatforms();
+  if (platforms) after(() => verwerkNotulen(user.email, platforms));
+  revalidatePath("/", "layout");
+  return null;
+}
+
+/** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */
+export async function verversMeetingAction(
+  meetingId: string,
+): Promise<string | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  if (!notulenAan()) return NOTULEN_UIT;
+  const platforms = await notulenPlatforms();
+  if (!platforms) return null;
+  const vervolg = await ververs(user.email, meetingId, platforms);
+  if (typeof vervolg === "function") after(vervolg);
+  revalidatePath("/", "layout");
+  return null;
+}
+
+/**
+ * Niet delen (`soort` "niet"), Al gedeeld ("elders") of ongedaan maken ("terug"):
+ * er wordt niets verstuurd.
+ */
+export async function nietDelenAction(
+  meetingId: string,
+  soort: string,
+): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  if (soort !== "niet" && soort !== "elders" && soort !== "terug") return;
+  const wijzig = {
+    niet: nietDelen,
+    elders: eldersGedeeld,
+    terug: tochDelen,
+  }[soort];
+  if (wijzig(user.email, meetingId)) revalidatePath("/", "layout");
+}
+
+const ONDERDEEL_KEUZES = {
+  overslaan: slaOnderdeelOver,
+  toch: heropenOnderdeel,
+  verstuurd: bevestigVerstuurd,
+};
+
+/** Slaat de mail of het Slack-bericht over, zet het weer open (Toch versturen), of bevestigt na een onzekere verzending dat het er staat. */
+export async function zetDeelOnderdeelAction(
+  meetingId: string,
+  onderdeel: string,
+  keuze: string,
+): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string" || !isDeelOnderdeel(onderdeel))
+    return;
+  if (keuze !== "overslaan" && keuze !== "toch" && keuze !== "verstuurd")
+    return;
+  if (ONDERDEEL_KEUZES[keuze](user.email, meetingId, onderdeel))
+    revalidatePath("/", "layout");
+}
+
+/** De mail- en Slack-tekst met de actuele acties uit Superhuman, bij het openen van Delen; null als dat niet lukt. */
+export async function deelTekstenAction(
+  meetingId: string,
+): Promise<DeelTeksten | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  return actueleDeelteksten(user.email, meetingId, user.voornaam);
+}
+
+/** Uitkomst van delen: gelukt, opnieuw verbinden (Google of Slack), of een fout. */
+export type DeelUitkomst =
+  | { uitkomst: "gelukt" }
+  | { uitkomst: "verbinden" }
+  | { uitkomst: "fout"; fout: string };
+
+const reden = (fout: unknown) =>
+  fout instanceof Error ? fout.message : String(fout);
+
+/** Verstuurt de mail met de notulen aan de klant, direct via Gmail, na een klik op Verstuur mail. */
+export async function stuurDeelMailAction(
+  meetingId: string,
+  mail: { aan: string[]; onderwerp: string; tekst: string },
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string")
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  const { aan, onderwerp, tekst } = mail ?? {};
+  if (
+    !Array.isArray(aan) ||
+    aan.length === 0 ||
+    aan.length > 50 ||
+    !aan.every((adres) => typeof adres === "string" && isEmail(adres))
+  ) {
+    return { uitkomst: "fout", fout: "Kies minstens één geldig e-mailadres" };
+  }
+  if (
+    typeof onderwerp !== "string" ||
+    !onderwerp.trim() ||
+    onderwerp.length > 300 ||
+    typeof tekst !== "string" ||
+    !tekst.trim() ||
+    tekst.length > 10000
+  ) {
+    return {
+      uitkomst: "fout",
+      fout: "Het onderwerp of bericht is leeg of te lang",
+    };
+  }
+  try {
+    const fout = await stuurDeelMail(user.email, meetingId, {
+      aan: aan.map((adres) => adres.trim()),
+      onderwerp: onderwerp.trim(),
+      tekst: tekst.trim(),
+    });
+    revalidatePath("/", "layout");
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    return { uitkomst: "gelukt" };
+  } catch (fout) {
+    if (
+      fout instanceof GmailComposeOntbreektError ||
+      fout instanceof GmailNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
+  }
+}
+
+/** Plaatst het Slack-bericht over de notulen, na een klik op Verstuur. */
+export async function deelInSlackAction(
+  meetingId: string,
+  bericht: string,
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string")
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  if (typeof bericht !== "string" || !bericht.trim() || bericht.length > 4000)
+    return { uitkomst: "fout", fout: "Het bericht is leeg of te lang" };
+  const platforms = await notulenPlatforms();
+  if (!platforms)
+    return { uitkomst: "fout", fout: "De platforms zijn niet te lezen" };
+  try {
+    const fout = await deelInSlack(
+      user.email,
+      meetingId,
+      bericht.trim(),
+      platforms,
+    );
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    revalidatePath("/", "layout");
+    return { uitkomst: "gelukt" };
+  } catch (fout) {
+    if (
+      fout instanceof SlackSchrijvenOntbreektError ||
+      fout instanceof SlackNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
+  }
+}
+
+// ---------- Actiepunten ----------
+
+const geldigId = (id: unknown): id is number =>
+  typeof id === "number" && Number.isInteger(id) && id > 0;
+
+/** Gedaan, Negeer, of terug in de feed (ongedaan maken). */
+export async function actieStatusAction(
+  id: number,
+  status: string,
+): Promise<void> {
+  if (!geldigId(id)) return;
+  if (status !== "gedaan" && status !== "genegeerd" && status !== "terug")
+    return;
+  await bijTaken((email) => zetActieStatus(email, id, status));
+}
+
+/** Een eigen actie op de to-do's, met de titel en prioriteit uit de popup. */
+export async function actieNaarTodoAction(
+  id: number,
+  titel: string,
+  prio: number,
+): Promise<void> {
+  const user = await currentUser();
+  const schoon = schoneTitel(String(titel));
+  const nieuw = parsePrio(prio);
+  if (!user || !geldigId(id) || !schoon || !nieuw) return;
+  actieNaarTodo(user.email, user.voornaam, id, schoon, nieuw);
+  revalidatePath("/", "layout");
+}
+
+export type HerinnerUitkomst = HerinnerVoorstel | { soort: "verbinden" };
+
+/** Het herinnerbericht van Claude; vraagt eerst om de persoon als de naam niet eenduidig is. */
+export async function herinnerVoorstelAction(
+  id: number,
+  gekozen: string | null,
+): Promise<HerinnerUitkomst> {
+  const user = await currentUser();
+  if (!user || !geldigId(id)) return { soort: "fout", fout: "Niet ingelogd" };
+  if (gekozen !== null && (typeof gekozen !== "string" || gekozen.length > 50))
+    return { soort: "fout", fout: "Ongeldige keuze" };
+  try {
+    if (!(await slackMagDm(user.email))) return { soort: "verbinden" };
+    return await herinnerVoorstel(user.email, user.voornaam, id, gekozen);
+  } catch (fout) {
+    if (fout instanceof SlackNietVerbondenError) return { soort: "verbinden" };
+    return {
+      soort: "fout",
+      fout: `Het bericht maken mislukte: ${reden(fout)}`,
+    };
+  }
+}
+
+/** Stuurt de herinnering als Slack-DM, na een klik op Verstuur. */
+export async function herinnerAction(
+  id: number,
+  bericht: string,
+): Promise<DeelUitkomst> {
+  const user = await currentUser();
+  if (!user || !geldigId(id))
+    return { uitkomst: "fout", fout: "Niet ingelogd" };
+  if (typeof bericht !== "string" || !bericht.trim() || bericht.length > 4000)
+    return { uitkomst: "fout", fout: "Het bericht is leeg of te lang" };
+  try {
+    const fout = await herinner(user.email, user.voornaam, id, bericht.trim());
+    if (fout) return { uitkomst: "fout", fout: fout.fout };
+    revalidatePath("/", "layout");
+    return { uitkomst: "gelukt" };
+  } catch (fout) {
+    if (
+      fout instanceof SlackSchrijvenOntbreektError ||
+      fout instanceof SlackNietVerbondenError
+    )
+      return { uitkomst: "verbinden" };
+    return { uitkomst: "fout", fout: `Versturen mislukte: ${reden(fout)}` };
+  }
 }

@@ -1,4 +1,5 @@
 import { database } from "@/lib/db";
+import type { SlackPersoon } from "@/lib/actiepunt";
 import { record, slackPost } from "./api";
 
 const VERSHEID = 7 * 24 * 60 * 60;
@@ -93,4 +94,29 @@ export async function haalNamenOp(
     }),
   );
   return { namen, bots };
+}
+
+/** Alle collega's in de workspace (geen apps, gasten of gedeactiveerde accounts), op naam. */
+export async function slackPersonen(email: string): Promise<SlackPersoon[]> {
+  const personen: SlackPersoon[] = [];
+  let cursor = "";
+  do {
+    const body = await slackPost(email, "users.list", {
+      limit: "200",
+      ...(cursor ? { cursor } : {}),
+    });
+    const leden = Array.isArray(body.members) ? body.members.map(record) : [];
+    for (const lid of leden) {
+      const gebruiker = parseGebruiker({ user: lid });
+      // Gasten (is_restricted, is_ultra_restricted) zijn geen collega's: hun acties zijn extern.
+      const gast =
+        lid.is_restricted === true || lid.is_ultra_restricted === true;
+      if (!gebruiker || gebruiker.bot || lid.deleted === true || gast) continue;
+      if (typeof lid.id === "string")
+        personen.push({ id: lid.id, naam: gebruiker.naam });
+    }
+    const volgende = record(body.response_metadata).next_cursor;
+    cursor = typeof volgende === "string" ? volgende : "";
+  } while (cursor);
+  return personen.sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
 }

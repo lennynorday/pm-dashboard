@@ -1,13 +1,17 @@
 "use client";
 
+import NextLink from "next/link";
 import { useEffect, useState } from "react";
 import {
   gedaanAction,
+  nietDelenAction,
+  slaMeetingOverAction,
   naarTodoAction,
   sluitUitAction,
   staToeAction,
   verplaatsTaakAction,
   zetGezienAction,
+  zetMeetingTerugAction,
   zetStatusAction,
 } from "@/app/actions";
 import {
@@ -17,10 +21,13 @@ import {
   type Prio,
   type Taak,
 } from "@/lib/taak";
+import { maandagVan } from "@/lib/sprint";
+import type { VastgelopenMeeting } from "@/lib/notulen";
 import { ExternalLink } from "./ExternalLink";
 import {
   BlockIcon,
   BookmarkIcon,
+  CalendarIcon,
   CheckIcon,
   ChevronIcon,
   CloseIcon,
@@ -58,13 +65,51 @@ function dialoogBron(taak: Taak): DialoogBron {
   };
 }
 
-type Props = { taken: Taak[]; genegeerd: Taak[]; updates: Taak[] };
+type Props = {
+  taken: Taak[];
+  genegeerd: Taak[];
+  updates: Taak[];
+  /** Meetings waarbij de notulen mislukten, of zonder opname of transcript 4 uur na afloop. */
+  vastgelopen: VastgelopenMeeting[];
+};
 
-export function Inbox({ taken, genegeerd, updates }: Props) {
+const meetingTijd = new Intl.DateTimeFormat("nl-NL", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Amsterdam",
+});
+
+/** Waarom een meeting vastzit en wat je kunt doen: de fout, of per stap. */
+function vastTekst({ stap, fout }: VastgelopenMeeting): {
+  wat: string;
+  hulp: string;
+} {
+  if (fout) return { wat: "Notulen mislukt", hulp: fout };
+  if (stap <= 1)
+    return { wat: "Geen opname gevonden", hulp: "Stond Plaud Desktop aan?" };
+  if (stap === 2) {
+    return {
+      wat: "Transcript nog niet gemaakt",
+      hulp: "Klik in Plaud web op Auto-generate.",
+    };
+  }
+  return {
+    wat: "Notulen nog niet gedeeld",
+    hulp: "Deel ze vanuit de meeting via Gmail of Slack.",
+  };
+}
+
+export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
   // Weggehaald is lokaal bijgehouden, zodat een item niet terugspringt voor de server klaar is.
   const [weg, setWeg] = useState<ReadonlySet<number>>(new Set());
   const [kiezen, setKiezen] = useState<Taak | null>(null);
   const [menu, setMenu] = useState<number | null>(null);
+  const [wegMeetings, setWegMeetings] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   // Teruggezet uit genegeerd, tot de server de lijsten ververst.
   const [terug, setTerug] = useState<ReadonlySet<number>>(new Set());
   const { toon, element } = useToast();
@@ -180,18 +225,98 @@ export function Inbox({ taken, genegeerd, updates }: Props) {
     });
   }
 
+  /** Geen notulen; staan ze al in Superhuman (stap 5), dan Niet delen. */
+  function geenNotulen(meeting: VastgelopenMeeting) {
+    const ref = {
+      id: meeting.id,
+      serieId: meeting.serieId,
+      titel: meeting.titel,
+      start: meeting.start,
+    };
+    const online = meeting.stap === 5;
+    setWegMeetings((huidig) => new Set(huidig).add(meeting.id));
+    void (online
+      ? nietDelenAction(meeting.id, "niet")
+      : slaMeetingOverAction(ref, false));
+    toon(online ? "Notulen niet gedeeld" : "Geen notulen voor deze meeting", {
+      ongedaan: () => {
+        setWegMeetings((huidig) => {
+          const nieuw = new Set(huidig);
+          nieuw.delete(meeting.id);
+          return nieuw;
+        });
+        void (online
+          ? nietDelenAction(meeting.id, "terug")
+          : zetMeetingTerugAction(ref));
+      },
+    });
+  }
+
   // Updates op to-do's staan op het moment van de reactie tussen de berichten.
   const feed = [...taken, ...updates].sort(
     (a, b) => (b.tijd ?? 0) - (a.tijd ?? 0),
   );
+  const meetings = vastgelopen.filter((m) => !wegMeetings.has(m.id));
   const open = feed.filter((taak) => !weg.has(taak.id));
   const stil = genegeerd.filter((taak) => !terug.has(taak.id));
 
   return (
     <>
       <section className={styles.paneel} aria-label="Inbox">
-        {open.length === 0 && <p className="nd-empty">Inbox leeg.</p>}
+        {open.length + meetings.length === 0 && (
+          <p className="nd-empty">Inbox leeg.</p>
+        )}
         <ul className={styles.lijst}>
+          {meetings.map((meeting) => {
+            const { wat, hulp } = vastTekst(meeting);
+            const datum = meeting.start.slice(0, 10);
+            return (
+              <li key={meeting.id} className={styles.rij}>
+                <div className={styles.klap}>
+                  <div className={`nd-row ${styles.item}`}>
+                    <div className={styles.body}>
+                      <p className={`nd-meta ${styles.meta}`}>
+                        <span className="nd-chip" data-tint="pink">
+                          <CalendarIcon className={styles.icoon} />
+                          Meeting
+                        </span>
+                        <span>{meeting.label}</span>
+                        <span>
+                          {meetingTijd.format(Date.parse(meeting.start))}
+                        </span>
+                      </p>
+                      <p className={styles.titel}>
+                        {wat}: {meeting.titel}
+                      </p>
+                      <p className={styles.snippet}>{hulp}</p>
+                    </div>
+                    <div className={`nd-actions ${styles.acties}`}>
+                      <NextLink
+                        href={`/meetings?week=${maandagVan(datum)}&meeting=${encodeURIComponent(meeting.id)}`}
+                        className="nd-action nd-action--main"
+                      >
+                        Naar de meeting
+                        <span className="nd-visually-hidden">
+                          : {meeting.titel}
+                        </span>
+                      </NextLink>
+                      <button
+                        type="button"
+                        className="nd-action"
+                        onClick={() => geenNotulen(meeting)}
+                      >
+                        <CloseIcon className={styles.icoon} />
+                        {meeting.stap === 5 ? "Niet delen" : "Geen notulen"}
+                        <span className="nd-visually-hidden">
+                          : {meeting.titel}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
           {feed.map((taak) => {
             if (taak.lijst === "todo") {
               return (

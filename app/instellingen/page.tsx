@@ -4,6 +4,8 @@ import {
   refreshAccountGegevensAction,
   staToeFormAction,
   zetBronAction,
+  zetKanaalFormAction,
+  zetSerieTerugFormAction,
 } from "@/app/actions";
 import { ExternalLink } from "@/components/ExternalLink";
 import { AlertIcon, CheckIcon, CloseIcon } from "@/components/icons";
@@ -13,6 +15,8 @@ import { config } from "@/config/dashboard";
 import { readAccountGegevens } from "@/lib/accountgegevens";
 import { bronAan, leesUitsluitingen } from "@/lib/inbox-bronnen";
 import { Bron, isVerbonden } from "@/lib/koppelingen";
+import { leesOvergeslagen, leesRegels } from "@/lib/meeting-regels";
+import { TEAM } from "@/lib/meetings";
 import { initialen } from "@/lib/navigation";
 import { currentUser } from "@/lib/session";
 import type { InboxBron } from "@/lib/taak";
@@ -67,6 +71,12 @@ export default async function InstellingenPage() {
   if (!user) return null;
   const { fout } = await readAccountGegevens();
   const uitsluitingen = leesUitsluitingen(user.email);
+  const overgeslagenSeries = leesOvergeslagen(user.email).filter(
+    (o) => o.soort === "serie",
+  );
+  const teamSeries = leesRegels(user.email).filter(
+    (r) => r.soort === "serie" && r.doel === TEAM,
+  );
 
   return (
     <>
@@ -114,6 +124,9 @@ export default async function InstellingenPage() {
           </a>
           <a className="nd-filter" href="#inbox">
             Inbox
+          </a>
+          <a className="nd-filter" href="#meetings">
+            Meetings
           </a>
           <a className="nd-filter" href="#accountgegevens">
             Accountgegevens
@@ -251,6 +264,106 @@ export default async function InstellingenPage() {
                   ))}
                 </ul>
               )}
+            </div>
+          </section>
+
+          <section className={styles.sectie} aria-labelledby="meetings">
+            <h2 id="meetings" className="nd-title">
+              Meetings
+            </h2>
+            <div className={styles.tegels}>
+              <div className={styles.tegel}>
+                <h3 id="zonder-notulen" className="nd-row__title">
+                  Meetings zonder notulen
+                </h3>
+                <p className="nd-meta">
+                  Series die je overslaat. Nieuwe afspraken uit deze series
+                  krijgen geen notulen en staan grijs in de week.
+                </p>
+                {overgeslagenSeries.length === 0 ? (
+                  <p className="nd-meta">Je slaat geen series over.</p>
+                ) : (
+                  <ul
+                    className={styles.series}
+                    aria-labelledby="zonder-notulen"
+                  >
+                    {overgeslagenSeries.map((serie) => (
+                      <li key={serie.sleutel} className={styles.serie}>
+                        <span>{serie.titel}</span>
+                        <form action={zetSerieTerugFormAction}>
+                          <input
+                            type="hidden"
+                            name="serie"
+                            value={serie.sleutel}
+                          />
+                          <button
+                            type="submit"
+                            className="nd-button nd-button--quiet nd-button--small"
+                          >
+                            Terugzetten
+                            <span className="nd-visually-hidden">
+                              : {serie.titel}
+                            </span>
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className={styles.tegel}>
+                <h3 id="team-series" className="nd-row__title">
+                  Team-overleggen
+                </h3>
+                <p className="nd-meta">
+                  Terugkerende interne overleggen zonder project. Per serie het
+                  Slack-kanaal waar de notulen gedeeld worden. Een serie maak je
+                  Team via de pil bij een meeting.
+                </p>
+                {teamSeries.length === 0 ? (
+                  <p className="nd-meta">Nog geen Team-series.</p>
+                ) : (
+                  <ul className={styles.series} aria-labelledby="team-series">
+                    {teamSeries.map((serie) => (
+                      <li key={serie.sleutel}>
+                        <form
+                          action={zetKanaalFormAction}
+                          className={styles.kanaal}
+                        >
+                          <input
+                            type="hidden"
+                            name="serie"
+                            value={serie.sleutel}
+                          />
+                          <label
+                            className={`nd-label ${styles.kanaalLabel}`}
+                            htmlFor={`kanaal-${serie.sleutel}`}
+                          >
+                            {serie.titel}
+                          </label>
+                          <input
+                            id={`kanaal-${serie.sleutel}`}
+                            name="kanaal"
+                            className="nd-field"
+                            defaultValue={serie.kanaal ?? ""}
+                            placeholder="#kanaal"
+                            maxLength={100}
+                          />
+                          <button
+                            type="submit"
+                            className="nd-button nd-button--quiet nd-button--small"
+                          >
+                            Bewaren
+                            <span className="nd-visually-hidden">
+                              : kanaal van {serie.titel}
+                            </span>
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </section>
 

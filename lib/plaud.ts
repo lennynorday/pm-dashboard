@@ -1,0 +1,213 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+
+/** Een opname in het gedeelde Plaud-account, zoals `plaud recent` hem toont. */
+export type Opname = { id: string; naam: string; datum: string };
+
+/** Wat `plaud file` over een opname zegt. */
+export type OpnameDetails = {
+  id: string;
+  /** Begin in ms (UTC). */
+  start: number;
+  duurMs: number;
+  transcript: boolean;
+};
+
+const PLAUD = process.env.PLAUD_PAD ?? "/opt/homebrew/bin/plaud";
+const TIMEOUT_MS = 60_000;
+
+/** "37m30s", "1h02m03s" of "45s" naar ms; 0 als het niet te lezen is. */
+export function parseDuur(tekst: string): number {
+  const deel = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(tekst.trim());
+  if (!deel || !deel[0]) return 0;
+  const [, uren = "0", minuten = "0", seconden = "0"] = deel;
+  return (Number(uren) * 3600 + Number(minuten) * 60 + Number(seconden)) * 1000;
+}
+
+/** De regels van `plaud recent`: "  of_<32 hex>  <naam>  <YYYY-MM-DD>  37m30s". De naam mag spaties bevatten. */
+export function parseRecent(tekst: string): Opname[] {
+  return tekst.split("\n").flatMap((regel) => {
+    const deel =
+      /^\s+(of_[0-9a-f]{32})\s{2,}(.*?)\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}\S+\s*$/.exec(
+        regel,
+      );
+    return deel ? [{ id: deel[1], naam: deel[2], datum: deel[3] }] : [];
+  });
+}
+
+/** De velden van `plaud file`; start_at is UTC zonder Z. Null als id of start ontbreekt. */
+export function parseFile(tekst: string): OpnameDetails | null {
+  const velden = new Map(
+    tekst.split("\n").flatMap((regel) => {
+      const deel = /^\s+([a-z_]+):\s+(.*?)\s*$/.exec(regel);
+      return deel ? [[deel[1], deel[2]] as const] : [];
+    }),
+  );
+  const id = velden.get("id");
+  const start = Date.parse(`${velden.get("start_at") ?? ""}Z`);
+  if (!id || Number.isNaN(start)) return null;
+  return {
+    id,
+    start,
+    duurMs: parseDuur(velden.get("duration") ?? ""),
+    transcript: velden.get("transcript") === "available",
+  };
+}
+
+/** Alleen de regels "[00:04 - 01:03] Speaker 1: tekst"; leeg als er geen transcript is. */
+export function parseTranscript(tekst: string): string {
+  return tekst
+    .split("\n")
+    .filter((regel) => /^\[\d+:\d{2}/.test(regel))
+    .join("\n");
+}
+
+const DAG_MS = 24 * 60 * 60 * 1000;
+const dagPlus = (dag: string, n: number) =>
+  new Date(Date.parse(`${dag}T00:00:00Z`) + n * DAG_MS)
+    .toISOString()
+    .slice(0, 10);
+
+/** Opnames van de dag zelf en de dag ervoor en erna; de datum in de lijst kan in UTC staan. */
+export function opnamesRondDag(opnames: Opname[], dag: string): Opname[] {
+  const dagen = [dagPlus(dag, -1), dag, dagPlus(dag, 1)];
+  return opnames.filter((opname) => dagen.includes(opname.datum));
+}
+
+const overlap = (
+  meeting: { start: number; eind: number },
+  opname: OpnameDetails,
+) =>
+  Math.min(meeting.eind, opname.start + opname.duurMs) -
+  Math.max(meeting.start, opname.start);
+
+/**
+ * Welke opname bij welke meeting hoort (meeting-id naar opname-id). Een opname hoort
+ * bij één meeting: die waarmee hij het langst overlapt, en minstens de helft van de
+ * meeting én van de opname. Heeft een meeting er meer, dan
+ * wint de langste overlap. Opnames in `bezet` zijn al gekoppeld en doen niet mee.
+ * Het account is gedeeld, dus alleen tijd telt, niet de naam.
+ */
+export function verdeelOpnames(
+  meetings: { id: string; start: number; eind: number }[],
+  opnames: OpnameDetails[],
+  bezet: Set<string>,
+): Map<string, string> {
+  const gekozen = new Map<string, { id: string; overlap: number }>();
+  for (const opname of opnames) {
+    if (bezet.has(opname.id)) continue;
+    let beste: { id: string; overlap: number } | null = null;
+    for (const meeting of meetings) {
+      const lengte = overlap(meeting, opname);
+      // Een opname die er maar half overheen valt (een collega na je eigen meeting) hoort er niet bij.
+      const genoeg =
+        lengte >= (meeting.eind - meeting.start) / 2 &&
+        lengte >= opname.duurMs / 2;
+      if (genoeg && lengte > (beste?.overlap ?? 0))
+        beste = { id: meeting.id, overlap: lengte };
+    }
+    if (!beste) continue;
+    const huidig = gekozen.get(beste.id);
+    if (!huidig || beste.overlap > huidig.overlap)
+      gekozen.set(beste.id, { id: opname.id, overlap: beste.overlap });
+  }
+  return new Map([...gekozen].map(([meeting, { id }]) => [meeting, id]));
+}
+
+type Uitkomst = { stdout: string } | { fout: string };
+
+/**
+ * Alleen wat de CLI nodig heeft, geen tokens van het dashboard. PATH krijgt de map
+ * van deze node erbij, zodat `#!/usr/bin/env node` ook onder launchd werkt. Zonder
+ * kleurcodes (next dev zet FORCE_COLOR=1), want dan herkennen de parsers niets.
+ */
+function plaudOmgeving(): NodeJS.ProcessEnv {
+  const plaud = Object.entries(process.env).filter(([naam]) =>
+    naam.startsWith("PLAUD_"),
+  );
+  return {
+    ...Object.fromEntries(plaud),
+    PATH: [path.dirname(process.execPath), process.env.PATH]
+      .filter(Boolean)
+      .join(path.delimiter),
+    HOME: process.env.HOME,
+    // Verplicht in het type van Next.js; de CLI kreeg hem al.
+    NODE_ENV: process.env.NODE_ENV,
+    FORCE_COLOR: "0",
+    NO_COLOR: "1",
+    PLAUD_TELEMETRY_DISABLED: "1",
+    PLAUD_NO_UPDATE_NOTIFIER: "1",
+  };
+}
+
+/** Draait de Plaud CLI (alleen lezende commando's); fouten staan op stderr. */
+function plaud(args: string[]): Promise<Uitkomst> {
+  return new Promise((klaar) => {
+    const proces = spawn(PLAUD, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: plaudOmgeving(),
+    });
+    let verlopen = false;
+    const timer = setTimeout(() => {
+      verlopen = true;
+      proces.kill("SIGKILL");
+    }, TIMEOUT_MS);
+    let stdout = "";
+    let stderr = "";
+    proces.stdout.on("data", (deel: Buffer) => (stdout += deel));
+    proces.stderr.on("data", (deel: Buffer) => (stderr += deel));
+    proces.on("error", (fout: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      klaar({
+        fout:
+          fout.code === "ENOENT"
+            ? "Plaud CLI niet gevonden"
+            : `Plaud CLI starten mislukte: ${fout.message}`,
+      });
+    });
+    proces.on("close", (code) => {
+      clearTimeout(timer);
+      if (verlopen)
+        return klaar({ fout: "Plaud reageerde niet binnen 1 minuut" });
+      // Voortgangsregels als "- Fetching …" staan ook op stderr; die zijn geen fout.
+      const melding = stderr
+        .split("\n")
+        .filter((regel) => regel.trim() && !regel.startsWith("- "))
+        .join(" ")
+        .trim();
+      if (code !== 0) {
+        return klaar({
+          fout: `Plaud gaf een fout: ${melding.slice(0, 300) || `code ${code}`}`,
+        });
+      }
+      klaar({ stdout });
+    });
+  });
+}
+
+export async function recenteOpnames(
+  dagen: number,
+): Promise<Opname[] | { fout: string }> {
+  const uit = await plaud(["recent", "--days", String(dagen)]);
+  return "fout" in uit ? uit : parseRecent(uit.stdout);
+}
+
+export async function opnameDetails(
+  id: string,
+): Promise<OpnameDetails | { fout: string }> {
+  const uit = await plaud(["file", id]);
+  if ("fout" in uit) return uit;
+  return parseFile(uit.stdout) ?? { fout: "Plaud gaf geen leesbare opname" };
+}
+
+/** Het opgeschoonde transcript, anders het gewone; leeg als er (nog) geen is. */
+export async function leesTranscript(
+  id: string,
+): Promise<string | { fout: string }> {
+  const opgeschoond = await plaud(["transcript", "--polished", id]);
+  if ("fout" in opgeschoond) return opgeschoond;
+  const tekst = parseTranscript(opgeschoond.stdout);
+  if (tekst) return tekst;
+  const gewoon = await plaud(["transcript", id]);
+  return "fout" in gewoon ? gewoon : parseTranscript(gewoon.stdout);
+}

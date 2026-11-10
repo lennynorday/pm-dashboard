@@ -45,3 +45,29 @@ export async function zetConceptKlaar(
     throw new Error("Gmail gaf geen concept terug");
   return `https://mail.google.com/mail/?authuser=${encodeURIComponent(email)}#drafts?compose=${berichtId}`;
 }
+
+/**
+ * Verstuurt een nieuwe mail onder het account van de gebruiker (`messages.send`
+ * zonder thread; het compose-recht staat dat toe). Geeft het id van het
+ * bericht en zijn thread.
+ */
+export async function stuurMail(
+  email: string,
+  mail: { aan: string[]; onderwerp: string; tekst: string },
+): Promise<{ berichtId: string; threadId: string }> {
+  const verstuurd = await gmailPost(email, "messages/send", {
+    raw: bouwAntwoord({
+      aan: mail.aan.join(", "),
+      onderwerp: mail.onderwerp,
+      tekst: mail.tekst,
+      inReplyTo: null,
+      references: null,
+    }),
+  });
+  if (
+    typeof verstuurd?.id !== "string" ||
+    typeof verstuurd.threadId !== "string"
+  )
+    throw new Error("Gmail gaf geen verstuurd bericht terug");
+  return { berichtId: verstuurd.id, threadId: verstuurd.threadId };
+}

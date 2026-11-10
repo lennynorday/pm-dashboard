@@ -124,6 +124,13 @@ export function AccountForm({ action, waarden, orbitNaam, terugHref }: Props) {
           defaultValue={huidig.orbitProjecten}
           fout={fouten.orbitProjecten}
         />
+        <Veld
+          name="roepnamen"
+          label="Roepnamen"
+          hint="Andere namen in agendatitels, gescheiden door komma's, bijvoorbeeld CMU, Mediafonds. Meetings herkent het platform eraan."
+          defaultValue={huidig.roepnamen}
+          fout={fouten.roepnamen}
+        />
       </fieldset>
 
       <fieldset className={styles.groep}>

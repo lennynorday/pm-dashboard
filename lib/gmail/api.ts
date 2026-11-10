@@ -8,10 +8,10 @@ export class GmailNietVerbondenError extends Error {
   }
 }
 
-/** Gmail is verbonden, maar het token mag geen concepten maken: opnieuw verbinden met Google. */
+/** Gmail is verbonden, maar het token mag geen mail maken of versturen (compose): opnieuw verbinden met Google. */
 export class GmailComposeOntbreektError extends Error {
   constructor() {
-    super("Geen toestemming om concepten in Gmail te maken");
+    super("Geen toestemming om mail te maken of te versturen in Gmail");
   }
 }
 
@@ -72,7 +72,7 @@ export const gmailGet = (
 ) => gmailVraag(email, pad, params, { signal }, false);
 
 /**
- * Eén POST met een JSON-body. Alleen voor concepten: vraagt de compose-scope en
+ * Eén POST met een JSON-body, voor concepten en versturen: vraagt de compose-scope en
  * geeft GmailComposeOntbreektError (en niet GmailNietVerbondenError) als die ontbreekt.
  */
 export const gmailPost = (email: string, pad: string, body: unknown) =>

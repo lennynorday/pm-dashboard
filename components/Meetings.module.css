@@ -1,0 +1,455 @@
+/* Alleen layout; knoppen, chips, kaarten en menu's komen uit de toolkit. */
+
+/* De week groeit mee met het scherm; de layout begrenst de inhoud op 1240px. */
+:global(#inhoud):has(.meetings) {
+  max-width: none;
+}
+
+/* Werkbalk */
+.balk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-03);
+  margin-bottom: var(--space-05);
+}
+
+.weeknav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+}
+
+.weekLabel {
+  min-width: 150px;
+  font: var(--type-item);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pijlVorige {
+  transform: rotate(90deg);
+}
+
+.pijlVolgende {
+  transform: rotate(-90deg);
+}
+
+.filter {
+  margin-left: auto;
+}
+
+.filterActief {
+  background: var(--norday-lilac);
+}
+
+.filterPijl {
+  width: 14px;
+  height: 14px;
+}
+
+/* Week + zijpaneel, even hoog */
+.indeling {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: stretch;
+  gap: var(--space-05);
+}
+
+.week {
+  --uur: 56px;
+  display: grid;
+  grid-template-columns: 44px repeat(5, minmax(0, 1fr));
+  column-gap: 6px;
+  padding: var(--space-04);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+}
+
+.dagkop {
+  padding: 0 0 var(--space-03) var(--space-01);
+  font: var(--type-item);
+}
+
+.dagDatum {
+  display: block;
+  color: var(--color-text-muted);
+  font: var(--type-meta);
+}
+
+.dagDatum[data-vandaag] {
+  color: var(--color-open);
+  font-weight: 600;
+}
+
+.uren,
+.dag {
+  position: relative;
+  height: calc(9 * var(--uur));
+}
+
+.uur {
+  position: absolute;
+  top: calc(var(--start) * var(--uur));
+  right: 6px;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.dag {
+  border-radius: var(--space-02);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--uur) - 1px),
+    var(--color-line-soft) calc(var(--uur) - 1px),
+    var(--color-line-soft) var(--uur)
+  );
+}
+
+.dag[data-vandaag] {
+  background-color: var(--color-raised);
+}
+
+.nu {
+  position: absolute;
+  top: calc(var(--start) * var(--uur));
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--norday-pink);
+  pointer-events: none;
+}
+
+/* Afspraak in de week; overlappende afspraken staan naast elkaar. */
+.afspraak {
+  position: absolute;
+  top: calc(var(--start) * var(--uur) + 1px);
+  left: calc(var(--kolom) / var(--kolommen) * 100% + 2px);
+  width: calc(100% / var(--kolommen) - 4px);
+  height: calc(var(--duur) * var(--uur) - 3px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--space-02);
+  background: var(--color-lilac-soft);
+  color: var(--norday-dark);
+  font: var(--type-meta);
+  text-align: left;
+  cursor: pointer;
+}
+
+.afspraak:hover {
+  filter: brightness(0.97);
+}
+
+.afspraak:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.afspraak[aria-pressed="true"] {
+  outline: 2px solid var(--norday-dark);
+  outline-offset: 1px;
+}
+
+.afspraak[data-kort] {
+  justify-content: center;
+  padding-block: 0;
+}
+
+.afspraak[data-soort="team"] {
+  background: var(--color-raised);
+  box-shadow: inset 0 0 0 1px var(--color-line-soft);
+}
+
+.afspraak[data-soort="prive"] {
+  background: var(--color-raised);
+  box-shadow: inset 0 0 0 1px var(--color-line-subtle);
+}
+
+.afspraak[data-overgeslagen] {
+  opacity: 0.55;
+}
+
+.afspraak[data-vervaagd] {
+  opacity: 0.3;
+}
+
+.afspraakTitel {
+  overflow: hidden;
+  font: var(--type-small);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afspraakMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Notulenstatus: een dot rechtsboven; de tekst staat in het paneel en in het label */
+.afspraak[data-stand] {
+  padding-right: 28px;
+}
+
+.afspraak[data-stand="warn"] {
+  box-shadow: inset 0 0 0 2px var(--color-warn);
+}
+
+.icoon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* Lijst */
+.lijstGroep {
+  margin-bottom: var(--space-05);
+}
+
+.lijstKop {
+  margin: 0 0 var(--space-02);
+  font: var(--type-title);
+  text-transform: uppercase;
+}
+
+.rijen {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lijstRij {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 200px) auto;
+  align-items: center;
+  gap: var(--space-04);
+  width: 100%;
+  padding: 10px var(--space-04);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--norday-dark);
+  font: var(--type-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lijstRij[aria-pressed="true"] {
+  box-shadow: var(--ring-strong);
+}
+
+.tijd {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lijstStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+}
+
+.lijstTitel {
+  overflow: hidden;
+  font: var(--type-item);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Zijpaneel: even hoog als de agenda, de inhoud scrolt erin */
+.paneel {
+  position: relative;
+  min-height: 420px;
+}
+
+.kaart {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  overflow: auto;
+  padding-bottom: var(--space-06);
+}
+
+.uitleg {
+  margin: var(--space-03) 0 0;
+  color: var(--color-text-muted);
+}
+
+.teDoenRij {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-02) var(--space-03);
+  border: 0;
+  border-radius: var(--space-02);
+  background: var(--color-raised);
+  color: var(--norday-dark);
+  text-align: left;
+  cursor: pointer;
+}
+
+.teDoenUitleg {
+  margin: 0 0 var(--space-02);
+}
+
+.teDoenMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-02);
+}
+
+.statuskop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: var(--space-03) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--space-02);
+  background: var(--color-raised);
+  font: var(--type-item);
+}
+
+.detail {
+  display: grid;
+  gap: var(--space-01);
+}
+
+.terug {
+  justify-self: start;
+}
+
+.detailTitel {
+  margin-top: var(--space-02);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-01);
+}
+
+.linkKnoppen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-04);
+  margin-top: var(--space-04);
+}
+
+.linkKnop {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: var(--type-meta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.linkKnop:hover {
+  color: var(--color-text);
+}
+
+/* De pil: zelfde maat als nd-chip, zodat ze naast elkaar recht staan */
+.pil {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--norday-white);
+  box-shadow: var(--ring);
+  color: var(--norday-dark);
+  font: var(--type-small);
+  cursor: pointer;
+}
+
+.pil:hover {
+  box-shadow: inset 0 0 0 1px var(--norday-dark);
+}
+
+/* Een lange platformnaam blijft op één regel; de volledige naam staat in de tooltip. */
+.pilTekst {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pilIcoon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* Het menu van de pil staat op de plek die HoortMenu inline instelt. */
+.hoortMenu {
+  position: fixed;
+  inset: auto;
+  width: 320px;
+}
+
+.menuKop {
+  margin: 6px 10px 4px;
+  color: var(--color-text-muted);
+  font: var(--type-small);
+}
+
+.doelen {
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vink {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+}
+
+.menuScope {
+  display: grid;
+  gap: 6px;
+  margin: 6px 4px 4px;
+  padding: 10px 6px 4px;
+  border: 0;
+  border-top: 1px solid var(--color-line-soft);
+  font: var(--type-meta);
+}
+
+.keuze {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-02);
+}
+
+@media (max-width: 1100px) {
+  .indeling {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kaart {
+    position: static;
+    max-height: 70vh;
+  }
+}

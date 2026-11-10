@@ -15,6 +15,13 @@ const GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose";
 export const heeftComposeScope = (token: OAuthToken): boolean =>
   token.scope?.split(" ").includes(GMAIL_COMPOSE_SCOPE) ?? false;
 
+// Alleen lezen: meetings plannen of verzetten blijft in Google Agenda.
+const AGENDA_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+
+/** Mag dit token de agenda lezen? Koppelingen van vóór de Meetings-pagina: nee, tot hij opnieuw verbindt. */
+export const heeftAgendaScope = (token: OAuthToken): boolean =>
+  token.scope?.split(" ").includes(AGENDA_SCOPE) ?? false;
+
 /** Alleen Google-accounts van dit domein mogen inloggen. */
 export const NORDAY_DOMEIN = "norday.nl";
 
@@ -45,7 +52,7 @@ export function startLogin(): Pkce & { authorizeUrl: string } {
     client_id: setting("GOOGLE_CLIENT_ID"),
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
-    scope: `openid email profile ${GMAIL_SCOPE} ${GMAIL_COMPOSE_SCOPE}`,
+    scope: `openid email profile ${GMAIL_SCOPE} ${GMAIL_COMPOSE_SCOPE} ${AGENDA_SCOPE}`,
     code_challenge: login.challenge,
     code_challenge_method: "S256",
     state: login.state,

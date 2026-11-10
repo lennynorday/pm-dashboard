@@ -256,6 +256,22 @@ export function nieuweTaak(email: string, titel: string, status: Status): void {
     .run(email, titel, status, Date.now());
 }
 
+/** Een actiepunt uit notulen als eigen to-do; geeft het id van de taak. */
+export function voegActieToe(
+  email: string,
+  titel: string,
+  prio: Prio,
+  bron: { bericht: string; plek: string; url: string | null },
+): number {
+  const { lastInsertRowid } = database()
+    .prepare(
+      `INSERT INTO taken (email, bron, titel, bericht, plek, url, lijst, prio, toegevoegd)
+       VALUES (?, 'eigen', ?, ?, ?, ?, 'todo', ?, ?)`,
+    )
+    .run(email, titel, bron.bericht, bron.plek, bron.url, prio, Date.now());
+  return Number(lastInsertRowid);
+}
+
 /** Terug naar de inbox koppelt een DM-gesprek weer aan (zie naarTodo). */
 export function verplaats(email: string, id: number, lijst: Lijst): void {
   database()

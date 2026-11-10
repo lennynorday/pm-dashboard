@@ -7,6 +7,8 @@ import { SYSTEEMPROMPT } from "./prompt";
 const CLAUDE =
   process.env.CLAUDE_PAD ?? path.join(homedir(), ".local", "bin", "claude");
 export const TIMEOUT_MS = 3 * 60 * 1000;
+// Notulen van een lange meeting (transcript van 100k+ tekens) hebben meer tijd nodig.
+export const NOTULEN_TIMEOUT_MS = 15 * 60 * 1000;
 
 /**
  * Slank en zonder rechten: sonnet, geen tools (dus ook niets dat kan versturen of
@@ -25,22 +27,25 @@ const ARGS = [
   "",
   "--no-session-persistence",
   "--system-prompt",
-  SYSTEEMPROMPT,
 ];
 
 export type Run = { stdout: string } | { fout: string };
 
 /** Draait Claude Code met de prompt, in een lege tijdelijke map zodat de repo niet meeladen. */
-export async function draaiClaude(prompt: string): Promise<Run> {
+export async function draaiClaude(
+  prompt: string,
+  systeemprompt = SYSTEEMPROMPT,
+  timeoutMs = TIMEOUT_MS,
+): Promise<Run> {
   const map = await mkdtemp(path.join(tmpdir(), "pm-claude-"));
   try {
     return await new Promise<Run>((klaar) => {
-      const proces = spawn(CLAUDE, ARGS, { cwd: map });
+      const proces = spawn(CLAUDE, [...ARGS, systeemprompt], { cwd: map });
       let verlopen = false;
       const timer = setTimeout(() => {
         verlopen = true;
         proces.kill("SIGKILL");
-      }, TIMEOUT_MS);
+      }, timeoutMs);
       let stdout = "";
       let stderr = "";
       proces.stdout.on("data", (deel: Buffer) => (stdout += deel));
@@ -58,7 +63,9 @@ export async function draaiClaude(prompt: string): Promise<Run> {
       proces.on("close", (code, signaal) => {
         clearTimeout(timer);
         if (verlopen) {
-          return klaar({ fout: "Claude reageerde niet binnen 3 minuten" });
+          return klaar({
+            fout: `Claude reageerde niet binnen ${timeoutMs / 60_000} minuten`,
+          });
         }
         if (signaal) {
           return klaar({ fout: `Claude Code werd onderbroken (${signaal})` });

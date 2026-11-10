@@ -35,6 +35,7 @@ const KOLOM = {
   supportOrganizations: "c-4-fKHAXd6d",
   contactpersonen: "c-zYeBW-ImGY",
   eigenLinks: "c-4PSZpd5BLm",
+  roepnamen: "c-h0X6nT4NEI",
 } as const;
 
 const LINK_KOLOM: Record<LinkType, string> = {
@@ -153,6 +154,7 @@ function parseRij(data: unknown): Rij | null {
         key.toUpperCase(),
       ),
       supportOrganizations: lijst(tekst(waarden, KOLOM.supportOrganizations)),
+      roepnamen: lijst(tekst(waarden, KOLOM.roepnamen)),
       contactpersonen: parseContactpersonen(
         tekst(waarden, KOLOM.contactpersonen),
       ),
@@ -280,6 +282,7 @@ export async function savePlatformRij(
       [KOLOM.orbitProjecten, platform.orbitProjecten.join(", ")],
       [KOLOM.jiraKeys, platform.jiraKeys.join(", ")],
       [KOLOM.supportOrganizations, platform.supportOrganizations.join(", ")],
+      [KOLOM.roepnamen, platform.roepnamen.join(", ")],
       [KOLOM.contactpersonen, formatContactpersonen(platform.contactpersonen)],
       [KOLOM.eigenLinks, formatEigenLinks(platform.eigenLinks)],
       ...LINK_TYPES.map((type): [string, string] => [

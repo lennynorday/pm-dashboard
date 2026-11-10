@@ -6,6 +6,7 @@ import {
   LinkUrls,
   MAX_EIGEN_LINKS,
 } from "./links";
+import { normaliseerRoepnamen } from "./roepnamen";
 
 /** Lege rijen onder de bestaande, om contactpersonen toe te voegen. */
 export const LEGE_RIJEN = 2;
@@ -20,6 +21,7 @@ export type FormWaarden = {
   am: string;
   jiraKeys: string;
   supportOrganizations: string;
+  roepnamen: string;
   contactpersonen: ContactRij[];
   links: Record<LinkType, string>;
   /** Altijd vier rijen; lege rijen tellen niet. */
@@ -48,6 +50,7 @@ export function toFormWaarden(
     am: klant.am ?? "",
     jiraKeys: gegevens.jiraKeys.join(", "),
     supportOrganizations: gegevens.supportOrganizations.join(", "),
+    roepnamen: gegevens.roepnamen.join(", "),
     contactpersonen: gegevens.contactpersonen.map((persoon) => ({
       naam: persoon.naam,
       rol: persoon.rol ?? "",
@@ -98,6 +101,7 @@ export function readFormWaarden(formData: FormData): FormWaarden {
     am: text(formData, "am"),
     jiraKeys: text(formData, "jiraKeys"),
     supportOrganizations: text(formData, "supportOrganizations"),
+    roepnamen: text(formData, "roepnamen"),
     contactpersonen: rijen(formData, "contact", (index) => ({
       naam: text(formData, `contact-${index}-naam`),
       rol: text(formData, `contact-${index}-rol`),
@@ -210,6 +214,7 @@ export function validateForm(
       orbitProjecten,
       jiraKeys,
       supportOrganizations: lijst(waarden.supportOrganizations),
+      roepnamen: normaliseerRoepnamen(waarden.roepnamen),
       contactpersonen,
       links,
       eigenLinks,

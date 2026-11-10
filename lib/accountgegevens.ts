@@ -30,6 +30,8 @@ export type PlatformGegevens = {
   jiraKeys: string[];
   /** Organizations in SUPP (Beheer en Support). */
   supportOrganizations: string[];
+  /** Andere namen in agendatitels voor dit platform, zoals CMU. */
+  roepnamen: string[];
   contactpersonen: Contactpersoon[];
   links: LinkUrls;
   /** Hooguit vier, met een eigen naam; de groep Overig op de platformpagina. */
@@ -49,6 +51,7 @@ export const LEEG_PLATFORM: PlatformGegevens = {
   orbitProjecten: [],
   jiraKeys: [],
   supportOrganizations: [],
+  roepnamen: [],
   contactpersonen: [],
   links: {},
   eigenLinks: [],
@@ -60,7 +63,7 @@ export type GegevensResult = {
   fout: string | null;
 };
 
-const SLEUTEL = "superhuman:accountgegevens:v4";
+const SLEUTEL = "superhuman:accountgegevens:v5";
 const CACHE_MS = 24 * 60 * 60 * 1000;
 
 function melding(error: unknown): string {

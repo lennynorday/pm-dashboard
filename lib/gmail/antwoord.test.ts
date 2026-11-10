@@ -73,3 +73,18 @@ test("niet-ASCII onderwerp wordt gecodeerd en regeleinden in headers verdwijnen"
   assert.strictEqual(koppen.Bcc, undefined);
   assert.strictEqual(koppen["In-Reply-To"], undefined);
 });
+
+test("een nieuwe mail krijgt geen Re: en kan meer ontvangers hebben", () => {
+  const { koppen } = ontleed(
+    bouwAntwoord({
+      aan: "a@klant.nl, b@klant.nl",
+      onderwerp: "Notulen Planning 4 november 2026",
+      tekst: "Hoi",
+      inReplyTo: null,
+      references: null,
+    }),
+  );
+  assert.strictEqual(koppen.To, "a@klant.nl, b@klant.nl");
+  assert.strictEqual(koppen.Subject, "Notulen Planning 4 november 2026");
+  assert.strictEqual(koppen["In-Reply-To"], undefined);
+});

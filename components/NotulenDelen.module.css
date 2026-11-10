@@ -1,0 +1,78 @@
+/* De overlay waarin de notulen gedeeld worden: mail en Slack naast elkaar. */
+.dialoog {
+  width: min(760px, calc(100vw - 2 * var(--space-04)));
+}
+
+.dialoog[data-twee] {
+  width: min(1080px, calc(100vw - 2 * var(--space-04)));
+}
+
+.onderdelen {
+  display: grid;
+  gap: var(--space-05);
+  max-height: 66vh;
+  overflow: auto;
+}
+
+.dialoog[data-twee] .onderdelen {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .dialoog[data-twee] .onderdelen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.onderdeel {
+  display: grid;
+  gap: var(--space-03);
+  padding: var(--space-05);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+
+.onderdeel[data-klaar] {
+  opacity: 0.8;
+}
+
+.kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-03);
+}
+
+.titel {
+  margin: 0;
+  font: var(--type-item);
+}
+
+.acties {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-04);
+}
+
+.klaarRegel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-02);
+  margin: 0;
+  font: var(--type-meta);
+}
+
+.vink {
+  width: 16px;
+  height: 16px;
+  color: var(--color-ok);
+}
+
+.tekst {
+  min-height: 160px;
+  resize: vertical;
+  line-height: 1.5;
+}

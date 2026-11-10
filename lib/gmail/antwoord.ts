@@ -35,7 +35,8 @@ export function bouwAntwoord(antwoord: Antwoord): string {
     .join(" ");
   const regels = [
     `To: ${eenRegel(antwoord.aan)}`,
-    `Subject: ${kop(eenRegel(metRe(antwoord.onderwerp)))}`,
+    // Een nieuwe mail (zonder inReplyTo) krijgt geen "Re: ".
+    `Subject: ${kop(eenRegel(inReplyTo ? metRe(antwoord.onderwerp) : antwoord.onderwerp))}`,
     ...(inReplyTo ? [`In-Reply-To: ${inReplyTo}`] : []),
     ...(references ? [`References: ${references}`] : []),
     "MIME-Version: 1.0",

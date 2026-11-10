@@ -6,8 +6,26 @@ const AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";
 const TOKEN_URL = "https://slack.com/api/oauth.v2.access";
 export const SLACK_REDIRECT_URI = appUrl("/api/slack/callback");
 
-/** Alleen lezen: zoeken in berichten (ook is:dm), namen van gebruikers en je eigen emoji-reacties. */
-const USER_SCOPES = "search:read users:read reactions:read";
+/**
+ * Lezen: zoeken in berichten (ook is:dm), namen van gebruikers en je eigen
+ * emoji-reacties. Schrijven: de notulen en herinneringen (een DM openen met
+ * im:write), alleen na een klik op Verstuur.
+ */
+const USER_SCOPES = "search:read users:read reactions:read chat:write im:write";
+
+/** Heeft dit token deze scopes? Tokens van vóór het bewaren van scopes: nee, tot hij opnieuw verbindt. */
+const heeftScopes = (token: OAuthToken, scopes: string[]): boolean => {
+  const gegeven = token.scope?.split(/[\s,]+/) ?? [];
+  return scopes.every((scope) => gegeven.includes(scope));
+};
+
+/** Mag dit token berichten plaatsen? */
+export const heeftSchrijfScope = (token: OAuthToken): boolean =>
+  heeftScopes(token, ["chat:write"]);
+
+/** Mag dit token een DM openen en erin schrijven? */
+export const heeftDmScope = (token: OAuthToken): boolean =>
+  heeftScopes(token, ["chat:write", "im:write"]);
 
 function setting(name: "SLACK_CLIENT_ID" | "SLACK_CLIENT_SECRET"): string {
   const value = process.env[name];
@@ -59,5 +77,7 @@ export async function exchangeCode(code: string): Promise<OAuthToken> {
     accessToken: user.access_token,
     refreshToken: null,
     expiresAt: Number.MAX_SAFE_INTEGER,
+    // Slack scheidt de scopes met komma's.
+    scope: typeof user.scope === "string" ? user.scope : null,
   };
 }

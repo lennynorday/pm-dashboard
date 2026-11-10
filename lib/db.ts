@@ -120,6 +120,111 @@ function open(): DatabaseSync {
       feedback TEXT,
       aangemaakt INTEGER NOT NULL
     );
+    -- Meetings: waar een meeting, serie of titelwoord bij hoort (platform-slug, team of prive).
+    -- vanaf: een serieregel geldt vanaf die start (ms); kanaal: het Slack-kanaal van een Team-serie.
+    CREATE TABLE IF NOT EXISTS meeting_regels (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      soort TEXT NOT NULL,
+      sleutel TEXT NOT NULL,
+      doel TEXT NOT NULL,
+      titel TEXT NOT NULL,
+      vanaf INTEGER,
+      kanaal TEXT,
+      PRIMARY KEY (email, soort, sleutel)
+    );
+    -- Meetings en series zonder notulen.
+    CREATE TABLE IF NOT EXISTS meetings_overgeslagen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      soort TEXT NOT NULL,
+      sleutel TEXT NOT NULL,
+      titel TEXT NOT NULL,
+      PRIMARY KEY (email, soort, sleutel)
+    );
+    -- Notulen: waar een afgelopen meeting in de flow staat. stap = aantal afgeronde stappen
+    -- (1 wacht op opname, 2 op transcript, 3 notulen maken, 4 naar Superhuman, 5 in Superhuman, 6 gedeeld).
+    -- acties_uit: wanneer (ms) de actiepunten uit de notulen zijn gehaald.
+    -- bezig: sinds wanneer (ms) een run aan deze meeting werkt, tegen dubbele runs.
+    -- Delen: extern een mail (mail_stand, mail_url = de thread in Gmail) en Slack, intern en Team alleen
+    -- Slack (slack_tekst van Claude, slack_stand, slack_url). Een stand is 'verstuurd', 'overgeslagen' of
+    -- 'onzeker' (time-out bij versturen); leeg = nog te doen.
+    -- opname_keuze: leeg = automatisch, 'geen' = geen opname, anders het gekozen opname-id.
+    -- pagina_versie: hoe vaak de notulen opnieuw zijn gemaakt na een andere opname; elke versie krijgt een eigen pagina.
+    -- niet_gedeeld: wanneer (ms) de gebruiker koos om niet te delen; Gedeeld telt dan als afgerond.
+    -- elders: wanneer (ms) de gebruiker aangaf dat het al elders gedeeld is.
+    CREATE TABLE IF NOT EXISTS notulen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      meeting_id TEXT NOT NULL,
+      serie_id TEXT,
+      titel TEXT NOT NULL,
+      label TEXT NOT NULL,
+      hoort TEXT,
+      extern INTEGER,
+      start TEXT NOT NULL,
+      eind TEXT NOT NULL,
+      stap INTEGER NOT NULL,
+      sinds INTEGER NOT NULL,
+      opname_id TEXT,
+      tekst TEXT,
+      pagina_doc TEXT,
+      pagina_id TEXT,
+      pagina_url TEXT,
+      pagina_versie INTEGER,
+      opname_keuze TEXT,
+      slack_tekst TEXT,
+      niet_gedeeld INTEGER,
+      mail_stand TEXT,
+      mail_url TEXT,
+      slack_stand TEXT,
+      slack_url TEXT,
+      elders INTEGER,
+      fout TEXT,
+      bezig INTEGER,
+      acties_uit INTEGER,
+      PRIMARY KEY (email, meeting_id)
+    );
+    -- Actiepunten uit de notulen (**Actie Naam:** wat), per meeting genummerd in volgorde.
+    -- status: open, herinnerd, todo, gedaan of genegeerd; herinnerd = wanneer (ms) de DM ging;
+    -- herinner_tekst = de DM die Claude schreef; taak_id = de to-do die ervan gemaakt is.
+    CREATE TABLE IF NOT EXISTS actiepunten (
+      id INTEGER PRIMARY KEY,
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      meeting_id TEXT NOT NULL,
+      volgnummer INTEGER NOT NULL,
+      eigenaar TEXT NOT NULL,
+      wat TEXT NOT NULL,
+      onderwerp TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      herinnerd INTEGER,
+      herinner_tekst TEXT,
+      taak_id INTEGER,
+      UNIQUE (email, meeting_id, volgnummer)
+    );
+    -- Per naam uit de notulen de Slack-gebruiker die de gebruiker koos.
+    CREATE TABLE IF NOT EXISTS slack_namen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      naam TEXT NOT NULL,
+      slack_id TEXT NOT NULL,
+      PRIMARY KEY (email, naam)
+    );
+    -- De Slack-leden bij de laatste keer ophalen: wie hier niet in staat is extern.
+    CREATE TABLE IF NOT EXISTS slack_leden (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      id TEXT NOT NULL,
+      naam TEXT NOT NULL,
+      PRIMARY KEY (email, id)
+    );
+    -- Vanaf wanneer (ms) het dashboard notulen maakt; eerdere meetings doen niet mee.
+    CREATE TABLE IF NOT EXISTS notulen_start (
+      email TEXT PRIMARY KEY REFERENCES gebruikers (email),
+      vanaf INTEGER NOT NULL
+    );
+    -- Per reeks de subpagina onder Notulen in Lennys Dashboard.
+    CREATE TABLE IF NOT EXISTS notulen_reeksen (
+      email TEXT NOT NULL REFERENCES gebruikers (email),
+      serie_id TEXT NOT NULL,
+      pagina_id TEXT NOT NULL,
+      PRIMARY KEY (email, serie_id)
+    );
   `);
   // De kolom bericht kwam later: de tekst van het oorspronkelijke Slack-bericht, naast de eigen titel.
   const kolommen = db.prepare("PRAGMA table_info(taken)").all();
@@ -191,6 +296,11 @@ function open(): DatabaseSync {
   // Feedback die nog in een nieuwe versie moet worden verwerkt; leeg als Claude niet bezig is met een aanpassing.
   if (!opdrachtKolommen.some((kolom) => kolom.name === "feedback")) {
     db.exec("ALTER TABLE opdrachten ADD COLUMN feedback TEXT");
+  }
+  // Series werden bewaard met Google's "_R<datum>" van een aangepaste reeks; nu zonder.
+  for (const tabel of ["meeting_regels", "meetings_overgeslagen"]) {
+    db.exec(`UPDATE OR IGNORE ${tabel} SET sleutel = substr(sleutel, 1, instr(sleutel, '_R') - 1)
+      WHERE soort = 'serie' AND instr(sleutel, '_R') > 0`);
   }
   if (DEMO) vulDemo(db);
   return db;
