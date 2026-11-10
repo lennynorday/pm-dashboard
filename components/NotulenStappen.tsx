@@ -179,7 +179,8 @@ export function Checklist({ meeting, status }: ChecklistProps) {
     if (index === 3) {
       return (
         <p className={`nd-meta ${styles.regel}`}>
-          Claude maakt de notulen, 1 tot 3 minuten.
+          Claude maakt de notulen, 1 tot 15 minuten: hoe langer de meeting, hoe
+          langer het duurt.
         </p>
       );
     }
