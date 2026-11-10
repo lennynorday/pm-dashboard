@@ -470,12 +470,15 @@ async function verder(
     try {
       await naarSuperhuman(email, meeting, klaar, platforms);
     } catch (fout) {
-      zetFout(
-        email,
-        meeting.id,
-        fout instanceof Error ? fout.message : String(fout),
-        { stap: 4, opnameId: tekst(klaar.opname_id) },
-      );
+      // Na een time-out kan de pagina toch bestaan: de volgende ronde vindt hem op naam.
+      if (isNetwerkFout(fout)) laatLos(email, meeting.id);
+      else
+        zetFout(
+          email,
+          meeting.id,
+          fout instanceof Error ? fout.message : String(fout),
+          { stap: 4, opnameId: tekst(klaar.opname_id) },
+        );
     }
   }
   const gedeeld = leesRij(email, meeting.id);
@@ -808,8 +811,15 @@ async function reeksPagina(email: string, meeting: Meeting): Promise<string> {
     .get(email, serieId);
   if (typeof bewaard?.pagina_id === "string") return bewaard.pagina_id;
   const { docId, notulen } = LENNYS_DASHBOARD;
+  const vanAnderen = paginaIds(
+    "SELECT pagina_id FROM notulen_reeksen WHERE email = ?",
+    email,
+  );
   const bestaand = (await leesPaginas(docId)).find(
-    (p) => p.parentId === notulen && p.naam === meeting.titel,
+    (p) =>
+      p.parentId === notulen &&
+      p.naam === meeting.titel &&
+      !vanAnderen.has(p.id),
   );
   const id =
     bestaand?.id ?? (await maakPagina(docId, notulen, meeting.titel, ""));
@@ -821,12 +831,21 @@ async function reeksPagina(email: string, meeting: Meeting): Promise<string> {
   return id;
 }
 
+/** Pagina-id's die al bij een andere rij horen; een pagina met dezelfde naam is dan niet die van ons. */
+const paginaIds = (sql: string, ...params: string[]) =>
+  new Set(
+    database()
+      .prepare(sql)
+      .all(...params)
+      .map((rij) => String(rij.pagina_id)),
+  );
+
 const wacht = (ms: number) => new Promise((klaar) => setTimeout(klaar, ms));
 
 /**
  * Maakt de subpagina (één keer: het id staat meteen in de database) en wacht
- * op de link, want de API loopt 20 tot 30 seconden achter. Komt de link niet,
- * dan haalt de volgende ronde hem op.
+ * op de link, want de API loopt 20 tot 30 seconden achter. Staat de pagina er
+ * zonder link, dan haalt de volgende ronde hem op; staat hij er niet, dan is dat een fout.
  */
 async function naarSuperhuman(
   email: string,
@@ -843,8 +862,14 @@ async function naarSuperhuman(
     const versie = Number(rij.pagina_versie ?? 0);
     const naam = paginaNaam(meeting) + (versie > 0 ? ` (${versie + 1})` : "");
     const paginas = doel.paginas ?? (await leesPaginas(doel.docId));
+    const vanAnderen = paginaIds(
+      "SELECT pagina_id FROM notulen WHERE email = ? AND meeting_id != ? AND pagina_id IS NOT NULL",
+      email,
+      meeting.id,
+    );
     const bestaand = paginas.find(
-      (p) => p.parentId === doel.ouder && p.naam === naam,
+      (p) =>
+        p.parentId === doel.ouder && p.naam === naam && !vanAnderen.has(p.id),
     );
     docId = doel.docId;
     paginaId =
@@ -859,14 +884,22 @@ async function naarSuperhuman(
       .run(docId, paginaId, email, meeting.id, verwacht.opnameId);
     if (changes === 0) return;
   }
+  let pagina: Pagina | null = null;
   for (let poging = 0; poging < 6; poging++) {
-    const pagina = await leesPagina(docId, paginaId);
+    pagina = await leesPagina(docId, paginaId);
     if (pagina?.link) {
       zetStap(email, meeting.id, 5, verwacht, { pagina_url: pagina.link });
       return;
     }
     await wacht(10_000);
   }
+  if (!pagina)
+    return zetFout(
+      email,
+      meeting.id,
+      "Pagina niet gevonden in Superhuman",
+      verwacht,
+    );
   laatLos(email, meeting.id);
 }
 
