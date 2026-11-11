@@ -37,6 +37,7 @@ import {
 } from "./icons";
 import styles from "./Inbox.module.css";
 import { TodoDialoog, type DialoogBron } from "./TodoDialoog";
+import { titelSuggestie } from "@/lib/titel-suggestie";
 import { useToast } from "./Toast";
 
 const tijdFormat = new Intl.DateTimeFormat("nl-NL", {
@@ -572,6 +573,7 @@ export function Inbox({ taken, genegeerd, updates, vastgelopen }: Props) {
       {kiezen && (
         <TodoDialoog
           modus="nieuw"
+          titel={titelSuggestie(kiezen.bron, berichtTekst(kiezen))}
           bron={dialoogBron(kiezen)}
           onSluit={() => setKiezen(null)}
           onBevestig={(titel, prio) => bevestig(kiezen, titel, prio)}

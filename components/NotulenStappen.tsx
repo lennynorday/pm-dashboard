@@ -92,6 +92,8 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   const standVan = (index: number): Stap => {
     if (index === 5 && meeting.hoort === PRIVE) return "nvt";
     if (index < status.stap) return "klaar";
+    // De actiepunten komen uit de notulen, dus ze kunnen klaar zijn terwijl Superhuman of Gedeeld nog loopt.
+    if (index === 6 && status.actiesUit) return "klaar";
     if (index !== huidig) return "open";
     return status.stand === "warn" ? "vast" : "nu";
   };
@@ -156,26 +158,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </p>
       );
     }
-    if (index === 2) {
-      return (
-        <>
-          <p className={styles.regel}>
-            De opname staat in Plaud, zonder transcript. Klik daar op
-            Auto-generate.
-          </p>
-          {status.opnameId && (
-            <div className={styles.knoppen}>
-              <ExternalLink
-                href={plaudWebUrl(status.opnameId)}
-                className="nd-button nd-button--small"
-              >
-                Open in Plaud web
-              </ExternalLink>
-            </div>
-          )}
-        </>
-      );
-    }
+    if (index === 2) return <Transcript meeting={meeting} status={status} />;
     if (index === 3) {
       return (
         <p className={`nd-meta ${styles.regel}`}>
@@ -270,7 +253,8 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   return (
     <>
       <p className={`nd-meta ${styles.teller}`}>
-        {status.stap} van {STAPPEN.length} stappen klaar
+        {status.stap + (status.actiesUit && status.stap < 7 ? 1 : 0)} van{" "}
+        {STAPPEN.length} stappen klaar
       </p>
       <ol className={styles.stappen}>
         {STAPPEN.map((naam, index) => {
@@ -375,7 +359,6 @@ function Opname({ meeting, status }: ChecklistProps) {
           type="button"
           className={styles.opnameLink}
           aria-expanded={kiezen}
-          disabled={bezig}
           onClick={() => setKiezen(!kiezen)}
         >
           Andere opname kiezen
@@ -439,6 +422,49 @@ function Opname({ meeting, status }: ChecklistProps) {
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Wacht op het transcript. Kijkt bij openen eerst zelf in Plaud: de achtergrondronde
+ * loopt maar elke 5 minuten, dus anders staat hier "zonder transcript" terwijl het er al is.
+ */
+function Transcript({ meeting, status }: ChecklistProps) {
+  const [gecontroleerd, setGecontroleerd] = useState(false);
+
+  useEffect(() => {
+    let actueel = true;
+    verversMeetingAction(meeting.id).finally(() => {
+      if (actueel) setGecontroleerd(true);
+    });
+    return () => {
+      actueel = false;
+    };
+  }, [meeting.id]);
+
+  if (!gecontroleerd) {
+    return (
+      <p className={`nd-meta ${styles.regel}`} role="status">
+        Transcript controleren in Plaud…
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className={styles.regel}>
+        De opname staat in Plaud, zonder transcript. Klik daar op Auto-generate.
+      </p>
+      {status.opnameId && (
+        <div className={styles.knoppen}>
+          <ExternalLink
+            href={plaudWebUrl(status.opnameId)}
+            className="nd-button nd-button--small"
+          >
+            Open in Plaud web
+          </ExternalLink>
+        </div>
+      )}
+    </>
   );
 }
 

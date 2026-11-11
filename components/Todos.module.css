@@ -113,6 +113,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-03);
+  /* Een lang mailadres of lange link duwt de kaart anders buiten de kolom. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   cursor: grab;
 }
 
