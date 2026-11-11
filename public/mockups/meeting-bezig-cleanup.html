@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lopende meeting en clean-up</title>
+    <link rel="stylesheet" href="/toolkit/toolkit.css" />
+    <style>
+      body {
+        background: var(--color-page, #efe9ee);
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 34ch) 380px;
+        gap: var(--space-08);
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: var(--space-08) var(--space-04);
+      }
+      .uitleg h1 {
+        margin: 0 0 var(--space-03);
+        font: var(--type-title);
+        text-transform: uppercase;
+      }
+      .uitleg p {
+        margin: 0 0 var(--space-03);
+      }
+      .uitleg .nd-filters {
+        flex-wrap: wrap;
+        margin-bottom: var(--space-04);
+      }
+      .paneel {
+        padding: var(--space-04);
+        border-radius: 24px;
+        background: var(--color-raised);
+      }
+      .detail {
+        display: grid;
+        gap: var(--space-01);
+      }
+      .terug {
+        justify-self: start;
+      }
+      .titel {
+        margin: var(--space-02) 0 0;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: var(--space-01);
+      }
+      .bezigChip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .puls {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-open);
+      }
+      .teller {
+        margin: var(--space-03) 0 0;
+      }
+      .stappen {
+        display: grid;
+        gap: 2px;
+        margin: var(--space-02) 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .stap {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 24px;
+        align-items: center;
+        gap: 4px var(--space-03);
+        padding: 7px 10px;
+        border-radius: var(--space-02);
+      }
+      .stap[data-stand="nu"] {
+        margin: 4px 0;
+        padding: 10px;
+        background: var(--norday-white);
+        box-shadow: inset 0 0 0 1px var(--color-line-soft);
+      }
+      .naam {
+        font: var(--type-body);
+      }
+      .stap[data-stand="klaar"] .naam,
+      .stap[data-stand="open"] .naam {
+        color: var(--color-text-muted);
+      }
+      .stap[data-stand="nu"] .naam {
+        font: var(--type-item);
+      }
+      .inhoud {
+        display: grid;
+        grid-column: 1 / -1;
+        gap: var(--space-02);
+      }
+      .inhoud p {
+        margin: 0;
+      }
+      .mini {
+        display: grid;
+        justify-self: end;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+      }
+      .mini[data-stand="klaar"] {
+        color: var(--color-ok);
+      }
+      .mini[data-stand="leeg"] {
+        box-shadow: inset 0 0 0 1px var(--color-line-soft);
+      }
+      .mini[data-stand="nu"] {
+        background: var(--color-open);
+        color: var(--norday-white);
+      }
+      .linkje {
+        margin-left: 8px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--norday-dark);
+        font: var(--type-meta);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+      }
+      .sub {
+        grid-column: 1 / -1;
+        margin: 0;
+      }
+      .sub .linkje {
+        margin-left: 4px;
+      }
+      .melding {
+        display: grid;
+        gap: var(--space-02);
+        margin-top: var(--space-03);
+        padding: 10px 12px;
+        border-radius: var(--space-02);
+        background: var(--norday-white);
+        box-shadow: inset 0 0 0 1px var(--color-line-soft);
+      }
+      .melding p {
+        margin: 0;
+      }
+      .knoppen {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-02);
+      }
+      .onder {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: var(--space-04);
+      }
+      .weg {
+        display: grid;
+        gap: var(--space-03);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .weg li {
+        display: grid;
+        gap: var(--space-02);
+        padding: 10px 12px;
+        border-radius: var(--space-02);
+        background: var(--color-raised);
+      }
+      .weg blockquote {
+        margin: 0;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="uitleg">
+        <h1>Lopende meeting en clean-up</h1>
+        <p class="nd-meta">Mockup, nepdata. Klik door de stappen of kies een stand.</p>
+        <div class="nd-filters" role="group" aria-label="Stand">
+          <button type="button" class="nd-filter" aria-pressed="true" data-naar="bezig">1. Loopt nog</button>
+          <button type="button" class="nd-filter" aria-pressed="false" data-naar="zoekt">2. Na "al afgelopen"</button>
+          <button type="button" class="nd-filter" aria-pressed="false" data-naar="klaar">3. Notulen met clean-up</button>
+        </div>
+        <p><strong>1.</strong> De stappen staan er al tijdens de meeting. Ingepland is de actieve stap: "Loopt nog tot 09:45", met de knop <em>Meeting al afgelopen</em>. Er staat een chip "Bezig" bij de meeting.</p>
+        <p><strong>2.</strong> Na de knop gaat Ingepland op klaar en zoekt het dashboard direct de opname in Plaud. "Toch nog bezig" zet het terug.</p>
+        <p><strong>3.</strong> Claude liet passages over personen weg. Onder Notulen staat "2 passages weggelaten" met Bekijken: per passage terugzetten. Daaronder de melding om de opname in Plaud zelf op te ruimen, met een link naar Plaud web en "Gedaan" om hem weg te klikken.</p>
+      </section>
+
+      <aside class="paneel" aria-label="Meeting">
+        <div class="detail">
+          <button type="button" class="nd-button nd-button--small nd-button--quiet terug">‹ Terug</button>
+          <h2 class="nd-title titel">Boijmans Ontvlechting - stand-up (sprint 1)</h2>
+          <p class="nd-meta">Wo 11 nov · 09:30–09:45 · terugkerend</p>
+          <div class="chips">
+            <span class="nd-chip bezigChip" data-alleen="bezig"><span class="puls" aria-hidden="true"></span>Bezig</span>
+            <span class="nd-chip" data-tint="yellow-soft">Intern</span>
+            <span class="nd-chip">Museum Boijmans Van Beuningen</span>
+          </div>
+
+          <p class="nd-meta teller" id="teller"></p>
+          <ol class="stappen" id="stappen"></ol>
+
+          <div class="melding" id="plaud" hidden>
+            <p><strong>Ruim de opname in Plaud op</strong></p>
+            <p class="nd-meta">Het transcript bevat opmerkingen over Marco en Noah. Die staan niet in de notulen, maar wel in Plaud, en dat account is gedeeld. Pas de opname daar aan of verwijder hem.</p>
+            <div class="knoppen">
+              <a class="nd-button nd-button--small" href="#" onclick="return false">Open in Plaud web</a>
+              <button type="button" class="nd-button nd-button--small nd-button--quiet" id="plaudGedaan">Gedaan</button>
+            </div>
+          </div>
+
+          <div class="onder">
+            <button type="button" class="linkje">Geen notulen</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <dialog class="nd-dialog" id="wegDialoog" aria-labelledby="wegKop">
+      <div class="nd-dialog__body">
+        <h2 id="wegKop" class="nd-title">Weggelaten passages</h2>
+        <p class="nd-meta">Claude liet deze stukken uit de notulen. Zet terug wat er wel in moet.</p>
+        <ul class="weg">
+          <li>
+            <span class="nd-meta">Onderwerp 2. CMS-velden</span>
+            <blockquote>Marco pakt dit weer veel te laat op, dat zie je bij elk project.</blockquote>
+            <div class="knoppen"><button type="button" class="nd-button nd-button--small nd-button--quiet" data-terug>Terugzetten</button></div>
+          </li>
+          <li>
+            <span class="nd-meta">Onderwerp 3. Apple-certificaat</span>
+            <blockquote>Noah zat er vorige keer ook al naast, ik vertrouw dat niet helemaal.</blockquote>
+            <div class="knoppen"><button type="button" class="nd-button nd-button--small nd-button--quiet" data-terug>Terugzetten</button></div>
+          </li>
+        </ul>
+        <div class="knoppen">
+          <button type="button" class="nd-button nd-button--small" id="wegSluit">Sluiten</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script>
+      const NAMEN = ["Ingepland", "Opname", "Transcript", "Notulen", "In Superhuman", "Gedeeld", "Actiepunten"];
+      const vink = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>';
+      let stand = "bezig";
+      let weggelaten = 2;
+      let plaudWeg = false;
+
+      function stap(naam, data, inhoud, extra) {
+        const icoon =
+          data === "klaar" ? `<span class="mini" data-stand="klaar">${vink}</span>`
+          : data === "nu" ? '<span class="mini" data-stand="nu">•</span>'
+          : '<span class="mini" data-stand="leeg"></span>';
+        return `<li class="stap" data-stand="${data}"><span class="naam">${naam}${extra ?? ""}</span>${icoon}${inhoud ? `<div class="inhoud">${inhoud}</div>` : ""}</li>`;
+      }
+
+      function teken() {
+        document.querySelectorAll("[data-naar]").forEach((knop) =>
+          knop.setAttribute("aria-pressed", String(knop.dataset.naar === stand)),
+        );
+        document.querySelectorAll("[data-alleen]").forEach((el) => (el.hidden = el.dataset.alleen !== stand));
+        const lijst = [];
+        if (stand === "bezig") {
+          lijst.push(stap("Ingepland", "nu", `
+            <p>Loopt nog tot 09:45. Daarna zoekt het dashboard de opname in Plaud.</p>
+            <div class="knoppen"><button type="button" class="nd-button nd-button--small" id="afgelopen">Meeting al afgelopen</button></div>`));
+          NAMEN.slice(1).forEach((n) => lijst.push(stap(n, "open")));
+          document.getElementById("teller").textContent = "0 van 7 stappen klaar";
+        } else if (stand === "zoekt") {
+          lijst.push(stap("Ingepland", "klaar", "", ' <button type="button" class="linkje" id="nogBezig">Toch nog bezig</button>'));
+          lijst.push(stap("Opname", "nu", `
+            <p class="nd-meta">Het dashboard zoekt de opname in Plaud. Daarna elke 5 minuten opnieuw.</p>
+            <div class="knoppen"><button type="button" class="linkje" style="margin:0">Andere opname kiezen</button><button type="button" class="linkje">Geen opname</button></div>`));
+          NAMEN.slice(2).forEach((n) => lijst.push(stap(n, "open")));
+          document.getElementById("teller").textContent = "1 van 7 stappen klaar";
+        } else {
+          NAMEN.slice(0, 3).forEach((n) => lijst.push(stap(n, "klaar")));
+          const sub = weggelaten
+            ? `<p class="nd-meta sub">${weggelaten} ${weggelaten === 1 ? "passage" : "passages"} weggelaten<button type="button" class="linkje" id="bekijk">Bekijken</button></p>`
+            : "";
+          lijst.push(stap("Notulen", "klaar", sub, ' <button type="button" class="linkje">Openen</button>'));
+          lijst.push(stap("In Superhuman", "nu", '<p class="nd-meta">Het dashboard zet de notulen in Superhuman.</p>'));
+          lijst.push(stap("Gedeeld", "open"));
+          lijst.push(stap("Actiepunten · 5", "klaar", "", ' <button type="button" class="linkje">Openen</button>'));
+          document.getElementById("teller").textContent = "4 van 7 stappen klaar";
+        }
+        document.getElementById("stappen").innerHTML = lijst.join("");
+        document.getElementById("plaud").hidden = stand !== "klaar" || plaudWeg;
+        document.getElementById("afgelopen")?.addEventListener("click", () => naar("zoekt"));
+        document.getElementById("nogBezig")?.addEventListener("click", () => naar("bezig"));
+        document.getElementById("bekijk")?.addEventListener("click", () => document.getElementById("wegDialoog").showModal());
+      }
+
+      function naar(nieuw) {
+        stand = nieuw;
+        teken();
+      }
+
+      document.querySelectorAll("[data-naar]").forEach((knop) => knop.addEventListener("click", () => naar(knop.dataset.naar)));
+      document.getElementById("plaudGedaan").addEventListener("click", () => {
+        plaudWeg = true;
+        teken();
+      });
+      document.getElementById("wegSluit").addEventListener("click", () => document.getElementById("wegDialoog").close());
+      document.querySelectorAll("[data-terug]").forEach((knop) =>
+        knop.addEventListener("click", () => {
+          knop.closest("li").remove();
+          weggelaten -= 1;
+          teken();
+          if (!weggelaten) document.getElementById("wegDialoog").close();
+        }),
+      );
+      teken();
+    </script>
+  </body>
+</html>

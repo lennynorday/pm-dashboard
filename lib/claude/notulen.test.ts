@@ -41,12 +41,26 @@ test("het transcript kan de afbakening niet sluiten", () => {
 test("parseNotulen haalt de notulen uit de envelop, ook met tekst eromheen", () => {
   const notulen =
     "**Aanwezig:** Theo van Wijk (WO2Net), Lennart ter Haar (Norday)  \n**Doel:** kick-off voorbereiden\n\n## 1. Aanpak\n\n- Prototype in code\n- **Actie Lennart:** plan van aanpak bijwerken";
-  assert.deepStrictEqual(parseNotulen(envelop(notulen)), { tekst: notulen });
+  assert.deepStrictEqual(parseNotulen(envelop(notulen)), {
+    tekst: notulen,
+    weggelaten: [],
+  });
   assert.deepStrictEqual(
     parseNotulen(
       envelop(`Hier zijn de notulen:\n\n\`\`\`markdown\n${notulen}\n\`\`\``),
     ),
-    { tekst: notulen },
+    { tekst: notulen, weggelaten: [] },
+  );
+  assert.deepStrictEqual(
+    parseNotulen(
+      envelop(
+        `${notulen}\n\n<weggelaten>\n- [1] Marco is altijd te laat\n</weggelaten>`,
+      ),
+    ),
+    {
+      tekst: notulen,
+      weggelaten: [{ onderwerp: 1, tekst: "Marco is altijd te laat" }],
+    },
   );
 });
 
@@ -59,6 +73,7 @@ test("parseNotulen zet Doel op een eigen regel", () => {
   assert.deepStrictEqual(uit, {
     tekst:
       "**Aanwezig:** Lennart  \n**Doel:** plannen\n\n## 1. Planning\n- Klaar",
+    weggelaten: [],
   });
 });
 

@@ -35,6 +35,7 @@ import {
   verwijderMeetingRegel,
   zetKanaal,
   zetTerug,
+  zetVroegKlaar,
 } from "@/lib/meeting-regels";
 import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
 import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
@@ -51,12 +52,14 @@ import {
   notulenAan,
   notulenPlatforms,
   opnameKeuzes,
+  plaudOpgeruimd,
   slaOnderdeelOver,
   stuurDeelMail,
   tochDelen,
   verwerkNotulen,
   ververs,
   zetOpname,
+  zetWeggelatenTerug,
 } from "@/lib/notulen";
 import { isDeelOnderdeel, isEmail } from "@/lib/notulen-delen";
 import type { OpnameKeuzes } from "@/lib/notulen-stand";
@@ -873,6 +876,27 @@ export async function slaMeetingOverAction(
   );
 }
 
+/**
+ * "Meeting al afgelopen" (klaar) of "Toch nog bezig": de notulen-flow start meteen,
+ * zonder te wachten op de eindtijd in de agenda.
+ */
+export async function meetingAfgelopenAction(
+  meeting: MeetingRef,
+  klaar: boolean,
+): Promise<void> {
+  if (!geldigeMeeting(meeting)) return;
+  const user = await currentUser();
+  if (!user) return;
+  zetVroegKlaar(user.email, meeting.id, meeting.titel, klaar === true);
+  const platforms = klaar && notulenAan() ? await notulenPlatforms() : null;
+  // Meteen voor deze meeting, ook als de achtergrondronde nog met een andere bezig is.
+  const vervolg = platforms
+    ? await ververs(user.email, meeting.id, platforms)
+    : null;
+  if (typeof vervolg === "function") after(vervolg);
+  revalidatePath("/", "layout");
+}
+
 /** Terugzetten in het paneel: de meeting en, als hij daardoor overgeslagen is, zijn serie. */
 export async function zetMeetingTerugAction(
   meeting: MeetingRef,
@@ -940,6 +964,27 @@ export async function kiesOpnameAction(
   if (platforms) after(() => verwerkNotulen(user.email, platforms));
   revalidatePath("/", "layout");
   return null;
+}
+
+/** Terugzetten van een passage die Claude uit de notulen liet; een melding als tekst. */
+export async function zetWeggelatenTerugAction(
+  meetingId: string,
+  index: number,
+): Promise<string | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string" || !Number.isInteger(index))
+    return null;
+  const melding = zetWeggelatenTerug(user.email, meetingId, index);
+  revalidatePath("/meetings");
+  return melding;
+}
+
+/** Gedaan bij de melding om de opname in Plaud op te ruimen. */
+export async function plaudOpgeruimdAction(meetingId: string): Promise<void> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return;
+  plaudOpgeruimd(user.email, meetingId);
+  revalidatePath("/meetings");
 }
 
 /** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */

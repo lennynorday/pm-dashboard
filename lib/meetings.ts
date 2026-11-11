@@ -62,6 +62,8 @@ export type Meeting = {
   /** "prive": niet aan een platform of Team gekoppeld, dus standaard zonder notulen. */
   overgeslagen: "meeting" | "serie" | "prive" | null;
   afgelopen: boolean;
+  /** Met "Meeting al afgelopen" klaar gezet terwijl de agendatijd nog loopt. */
+  vroegKlaar: boolean;
   /** Naast elkaar bij overlap: kolom (vanaf 0) van het aantal kolommen. */
   kolom: number;
   kolommen: number;
@@ -259,6 +261,7 @@ export function bepaalMeetings(
   domein: string,
   nu: number,
   metNotulen: ReadonlySet<string> = new Set(),
+  vroegKlaar: ReadonlySet<string> = new Set(),
 ): Meeting[] {
   const basis = items.flatMap((item) => {
     const begin = lokaal(item.start);
@@ -292,7 +295,8 @@ export function bepaalMeetings(
           overgeslagen,
           terugval && !metNotulen.has(item.id),
         ),
-        afgelopen: Date.parse(item.eind) < nu,
+        afgelopen: Date.parse(item.eind) < nu || vroegKlaar.has(item.id),
+        vroegKlaar: Date.parse(item.eind) >= nu && vroegKlaar.has(item.id),
       },
     ];
   });

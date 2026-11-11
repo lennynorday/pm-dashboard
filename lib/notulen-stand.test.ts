@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { test } from "node:test";
-import { notulenStatus, type NotulenRij } from "./notulen-stand.ts";
+import { nogTeDoen, notulenStatus, type NotulenRij } from "./notulen-stand.ts";
 
 const EIND = "2026-11-09T10:00:00+01:00";
 const eind = Date.parse(EIND);
@@ -9,8 +9,11 @@ const meeting = {
   hoort: "wo2",
   overgeslagen: null,
   afgelopen: true,
+  start: "2026-11-09T09:30:00+01:00",
   einde: EIND,
+  tot: "10:00",
   extern: false,
+  vroegKlaar: false,
 } as const;
 const rij = (stap: number, extra: Partial<NotulenRij> = {}): NotulenRij => ({
   meetingId: "m1",
@@ -38,7 +41,7 @@ const stand = (
 
 test("geen flow voor toekomst en meetings van vóór de start", () => {
   assert.strictEqual(
-    stand(undefined, eind, { ...meeting, afgelopen: false }),
+    stand(undefined, eind - UUR, { ...meeting, afgelopen: false }),
     null,
   );
   assert.strictEqual(
@@ -186,4 +189,16 @@ test("al gedeeld: Gedeeld is afgerond zonder dat het dashboard iets verstuurde",
   );
   assert.strictEqual(status?.elders, true);
   assert.strictEqual(status?.stand, "ok");
+});
+
+test("een lopende meeting staat op Ingepland en telt niet als te doen", () => {
+  const status = notulenStatus(
+    { ...meeting, afgelopen: false },
+    undefined,
+    eind - UUR,
+    eind - 10 * 60 * 1000,
+  );
+  assert.strictEqual(status?.stap, 0);
+  assert.strictEqual(status?.tekst, "Loopt nog tot 10:00");
+  assert.strictEqual(nogTeDoen(status), false);
 });

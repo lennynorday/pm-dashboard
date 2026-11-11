@@ -9,7 +9,11 @@ import { VerbindLink } from "@/components/VerbindLink";
 import { loadDashboard } from "@/lib/dashboard";
 import { leesAgenda } from "@/lib/google/agenda";
 import { NORDAY_DOMEIN } from "@/lib/google/oauth";
-import { leesOvergeslagen, leesRegels } from "@/lib/meeting-regels";
+import {
+  leesOvergeslagen,
+  leesRegels,
+  leesVroegKlaar,
+} from "@/lib/meeting-regels";
 import {
   bepaalMeetings,
   lokaal,
@@ -94,6 +98,7 @@ export default async function MeetingsPage({
               agenda.items.map((item) => item.id),
             ).map((rij) => rij.meetingId),
           ),
+          leesVroegKlaar(user.email),
         )
       : [];
 
