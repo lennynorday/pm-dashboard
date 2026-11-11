@@ -132,7 +132,7 @@ function open(): DatabaseSync {
       kanaal TEXT,
       PRIMARY KEY (email, soort, sleutel)
     );
-    -- Meetings en series zonder notulen.
+    -- Meetings en series zonder notulen (soort meeting of serie), en meetings die eerder klaar waren dan de agenda (soort klaar).
     CREATE TABLE IF NOT EXISTS meetings_overgeslagen (
       email TEXT NOT NULL REFERENCES gebruikers (email),
       soort TEXT NOT NULL,
@@ -180,6 +180,8 @@ function open(): DatabaseSync {
       fout TEXT,
       bezig INTEGER,
       acties_uit INTEGER,
+      weggelaten TEXT,
+      plaud_gedaan INTEGER,
       PRIMARY KEY (email, meeting_id)
     );
     -- Actiepunten uit de notulen (**Actie Naam:** wat), per meeting genummerd in volgorde.
@@ -249,6 +251,14 @@ function open(): DatabaseSync {
   // Tijd van een nieuwe reactie op een to-do die je nog niet hebt gezien; leeg = niets nieuws.
   if (!kolommen.some((kolom) => kolom.name === "reactie")) {
     db.exec("ALTER TABLE taken ADD COLUMN reactie INTEGER");
+  }
+  // Passages die Claude uit de notulen liet (JSON) en of de opname in Plaud is opgeruimd (ms).
+  const notulenKolommen = db.prepare("PRAGMA table_info(notulen)").all();
+  if (!notulenKolommen.some((kolom) => kolom.name === "weggelaten")) {
+    db.exec(`
+      ALTER TABLE notulen ADD COLUMN weggelaten TEXT;
+      ALTER TABLE notulen ADD COLUMN plaud_gedaan INTEGER;
+    `);
   }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db

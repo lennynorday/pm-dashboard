@@ -17,7 +17,8 @@ import { stuurMail } from "./gmail/concept";
 import { type AgendaUitkomst, leesAgenda } from "./google/agenda";
 import { NORDAY_DOMEIN } from "./google/oauth";
 import type { LinkUrls } from "./links";
-import { leesOvergeslagen, leesRegels } from "./meeting-regels";
+import { leesOvergeslagen, leesRegels, leesVroegKlaar } from "./meeting-regels";
+import { parsePassages, type Passage, zetPassageTerug } from "./weggelaten";
 import {
   type Meeting,
   type PlatformNaam,
@@ -141,6 +142,8 @@ function parseRij(rij: Record<string, unknown>): NotulenRij {
     nietGedeeld: rij.niet_gedeeld !== null,
     elders: rij.elders !== null,
     geenOpname: rij.opname_keuze === "geen",
+    weggelaten: parsePassages(rij.weggelaten),
+    plaudGedaan: rij.plaud_gedaan !== null,
   };
 }
 
@@ -301,6 +304,7 @@ export async function meetingsVoorNotulen(
   );
   const regels = leesRegels(email);
   const overgeslagen = leesOvergeslagen(email);
+  const vroegKlaar = leesVroegKlaar(email);
   const meetings: Meeting[] = [];
   for (const [index, agenda] of agendas.entries()) {
     if ("verbinden" in agenda)
@@ -323,6 +327,7 @@ export async function meetingsVoorNotulen(
         NORDAY_DOMEIN,
         nu,
         metNotulen,
+        vroegKlaar,
       ),
     );
   }
@@ -487,7 +492,10 @@ async function verder(
     // Is de rij tijdens de run teruggezet, dan telt dit resultaat niet.
     if ("fout" in uitkomst)
       return zetFout(email, meeting.id, uitkomst.fout, verwacht);
-    zetStap(email, meeting.id, 4, verwacht, { tekst: uitkomst.tekst });
+    zetStap(email, meeting.id, 4, verwacht, {
+      tekst: uitkomst.tekst,
+      weggelaten: JSON.stringify(uitkomst.weggelaten),
+    });
   }
   const klaar = leesRij(email, meeting.id);
   if (Number(klaar?.stap) === 4 && typeof klaar?.tekst === "string") {
@@ -789,7 +797,7 @@ const wanneerFormat = new Intl.DateTimeFormat("nl-NL", {
 async function maakNotulen(
   meeting: Meeting,
   opnameId: string,
-): Promise<{ tekst: string } | { fout: string }> {
+): Promise<{ tekst: string; weggelaten: Passage[] } | { fout: string }> {
   const transcript = await leesTranscript(opnameId);
   if (typeof transcript !== "string") return transcript;
   if (!transcript) return { fout: "Plaud gaf een leeg transcript" };
@@ -1088,16 +1096,61 @@ export async function ververs(
   id: string,
   platforms: NotulenPlatform[],
 ): Promise<(() => Promise<void>) | { fout: string }> {
-  const rij = leesRij(email, id);
-  if (!rij) return { fout: "Deze meeting is niet gevonden" };
   const meetings = await meetingsVoorNotulen(email, platforms, Date.now());
   if ("fout" in meetings) return meetings;
   const meeting = meetings.find((m) => m.id === id);
   if (!meeting) return { fout: "Deze meeting staat niet meer in de agenda" };
+  // Net met "Meeting al afgelopen" klaar gezet: dan is er nog geen rij.
+  if (!leesRij(email, id)) {
+    if (!meeting.afgelopen || meeting.overgeslagen)
+      return { fout: "Deze meeting is niet gevonden" };
+    bewaarMeeting(email, meeting);
+  }
   // Een opgeloste fout hoort bij Verversen: opnieuw kijken is precies opnieuw proberen.
   herstelNotulen(email, id);
   await zoekOpnames(email, [meeting], meetings, Date.now());
   // Nu al, zodat het paneel na Verversen niet nog "zonder transcript" toont.
   await controleerTranscript(email, id);
   return () => verder(email, meeting, platforms);
+}
+
+/**
+ * Zet een weggelaten passage terug in de notulen van het dashboard. Staan ze al in
+ * Superhuman, dan komt er een melding: daar zet Lennart hem zelf bij.
+ */
+export function zetWeggelatenTerug(
+  email: string,
+  id: string,
+  index: number,
+): string | null {
+  const rij = leesRij(email, id);
+  const notulen = tekst(rij?.tekst);
+  const passages = parsePassages(rij?.weggelaten);
+  const passage = passages[index];
+  if (!rij || !notulen || !passage) return "Deze passage is niet gevonden";
+  const { changes } = database()
+    .prepare(
+      "UPDATE notulen SET tekst = ?, weggelaten = ? WHERE email = ? AND meeting_id = ? AND tekst = ?",
+    )
+    .run(
+      zetPassageTerug(notulen, passage),
+      JSON.stringify(passages.filter((_, i) => i !== index)),
+      email,
+      id,
+      notulen,
+    );
+  if (changes === 0)
+    return "De notulen zijn intussen veranderd; probeer het opnieuw";
+  return Number(rij.stap) >= 5
+    ? "Teruggezet in het dashboard. De notulen staan al in Superhuman: zet de passage daar zelf bij."
+    : null;
+}
+
+/** Gedaan bij "Ruim de opname in Plaud op". */
+export function plaudOpgeruimd(email: string, id: string): void {
+  database()
+    .prepare(
+      "UPDATE notulen SET plaud_gedaan = ? WHERE email = ? AND meeting_id = ?",
+    )
+    .run(Date.now(), email, id);
 }

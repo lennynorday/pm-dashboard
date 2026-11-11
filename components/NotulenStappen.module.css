@@ -307,3 +307,36 @@
 .bericht {
   min-height: 140px;
 }
+
+/* "2 passages weggelaten · Bekijken" onder de stap Notulen */
+.sub {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* Ruim de opname in Plaud op */
+.melding {
+  display: grid;
+  gap: var(--space-02);
+  margin-top: var(--space-03);
+  padding: 10px 12px;
+  border-radius: var(--space-02);
+  background: var(--norday-white);
+  box-shadow: inset 0 0 0 1px var(--color-line-soft);
+}
+
+.passages {
+  display: grid;
+  gap: var(--space-03);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.passage {
+  display: grid;
+  gap: var(--space-02);
+  padding: 10px 12px;
+  border-radius: var(--space-02);
+  background: var(--color-raised);
+}

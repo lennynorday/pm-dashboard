@@ -524,6 +524,11 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
         {meeting.serieId && " · terugkerend"}
       </p>
       <div className={styles.chips}>
+        {status?.lopend && (
+          <span className="nd-chip" data-tint="lilac-soft">
+            Bezig
+          </span>
+        )}
         {soort(meeting) === "platform" && (
           <span
             className="nd-chip"
@@ -532,11 +537,7 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
             {meeting.extern ? "Extern" : "Intern"}
           </span>
         )}
-        <HoortMenu
-          meeting={meeting}
-          platforms={platforms}
-          kies={koppel}
-        />
+        <HoortMenu meeting={meeting} platforms={platforms} kies={koppel} />
       </div>
       {fout && (
         <p role="alert" className={styles.uitleg}>
@@ -555,9 +556,7 @@ function Detail({ meeting, status, platforms, terug }: DetailProps) {
       )}
       {meeting.overgeslagen && (
         <>
-          <p className={styles.uitleg}>
-            {UITLEG[meeting.overgeslagen]}
-          </p>
+          <p className={styles.uitleg}>{UITLEG[meeting.overgeslagen]}</p>
           <div className={styles.linkKnoppen}>
             {meeting.overgeslagen === "prive" ? (
               <AanzetKnop
@@ -728,7 +727,8 @@ function HoortMenu({ meeting, platforms, kies }: HoortMenuProps) {
                 aria-pressed={meeting.hoort === doel.slug}
                 // Een titelwoord wordt een roepnaam van een platform; Team en Privé hebben die niet.
                 disabled={
-                  scope === "titel" && (doel.slug === TEAM || doel.slug === PRIVE)
+                  scope === "titel" &&
+                  (doel.slug === TEAM || doel.slug === PRIVE)
                 }
                 onClick={() => {
                   menu.current?.hidePopover();

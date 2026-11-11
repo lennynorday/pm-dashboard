@@ -6,7 +6,7 @@ import { zetFout, zetStap } from "./notulen-stap.ts";
 function metRij(stap: number, opnameId: string | null) {
   const db = new DatabaseSync(":memory:");
   db.exec(`CREATE TABLE notulen (email TEXT, meeting_id TEXT, stap INTEGER, sinds INTEGER,
-    opname_id TEXT, tekst TEXT, pagina_url TEXT, fout TEXT, bezig INTEGER)`);
+    opname_id TEXT, tekst TEXT, pagina_url TEXT, weggelaten TEXT, fout TEXT, bezig INTEGER)`);
   db.prepare(
     "INSERT INTO notulen (email, meeting_id, stap, sinds, opname_id) VALUES ('a', 'm', ?, 0, ?)",
   ).run(stap, opnameId);

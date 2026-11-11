@@ -2,6 +2,7 @@
 import type { Actiepunt } from "./actiepunt.ts";
 import { type Meeting, PRIVE } from "./meetings.ts";
 import type { DeelInfo, Onderdeel } from "./notulen-delen.ts";
+import type { Passage } from "./weggelaten.ts";
 
 export const STAPPEN = [
   "Ingepland",
@@ -37,6 +38,10 @@ export type NotulenRij = {
   elders: boolean;
   /** Handmatig gekozen voor Geen opname: het dashboard koppelt er niet zelf een. */
   geenOpname?: boolean;
+  /** Passages over personen die Claude uit de notulen liet. */
+  weggelaten?: Passage[];
+  /** De opname in Plaud is opgeruimd (Gedaan bij de melding). */
+  plaudGedaan?: boolean;
 };
 
 /** Een Plaud-opname zoals het paneel hem toont. */
@@ -71,6 +76,13 @@ export type NotulenStatus = {
   geenOpname: boolean;
   /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
   delen: DeelInfo | null;
+  weggelaten: Passage[];
+  /** Toon "Ruim de opname in Plaud op": er is iets weggelaten en het is nog niet opgeruimd. */
+  plaudOpruimen: boolean;
+  /** De meeting loopt volgens de agenda nog (stap 0): Ingepland is de actieve stap. */
+  lopend: boolean;
+  /** Met "Meeting al afgelopen" klaar gezet terwijl de agendatijd nog loopt. */
+  vroegKlaar: boolean;
   /** Zijn de actiepunten uit de notulen gehaald? Kan al vóór Superhuman en Gedeeld. */
   actiesUit: boolean;
   /** De actiepunten van deze meeting, als ze uitgelezen zijn; de pagina vult dit in. */
@@ -99,7 +111,14 @@ const MISLUKT = [
 export function notulenStatus(
   meeting: Pick<
     Meeting,
-    "hoort" | "overgeslagen" | "afgelopen" | "einde" | "extern"
+    | "hoort"
+    | "overgeslagen"
+    | "afgelopen"
+    | "einde"
+    | "extern"
+    | "start"
+    | "tot"
+    | "vroegKlaar"
   >,
   rij: NotulenRij | undefined,
   vanaf: number | null,
@@ -119,6 +138,10 @@ export function notulenStatus(
     elders: rij?.elders ?? false,
     geenOpname: rij?.geenOpname ?? false,
     delen: null,
+    lopend: false,
+    weggelaten: rij?.weggelaten ?? [],
+    plaudOpruimen: (rij?.weggelaten?.length ?? 0) > 0 && !rij?.plaudGedaan,
+    vroegKlaar: meeting.vroegKlaar,
     actiesUit: rij?.actiesUit ?? false,
     acties: null,
   };
@@ -131,7 +154,18 @@ export function notulenStatus(
     };
   }
   const eind = Date.parse(meeting.einde);
-  if (!meeting.afgelopen) return null;
+  if (!meeting.afgelopen) {
+    // Loopt hij nu, dan staan de stappen er al, met Ingepland als actieve stap.
+    const lopend = vanaf !== null && Date.parse(meeting.start) <= nu;
+    if (!lopend) return null;
+    return {
+      ...basis,
+      stap: 0,
+      lopend,
+      stand: "open",
+      tekst: `Loopt nog tot ${meeting.tot}`,
+    };
+  }
   if (!rij && (vanaf === null || eind < vanaf)) return null;
 
   const { stap } = basis;
@@ -176,4 +210,7 @@ export function notulenStatus(
 
 /** Nog te doen: een status die niet klaar en niet overgeslagen is. */
 export const nogTeDoen = (status: NotulenStatus | null) =>
-  status !== null && status.stand !== "ok" && status.stand !== "muted";
+  status !== null &&
+  !status.lopend &&
+  status.stand !== "ok" &&
+  status.stand !== "muted";

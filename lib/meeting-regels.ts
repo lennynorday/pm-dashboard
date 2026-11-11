@@ -84,6 +84,39 @@ export function leesOvergeslagen(email: string): Overslaan[] {
     );
 }
 
+/** Meetings die eerder klaar waren dan de agenda zegt ("Meeting al afgelopen"); soort "klaar" in dezelfde tabel. */
+export function leesVroegKlaar(email: string): Set<string> {
+  return new Set(
+    database()
+      .prepare(
+        "SELECT sleutel FROM meetings_overgeslagen WHERE email = ? AND soort = 'klaar'",
+      )
+      .all(email)
+      .map((rij) => String(rij.sleutel)),
+  );
+}
+
+export function zetVroegKlaar(
+  email: string,
+  id: string,
+  titel: string,
+  klaar: boolean,
+): void {
+  if (!klaar) {
+    database()
+      .prepare(
+        "DELETE FROM meetings_overgeslagen WHERE email = ? AND soort = 'klaar' AND sleutel = ?",
+      )
+      .run(email, id);
+    return;
+  }
+  database()
+    .prepare(
+      "INSERT OR IGNORE INTO meetings_overgeslagen (email, soort, sleutel, titel) VALUES (?, 'klaar', ?, ?)",
+    )
+    .run(email, id, titel);
+}
+
 export function slaOver(email: string, overslaan: Overslaan): void {
   database()
     .prepare(

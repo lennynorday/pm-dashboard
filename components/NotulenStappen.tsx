@@ -3,10 +3,13 @@
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import {
   kiesOpnameAction,
+  meetingAfgelopenAction,
   nietDelenAction,
+  plaudOpgeruimdAction,
   opnameKeuzesAction,
   opnieuwNotulenAction,
   verversMeetingAction,
+  zetWeggelatenTerugAction,
 } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
 import { PRIVE } from "@/lib/meetings";
@@ -86,6 +89,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   const [notulenOpen, setNotulenOpen] = useState(false);
   const [actiesOpen, setActiesOpen] = useState(false);
   const [delenOpen, setDelenOpen] = useState(false);
+  const [wegOpen, setWegOpen] = useState(false);
   const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startTransition] = useTransition();
   const huidig = huidigeStap(status, meeting.hoort === PRIVE);
@@ -98,7 +102,41 @@ export function Checklist({ meeting, status }: ChecklistProps) {
     return status.stand === "warn" ? "vast" : "nu";
   };
 
+  const afgelopen = (klaar: boolean) =>
+    startTransition(() =>
+      meetingAfgelopenAction(
+        {
+          id: meeting.id,
+          serieId: meeting.serieId,
+          titel: meeting.titel,
+          start: meeting.start,
+        },
+        klaar,
+      ),
+    );
+
   function inhoud(index: number) {
+    if (status.lopend) {
+      return (
+        <>
+          <p className={styles.regel}>
+            Loopt nog tot {meeting.tot}. Daarna zoekt het dashboard de opname in
+            Plaud.
+          </p>
+          <div className={styles.knoppen}>
+            <button
+              type="button"
+              className="nd-button nd-button--small"
+              aria-busy={bezig}
+              disabled={bezig}
+              onClick={() => afgelopen(true)}
+            >
+              Meeting al afgelopen
+            </button>
+          </div>
+        </>
+      );
+    }
     if (status.fout) {
       // Mislukte het Slack-bericht, dan kan de mail nog wel: Delen blijft erbij staan.
       return (
@@ -191,6 +229,18 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   }
 
   function openen(index: number) {
+    if (index === 0 && status.vroegKlaar && status.stap <= 1) {
+      return (
+        <button
+          type="button"
+          className={styles.openen}
+          disabled={bezig}
+          onClick={() => afgelopen(false)}
+        >
+          Toch nog bezig
+        </button>
+      );
+    }
     if (index === 3 && status.notulen) {
       return (
         <button
@@ -276,7 +326,24 @@ export function Checklist({ meeting, status }: ChecklistProps) {
               {(stap === "nu" || stap === "vast") && (
                 <div className={styles.inhoud}>{inhoud(index)}</div>
               )}
+              {index === 3 &&
+                stap === "klaar" &&
+                status.weggelaten.length > 0 && (
+                  <p className={`nd-meta ${styles.sub}`}>
+                    {status.weggelaten.length}{" "}
+                    {status.weggelaten.length === 1 ? "passage" : "passages"}{" "}
+                    weggelaten
+                    <button
+                      type="button"
+                      className={styles.openen}
+                      onClick={() => setWegOpen(true)}
+                    >
+                      Bekijken
+                    </button>
+                  </p>
+                )}
               {index === 1 &&
+                !status.lopend &&
                 (status.stand !== "muted" || status.geenOpname) && (
                   <Opname meeting={meeting} status={status} />
                 )}
@@ -284,6 +351,43 @@ export function Checklist({ meeting, status }: ChecklistProps) {
           );
         })}
       </ol>
+      {status.plaudOpruimen && status.opnameId && (
+        <div className={styles.melding} role="status">
+          <p className={styles.regel}>
+            <strong>Ruim de opname in Plaud op</strong>
+          </p>
+          <p className={`nd-meta ${styles.regel}`}>
+            Het transcript bevat opmerkingen over personen. Die staan niet in de
+            notulen, maar wel in Plaud, en dat account is gedeeld. Pas de opname
+            daar aan of verwijder hem.
+          </p>
+          <div className={styles.knoppen}>
+            <ExternalLink
+              href={plaudWebUrl(status.opnameId)}
+              className="nd-button nd-button--small"
+            >
+              Open in Plaud web
+            </ExternalLink>
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              disabled={bezig}
+              onClick={() =>
+                startTransition(() => plaudOpgeruimdAction(meeting.id))
+              }
+            >
+              Gedaan
+            </button>
+          </div>
+        </div>
+      )}
+      {wegOpen && (
+        <WeggelatenDialoog
+          meeting={meeting}
+          status={status}
+          onSluit={() => setWegOpen(false)}
+        />
+      )}
       {notulenOpen && status.notulen && (
         <NotulenDialoog
           meeting={meeting}
@@ -626,6 +730,84 @@ function NotulenDialoog({ meeting, tekst, paginaUrl, onSluit }: DialoogProps) {
               Open in Superhuman
             </ExternalLink>
           )}
+          <button
+            type="button"
+            className="nd-button"
+            onClick={() => dialoog.current?.close()}
+          >
+            Sluiten
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
+/** De passages die Claude uit de notulen liet, met per passage Terugzetten. */
+function WeggelatenDialoog({
+  meeting,
+  status,
+  onSluit,
+}: ChecklistProps & { onSluit: () => void }) {
+  const dialoog = useRef<HTMLDialogElement>(null);
+  const [melding, setMelding] = useState<string | null>(null);
+  const [bezig, startTransition] = useTransition();
+  useEffect(() => {
+    dialoog.current?.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialoog}
+      className={`nd-dialog ${styles.dialoog}`}
+      aria-labelledby="weggelaten-kop"
+      onClose={onSluit}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dialoog.current?.close();
+      }}
+    >
+      <div className="nd-dialog__body">
+        <h2 className="nd-title" id="weggelaten-kop">
+          Weggelaten passages
+        </h2>
+        <p className={`nd-meta ${styles.regel}`}>
+          Claude liet deze stukken uit de notulen. Zet terug wat er wel in moet.
+        </p>
+        {status.weggelaten.length === 0 && (
+          <p className={styles.regel}>Alles is teruggezet.</p>
+        )}
+        <ul className={styles.passages}>
+          {status.weggelaten.map((passage, index) => (
+            <li key={`${index}-${passage.tekst}`} className={styles.passage}>
+              {passage.onderwerp !== null && (
+                <span className="nd-meta">Onderwerp {passage.onderwerp}</span>
+              )}
+              <blockquote className={styles.regel}>{passage.tekst}</blockquote>
+              <div className={styles.knoppen}>
+                <button
+                  type="button"
+                  className="nd-button nd-button--small nd-button--quiet"
+                  disabled={bezig}
+                  onClick={() =>
+                    startTransition(async () =>
+                      setMelding(
+                        await zetWeggelatenTerugAction(meeting.id, index),
+                      ),
+                    )
+                  }
+                >
+                  Terugzetten
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {melding && (
+          <p className={`nd-meta ${styles.regel}`} role="status">
+            {melding}
+          </p>
+        )}
+        <div className="nd-dialog__foot">
           <button
             type="button"
             className="nd-button"
