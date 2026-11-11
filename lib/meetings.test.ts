@@ -83,6 +83,22 @@ test("titelWoord: wat vóór de streep staat, anders de hele titel", () => {
   assert.strictEqual(titelWoord("Accountoverleg Zoie"), "Accountoverleg Zoie");
 });
 
+test("koppeling: Norday zelf telt niet als platform in de titel", () => {
+  const metNorday = [
+    ...PLATFORMS,
+    { slug: "norday", naam: "Norday", roepnamen: [] },
+  ];
+  assert.strictEqual(
+    koppeling(item({ titel: "Norday x Kunsthal | Planning" }), metNorday, [])
+      .doel,
+    "kunsthal",
+  );
+  assert.strictEqual(
+    koppeling(item({ titel: "Norday kwartaaloverleg" }), metNorday, []).doel,
+    "prive",
+  );
+});
+
 test("koppeling: herkenning", () => {
   assert.strictEqual(
     koppeling(item({ titel: "Kunsthal | Planning" }), PLATFORMS, []).doel,
