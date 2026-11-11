@@ -447,6 +447,24 @@ async function zoekOpnames(
   }
 }
 
+/** Kijkt in Plaud of het transcript er is en zet de meeting dan op stap 3; false als het er (nog) niet is. */
+async function controleerTranscript(
+  email: string,
+  id: string,
+): Promise<boolean> {
+  const rij = leesRij(email, id);
+  const opnameId = tekst(rij?.opname_id);
+  if (Number(rij?.stap) !== 2 || !opnameId) return false;
+  const details = await opnameDetails(opnameId);
+  if ("fout" in details) {
+    console.error("Plaud: transcript controleren mislukt:", details.fout);
+    return false;
+  }
+  if (!details.transcript) return false;
+  zetStap(email, id, 3, { stap: 2, opnameId });
+  return true;
+}
+
 /** Doet de volgende stappen zolang dat lukt; een fout blijft staan tot Opnieuw proberen. */
 async function verder(
   email: string,
@@ -455,17 +473,8 @@ async function verder(
 ): Promise<void> {
   const rij = leesRij(email, meeting.id);
   if (!rij || rij.fout !== null) return;
-  const opnameId = tekst(rij.opname_id);
-  if (rij.stap === 2 && opnameId) {
-    const details = await opnameDetails(opnameId);
-    if ("fout" in details)
-      return console.error(
-        "Plaud: transcript controleren mislukt:",
-        details.fout,
-      );
-    if (!details.transcript) return;
-    zetStap(email, meeting.id, 3, { stap: 2, opnameId });
-  }
+  if (rij.stap === 2 && !(await controleerTranscript(email, meeting.id)))
+    return;
   if (Number(leesRij(email, meeting.id)?.stap) === 3) {
     if (!claim(email, meeting.id)) return;
     // Na de claim opnieuw lezen: intussen kan er een andere opname gekozen zijn.
@@ -1060,7 +1069,7 @@ export async function opnameKeuzes(
     if ("fout" in info) return info;
     opties.push(info);
   }
-  opties.sort((a, b) => a.start - b.start);
+  opties.sort((a, b) => b.start - a.start);
   const opnameId = tekst(rij.opname_id);
   if (!opnameId) return { gekoppeld: null, opties };
   const gekoppeld =
@@ -1088,5 +1097,7 @@ export async function ververs(
   // Een opgeloste fout hoort bij Verversen: opnieuw kijken is precies opnieuw proberen.
   herstelNotulen(email, id);
   await zoekOpnames(email, [meeting], meetings, Date.now());
+  // Nu al, zodat het paneel na Verversen niet nog "zonder transcript" toont.
+  await controleerTranscript(email, id);
   return () => verder(email, meeting, platforms);
 }

@@ -5,7 +5,7 @@ import type { DeelInfo, Onderdeel } from "./notulen-delen.ts";
 
 export const STAPPEN = [
   "Ingepland",
-  "Opgenomen",
+  "Opname",
   "Transcript",
   "Notulen",
   "In Superhuman",
@@ -71,6 +71,8 @@ export type NotulenStatus = {
   geenOpname: boolean;
   /** Ontvangers of kanaal voor de stap Gedeeld; de pagina vult dit in. */
   delen: DeelInfo | null;
+  /** Zijn de actiepunten uit de notulen gehaald? Kan al vóór Superhuman en Gedeeld. */
+  actiesUit: boolean;
   /** De actiepunten van deze meeting, als ze uitgelezen zijn; de pagina vult dit in. */
   acties: Actiepunt[] | null;
 };
@@ -117,6 +119,7 @@ export function notulenStatus(
     elders: rij?.elders ?? false,
     geenOpname: rij?.geenOpname ?? false,
     delen: null,
+    actiesUit: rij?.actiesUit ?? false,
     acties: null,
   };
   if (meeting.overgeslagen) {

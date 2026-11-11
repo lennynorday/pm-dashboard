@@ -163,7 +163,7 @@ export default async function MeetingsPage({
     statussen[meeting.id] = {
       ...status,
       delen: delen ? deelInfo(meeting) : null,
-      acties: status.stap === 7 ? (acties.get(meeting.id) ?? []) : null,
+      acties: status.actiesUit ? (acties.get(meeting.id) ?? []) : null,
     };
   }
   const teDoen: Meeting[] = notulenMeetings
