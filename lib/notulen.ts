@@ -69,6 +69,7 @@ import {
   leesPagina,
   leesPaginas,
   maakPagina,
+  paginaIdUitLink,
 } from "./superhuman-docs";
 
 /** Een platform met zijn links (Superhuman, Slack) en contactpersonen (de PO). */
@@ -834,6 +835,22 @@ async function bestemming(
   }
   const platform = platforms.find((p) => p.slug === meeting.hoort);
   const soort = meeting.extern ? "gedeelde" : "interne";
+  const notulenLink =
+    platform?.links[meeting.extern ? "notulen-gedeeld" : "notulen-intern"];
+  if (platform && notulenLink) {
+    const docId = docIdUitLink(notulenLink);
+    const kort = paginaIdUitLink(notulenLink);
+    const paginas = docId ? await leesPaginas(docId) : [];
+    const pagina = paginas.find(
+      (p) => kort && p.link && paginaIdUitLink(p.link) === kort,
+    );
+    if (!docId || !pagina) {
+      throw new Error(
+        `De notulenlink van ${platform.naam} wijst naar een pagina die niet bestaat.`,
+      );
+    }
+    return { docId, ouder: pagina.id, paginas };
+  }
   const link =
     platform?.links[
       meeting.extern ? "superhuman-gedeeld" : "superhuman-intern"

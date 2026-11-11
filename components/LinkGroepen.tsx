@@ -28,6 +28,8 @@ const ICOON: Record<LinkType, typeof LinkIcon> = {
   "slack-klant": SlackIcon,
   "superhuman-intern": DocIcon,
   "superhuman-gedeeld": DocIcon,
+  "notulen-intern": DocIcon,
+  "notulen-gedeeld": DocIcon,
   "jira-board": BoardIcon,
   drive: FolderIcon,
   figma: FigmaIcon,
