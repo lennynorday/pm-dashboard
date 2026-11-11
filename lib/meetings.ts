@@ -184,6 +184,7 @@ export function koppeling(
     );
   if (handmatig) return { doel: handmatig.doel, terugval: false };
   // De langste naam eerst, zodat "Kunsthal Kids" wint van "Kunsthal".
+  // "Norday" zijn wij zelf: in "Norday x CMU" hoort de meeting bij de klant, niet bij Norday.
   const kandidaat = platforms
     .flatMap((platform) =>
       [platform.naam, ...platform.roepnamen].map((naam) => ({
@@ -191,6 +192,7 @@ export function koppeling(
         naam,
       })),
     )
+    .filter(({ naam }) => naam.toLowerCase() !== "norday")
     .sort((a, b) => b.naam.length - a.naam.length)
     .find(({ naam }) => alsWoordIn(item.titel, naam));
   if (kandidaat) return { doel: kandidaat.slug, terugval: false };
