@@ -41,6 +41,8 @@ const KOLOM = {
 const LINK_KOLOM: Record<LinkType, string> = {
   "superhuman-intern": "c-LPOGYQlSE5",
   "superhuman-gedeeld": "c-fA7PCRVDWX",
+  "notulen-intern": "c-hU7uF85QlP",
+  "notulen-gedeeld": "c-mjbktN0sXT",
   "slack-intern": "c--H27m0-DDg",
   "slack-klant": "c-0NIx0b5Jlb",
   "jira-board": "c-bWOcV9NxJl",

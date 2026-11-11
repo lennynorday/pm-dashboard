@@ -25,6 +25,18 @@ export function docIdUitLink(url: string): string | null {
   return segment.slice(begin + 2) || null;
 }
 
+/**
+ * Het korte pagina-id uit een paginalink: ".../_d1iIzGZvA6Q/_suOaNM9q" en
+ * ".../Notulen-intern_suOaNM9q" geven allebei "OaNM9q". De API zet zo'n link niet om.
+ */
+export function paginaIdUitLink(url: string): string | null {
+  const pad = URL.canParse(url) ? new URL(url).pathname : "";
+  const segment = pad.split("/").filter(Boolean).at(-1) ?? "";
+  const begin = segment.lastIndexOf("_su");
+  if (begin < 0) return null;
+  return segment.slice(begin + 3) || null;
+}
+
 const record = (waarde: unknown): Record<string, unknown> =>
   typeof waarde === "object" && waarde !== null && !Array.isArray(waarde)
     ? (waarde as Record<string, unknown>)
@@ -75,8 +87,10 @@ export async function leesPaginas(docId: string): Promise<Pagina[]> {
   const paginas: Pagina[] = [];
   let pageToken: string | null = null;
   do {
-    const params = new URLSearchParams({ limit: "500" });
-    if (pageToken) params.set("pageToken", pageToken);
+    // Superhuman weigert limit naast pageToken (400).
+    const params = new URLSearchParams(
+      pageToken ? { pageToken } : { limit: "500" },
+    );
     const data = await json(
       await request(`/docs/${encodeURIComponent(docId)}/pages?${params}`),
     );
