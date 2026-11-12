@@ -159,8 +159,8 @@ Meeting: ${titel}
 Link naar de notulen: ${link}
 
 Format:
-- Eén zin dat de notulen van de meeting klaarstaan, met de link erin.
-- Dan een witregel en "Acties:" met per actie een regel "• Naam: wat". Neem de acties over uit de regels met "**Actie Naam:**" in de notulen, kort en zonder ze te veranderen. Zijn er geen acties, laat dit deel dan weg.
+- Lennart schrijft dit bericht zelf, in de ik-vorm. Begin met één zin met wie hij net sprak (voornamen uit Aanwezig) en waarover, bijvoorbeeld "Ik had net een overleg met Lizzy over de JDCRP-offerte" of "Jos en ik hebben Myra net gesproken over de supportweek". Zeg daarna dat de notulen in Superhuman staan, met de link erin.
+- Dan een witregel en "Acties:" met per actie een regel "• Naam: wat". Neem de acties over uit de regels met "**Actie Naam:**" in de notulen, kort en zonder ze te veranderen. Sorteer de acties op naam. Zijn er geen acties, laat dit deel dan weg.
 
 Regels:
 - Slack-opmaak: geen Markdown-koppen, geen dubbele sterretjes.
