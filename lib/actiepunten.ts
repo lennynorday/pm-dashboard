@@ -129,7 +129,7 @@ export async function ververLeden(email: string): Promise<void> {
 }
 
 /** De Slack-leden uit de database, hooguit elk uur ververst, in plaats van bij elke herinnering users.list. */
-async function bewaardeLeden(email: string): Promise<SlackPersoon[]> {
+export async function bewaardeLeden(email: string): Promise<SlackPersoon[]> {
   await ververLeden(email);
   return leesLeden(email).personen ?? [];
 }

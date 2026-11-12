@@ -1,5 +1,5 @@
 import { leesActies } from "./actiepunt";
-import { haalActiesUit } from "./actiepunten";
+import { bewaardeLeden, haalActiesUit } from "./actiepunten";
 import { NOTULEN_TIMEOUT_MS, draaiClaude } from "./claude/run";
 import {
   NOTULEN_SYSTEEMPROMPT,
@@ -489,7 +489,12 @@ async function verder(
       opnameId: tekst(leesRij(email, meeting.id)?.opname_id),
     };
     if (!verwacht.opnameId) return laatLos(email, meeting.id);
-    const uitkomst = await maakNotulen(meeting, verwacht.opnameId);
+    const uitkomst = await maakNotulen(
+      email,
+      meeting,
+      verwacht.opnameId,
+      platforms,
+    );
     // Is de rij tijdens de run teruggezet, dan telt dit resultaat niet.
     if ("fout" in uitkomst)
       return zetFout(email, meeting.id, uitkomst.fout, verwacht);
@@ -795,13 +800,30 @@ const wanneerFormat = new Intl.DateTimeFormat("nl-NL", {
   timeZone: "Europe/Amsterdam",
 });
 
+/** Juist gespelde namen voor de notulen: alle platforms en de contactpersonen van dit platform. */
+function spellingNamen(hoort: string, platforms: NotulenPlatform[]): string[] {
+  const namen = platforms.map((p) =>
+    p.roepnamen.length ? `${p.naam} (ook: ${p.roepnamen.join(", ")})` : p.naam,
+  );
+  const eigen = platforms.find((p) => p.slug === hoort);
+  const personen = (eigen?.contactpersonen ?? []).map((c) =>
+    c.rol
+      ? `${c.naam} (${c.rol}, ${eigen?.naam})`
+      : `${c.naam} (${eigen?.naam})`,
+  );
+  return [...namen, ...personen];
+}
+
 async function maakNotulen(
+  email: string,
   meeting: Meeting,
   opnameId: string,
+  platforms: NotulenPlatform[],
 ): Promise<{ tekst: string; weggelaten: Passage[] } | { fout: string }> {
   const transcript = await leesTranscript(opnameId);
   if (typeof transcript !== "string") return transcript;
   if (!transcript) return { fout: "Plaud gaf een leeg transcript" };
+  const collegas = (await bewaardeLeden(email)).map((p) => p.naam);
   const run = await draaiClaude(
     bouwNotulenPrompt({
       titel: meeting.titel,
@@ -810,6 +832,9 @@ async function maakNotulen(
       standup:
         alsWoordIn(meeting.titel, "standup") ||
         alsWoordIn(meeting.titel, "stand-up"),
+      extern: meeting.extern,
+      namen: spellingNamen(meeting.hoort, platforms),
+      collegas,
       transcript,
     }),
     NOTULEN_SYSTEEMPROMPT,

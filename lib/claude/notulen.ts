@@ -12,6 +12,12 @@ type Context = {
   /** E-mailadressen van de genodigden, zonder Lennart zelf. */
   genodigden: string[];
   standup: boolean;
+  /** Er zijn mensen van buiten Norday bij. */
+  extern: boolean;
+  /** Juist gespelde namen: platforms en contactpersonen, zoals "Kunsthal (ook: KH)". */
+  namen: string[];
+  /** Volledige namen van de Norday-collega's, uit Slack. */
+  collegas: string[];
   transcript: string;
 };
 
@@ -21,16 +27,28 @@ export function bouwNotulenPrompt({
   wanneer,
   genodigden,
   standup,
+  extern,
+  namen,
+  collegas,
   transcript,
 }: Context): string {
   const kop = standup
     ? "**Aanwezig:** namen, met de organisatie tussen haakjes"
     : "**Aanwezig:** namen, met de organisatie tussen haakjes  \n**Doel:** in één of twee zinnen waar de meeting voor was";
+  const spelling = namen.length
+    ? `\nJuist gespelde namen (het transcript verhaspelt ze soms): ${ontsnap(namen.join("; "))}`
+    : "";
+  const team = collegas.length
+    ? `\nNorday-collega's (juiste spelling): ${ontsnap(collegas.join("; "))}`
+    : "";
+  const buiten = extern
+    ? "\n- Er zitten mensen van buiten Norday bij. Laat daarom ook oordelen over hoe geschikt collega's zijn en privézaken (zoals gezin, gezondheid of verhuizing) weg, en zet ze in het blok met weggelaten passages. Dat iemand niet beschikbaar is, mag blijven staan."
+    : "";
   return `Maak notulen van deze meeting op basis van het transcript.
 
 Meeting: ${titel}
 Wanneer: ${wanneer}
-Genodigden: Lennart ter Haar (Norday)${genodigden.length ? `, ${genodigden.join(", ")}` : ""}
+Genodigden: Lennart ter Haar (Norday)${genodigden.length ? `, ${genodigden.join(", ")}` : ""}${spelling}${team}
 
 Format (precies zo, in Markdown):
 ${kop}
@@ -44,14 +62,21 @@ ${kop}
 
 Regels:
 - Begin direct met "**Aanwezig:**", zonder titel, inleiding of uitleg eromheen.${standup ? "\n- Dit is een standup: geen Doel." : ""}
+- Bij Aanwezig staan alleen mensen die in het transcript echt meepraten of worden aangesproken, niet zomaar alle genodigden. Zet "(?)" achter een naam als je niet zeker weet of diegene er was.
 - Nummer de onderwerpen: "## 1. Onderwerp", "## 2. Onderwerp", enzovoort. Kies korte, inhoudelijke koppen.
+- Elk onderwerp komt één keer voor. Komt een onderwerp later in het gesprek terug, voeg het dan samen met het eerdere onderwerp en herhaal geen bullets of acties.
 - Zet zoveel bullets als nodig is; er is geen maximum. Kort en feitelijk, in het Nederlands.
 - Zet acties in de tekst bij het onderwerp als "**Actie Naam:** wat". Gebruik de voornaam van wie de actie heeft.
-- Hebben meer mensen dezelfde actie, schrijf dan per persoon een eigen regel "**Actie Naam:** wat", niet "**Actie Theo en Kim:**".
+- Een actie is alleen iets wat na de meeting nog moet gebeuren. Is iets tijdens de meeting al gedaan, als gedaan gemeld of al in gang gezet (de vraag staat al uit), dan is het geen actie. Zet het dan als gewone bullet, bijvoorbeeld "Lennart heeft de tickets tijdens de call verhuisd".
+- Eén actie per persoon per taak: knip één taak niet op in meerdere acties.
+- Hebben meer mensen dezelfde actie, schrijf dan per persoon een eigen regel "**Actie Naam:** wat", niet "**Actie Theo en Kim:**" of "**Actie Theo / Kim:**".
+- Geen acties over de notulen zelf, zoals actiepunten verzamelen of verspreiden: dat gebeurt automatisch.
+- Let goed op wie een actie op zich neemt: dat is wie zegt "dat ga ik doen", niet wie de vraag stelt.
 - Lennart heet in het transcript soms Lenny of Lennie. Sprekers heten in het transcript "Speaker 1", "Speaker 2": leid de namen af uit de inhoud en de genodigden. Weet je een naam niet, schrijf dan wat iemand doet of vertegenwoordigt.
+- Gebruik de juist gespelde namen en de namen van de Norday-collega's als een woord in het transcript daar duidelijk een verhaspeling van is. Schrijf collega's in de tekst en bij acties met hun voornaam zoals die in de lijst staat.
 - Gebruik geen gedachtestreepjes (geen "–" of "—" als zinsdeel-scheiding).
 - Verzin niets dat niet in het transcript staat. Laat small talk weg.
-- Collega's en klanten lezen deze notulen. Laat persoonlijke opmerkingen, kritiek, klachten en roddel over personen weg. Inhoudelijke afspraken en acties blijven staan, ook als ze over iemand gaan.
+- Collega's en klanten lezen deze notulen. Laat persoonlijke opmerkingen, kritiek, klachten en roddel over personen weg. Inhoudelijke afspraken en acties blijven staan, ook als ze over iemand gaan.${buiten}
 - Heb je zulke passages weggelaten, zet dan na de notulen dit blok, met per passage één regel zoals hij in de notulen had gestaan en het nummer van het onderwerp:
 <weggelaten>
 - [2] de passage

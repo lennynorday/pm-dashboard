@@ -13,6 +13,9 @@ const BASIS = {
   wanneer: "woensdag 4 november 2026, 10:00–10:45",
   genodigden: ["theo@wo2net.nl"],
   standup: false,
+  extern: false,
+  namen: [],
+  collegas: [],
   transcript: "[00:04 - 01:03] Speaker 1: Hé Lennie, goedemorgen.",
 };
 
@@ -27,6 +30,24 @@ test("de prompt vraagt Aanwezig en Doel, behalve bij een standup", () => {
   const standup = bouwNotulenPrompt({ ...BASIS, standup: true });
   assert.doesNotMatch(standup, /\*\*Doel:\*\*/);
   assert.match(standup, /geen Doel/);
+});
+
+test("de prompt geeft de juiste namen mee en is strenger met externen erbij", () => {
+  const intern = bouwNotulenPrompt(BASIS);
+  assert.doesNotMatch(intern, /Juist gespelde namen \(/);
+  assert.doesNotMatch(intern, /van buiten Norday/);
+  const extern = bouwNotulenPrompt({
+    ...BASIS,
+    extern: true,
+    namen: ["Kunsthal (ook: KH)", "Theo van Wijk (PO, WO2Net)"],
+    collegas: ["Jacco Ouwerkerk", "Vronie Groenewegen"],
+  });
+  assert.match(
+    extern,
+    /Norday-collega's \(juiste spelling\): Jacco Ouwerkerk; Vronie/,
+  );
+  assert.match(extern, /Kunsthal \(ook: KH\); Theo van Wijk/);
+  assert.match(extern, /van buiten Norday/);
 });
 
 test("het transcript kan de afbakening niet sluiten", () => {
