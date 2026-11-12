@@ -73,7 +73,14 @@ test("geen opname of transcript na 4 uur is vastgelopen", () => {
 
 test("dashboard bezig, klaar, fout en overgeslagen", () => {
   assert.strictEqual(stand(rij(3)), "open Claude maakt notulen");
-  assert.strictEqual(stand(rij(4)), "open Naar Superhuman");
+  assert.strictEqual(
+    stand(rij(4)),
+    "jij Wacht op jou: notulen lezen en akkoord geven",
+  );
+  assert.strictEqual(
+    stand(rij(4, { akkoord: true })),
+    "open Naar Superhuman",
+  );
   assert.strictEqual(
     stand(rij(5, { actiesUit: true }), eind, { ...meeting, hoort: "prive" }),
     "ok Klaar",

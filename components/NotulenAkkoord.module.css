@@ -1,0 +1,84 @@
+/* Notulen lezen, aanpassen en akkoord geven: een rich-text-veld in een overlay. */
+.dialoog {
+  width: min(760px, calc(100vw - 2 * var(--space-04)));
+}
+
+.regel {
+  margin: 0;
+}
+
+.kop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-03);
+}
+
+.balk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-01);
+}
+
+.knop {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--space-02);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.knop:hover {
+  background: var(--color-lilac-soft);
+}
+
+.knop[aria-pressed="true"] {
+  background: var(--norday-lilac);
+}
+
+.veld {
+  min-height: 50vh;
+  max-height: 60vh;
+  overflow: auto;
+  padding: var(--space-04);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  box-shadow: var(--ring);
+  font: var(--type-body);
+  line-height: 1.55;
+}
+
+.veld:focus-visible {
+  outline: 2px solid var(--norday-dark);
+  outline-offset: 2px;
+}
+
+/* De inhoud komt uit het rich-text-veld en heeft geen eigen classes. */
+.veld h3 {
+  margin: var(--space-05) 0 6px;
+  font: var(--type-item);
+}
+
+.veld h3:first-child {
+  margin-top: 0;
+}
+
+.veld p,
+.veld ul,
+.veld ol {
+  margin: 0 0 var(--space-03);
+}
+
+.veld ul,
+.veld ol {
+  padding-left: 20px;
+}
+
+.voet {
+  flex-wrap: wrap;
+}

@@ -145,6 +145,8 @@ function parseRij(rij: Record<string, unknown>): NotulenRij {
     geenOpname: rij.opname_keuze === "geen",
     weggelaten: parsePassages(rij.weggelaten),
     plaudGedaan: rij.plaud_gedaan !== null,
+    akkoord: rij.akkoord !== null,
+    bewerkt: typeof rij.bewerkt === "number" ? rij.bewerkt : null,
   };
 }
 
@@ -499,7 +501,12 @@ async function verder(
     });
   }
   const klaar = leesRij(email, meeting.id);
-  if (Number(klaar?.stap) === 4 && typeof klaar?.tekst === "string") {
+  // Pas na jouw akkoord gaan de notulen naar Superhuman.
+  if (
+    Number(klaar?.stap) === 4 &&
+    typeof klaar?.tekst === "string" &&
+    klaar.akkoord !== null
+  ) {
     if (!claim(email, meeting.id)) return;
     try {
       await naarSuperhuman(email, meeting, klaar, platforms);
@@ -999,7 +1006,7 @@ export function zetOpname(
        tekst = NULL, pagina_doc = NULL, pagina_id = NULL, pagina_url = NULL,
        slack_tekst = NULL, niet_gedeeld = NULL, elders = NULL,
        mail_stand = NULL, mail_url = NULL, slack_stand = NULL, slack_url = NULL,
-       fout = NULL, bezig = NULL, acties_uit = NULL
+       fout = NULL, bezig = NULL, acties_uit = NULL, akkoord = NULL, bewerkt = NULL
      WHERE email = ? AND meeting_id = ?`,
   );
   // De open acties komen opnieuw uit de nieuwe notulen; afgehandelde (to-do, gedaan, genegeerd, herinnerd) blijven staan.
@@ -1161,6 +1168,26 @@ export function zetWeggelatenTerug(
   return Number(rij.stap) >= 5
     ? "Teruggezet in het dashboard. De notulen staan al in Superhuman: zet de passage daar zelf bij."
     : null;
+}
+
+/**
+ * Bewaart de aangepaste notulen als concept, of geeft er akkoord op. Kan alleen
+ * zolang ze nog niet naar Superhuman zijn. Geeft het tijdstip, of null als het niet kon.
+ */
+export function bewaarNotulen(
+  email: string,
+  id: string,
+  notulen: string,
+  akkoord: boolean,
+): number | null {
+  const nu = Date.now();
+  const { changes } = database()
+    .prepare(
+      `UPDATE notulen SET tekst = ?, bewerkt = ?, akkoord = ?
+       WHERE email = ? AND meeting_id = ? AND stap = 4 AND akkoord IS NULL`,
+    )
+    .run(notulen, nu, akkoord ? nu : null, email, id);
+  return changes > 0 ? nu : null;
 }
 
 /** Gedaan bij "Ruim de opname in Plaud op". */

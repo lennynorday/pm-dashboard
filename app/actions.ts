@@ -28,6 +28,7 @@ import { clearJiraCache } from "@/lib/jira/overview";
 import { BRONNEN, deleteKoppeling, isVerbonden } from "@/lib/koppelingen";
 import { clearBudgetCache } from "@/lib/orbit/budget";
 import { clearProjectCache } from "@/lib/orbit/projects";
+import { DEMO } from "@/lib/demo";
 import { currentUser, SESSIE_COOKIE, stopSessie } from "@/lib/session";
 import {
   bewaarRegel,
@@ -41,6 +42,7 @@ import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
 import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
 import {
   actueleDeelteksten,
+  bewaarNotulen,
   type DeelTeksten,
   deelInSlack,
   eldersGedeeld,
@@ -985,6 +987,31 @@ export async function plaudOpgeruimdAction(meetingId: string): Promise<void> {
   if (!user || typeof meetingId !== "string") return;
   plaudOpgeruimd(user.email, meetingId);
   revalidatePath("/meetings");
+}
+
+/**
+ * Bewaart de aangepaste notulen als concept, of met `akkoord` definitief; dan
+ * gaan ze meteen door naar Superhuman. Geeft het tijdstip, of null als het niet kon.
+ */
+export async function bewaarNotulenAction(
+  meetingId: string,
+  notulen: string,
+  akkoord: boolean,
+): Promise<number | null> {
+  const user = await currentUser();
+  if (!user || typeof meetingId !== "string") return null;
+  if (typeof notulen !== "string" || !notulen.trim() || notulen.length > 200_000)
+    return null;
+  const bewaard = bewaarNotulen(user.email, meetingId, notulen, akkoord === true);
+  if (bewaard === null || akkoord !== true) return bewaard;
+  // In de demo gaat er niets naar Superhuman.
+  const platforms = notulenAan() && !DEMO ? await notulenPlatforms() : null;
+  if (platforms) {
+    const vervolg = await ververs(user.email, meetingId, platforms);
+    if (typeof vervolg === "function") after(vervolg);
+  }
+  revalidatePath("/", "layout");
+  return bewaard;
 }
 
 /** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */

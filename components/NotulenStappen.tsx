@@ -20,9 +20,11 @@ import {
   plaudWebUrl,
   type Stand,
   STAPPEN,
+  stappenKlaar,
 } from "@/lib/notulen-stand";
 import { ActiepuntenDialoog } from "./Actiepunten";
 import { ExternalLink } from "./ExternalLink";
+import { NotulenAkkoord } from "./NotulenAkkoord";
 import { Delen, DelenDialoog } from "./NotulenDelen";
 import {
   AlertIcon,
@@ -84,20 +86,22 @@ type Stap = "klaar" | "nu" | "vast" | "open" | "nvt";
 
 type ChecklistProps = { meeting: Meeting; status: NotulenStatus };
 
-/** De zeven stappen van een meeting; de huidige stap uitgelicht met uitleg en knop. */
+/** De acht stappen van een meeting; de huidige stap uitgelicht met uitleg en knop. */
 export function Checklist({ meeting, status }: ChecklistProps) {
   const [notulenOpen, setNotulenOpen] = useState(false);
   const [actiesOpen, setActiesOpen] = useState(false);
   const [delenOpen, setDelenOpen] = useState(false);
   const [wegOpen, setWegOpen] = useState(false);
+  const [akkoordOpen, setAkkoordOpen] = useState(false);
   const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startTransition] = useTransition();
+  const klaar = stappenKlaar(status);
   const huidig = huidigeStap(status, meeting.hoort === PRIVE);
   const standVan = (index: number): Stap => {
-    if (index === 5 && meeting.hoort === PRIVE) return "nvt";
-    if (index < status.stap) return "klaar";
+    if (index === 6 && meeting.hoort === PRIVE) return "nvt";
+    if (index < klaar) return "klaar";
     // De actiepunten komen uit de notulen, dus ze kunnen klaar zijn terwijl Superhuman of Gedeeld nog loopt.
-    if (index === 6 && status.actiesUit) return "klaar";
+    if (index === 7 && status.actiesUit) return "klaar";
     if (index !== huidig) return "open";
     return status.stand === "warn" ? "vast" : "nu";
   };
@@ -164,7 +168,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
               {melding}
             </p>
           )}
-          {index === 5 && (
+          {index === 6 && (
             <Delen
               meeting={meeting}
               status={status}
@@ -205,7 +209,27 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </p>
       );
     }
-    if (index === 5) {
+    if (index === 4) {
+      return (
+        <>
+          <p className={`nd-meta ${styles.regel}`}>
+            {status.bewerkt
+              ? `Concept opgeslagen om ${tijdFormat.format(status.bewerkt)}, nog geen akkoord.`
+              : "Lees de notulen, pas aan wat nodig is en geef akkoord. Pas daarna gaan ze naar Superhuman."}
+          </p>
+          <div className={styles.knoppen}>
+            <button
+              type="button"
+              className="nd-button nd-button--small"
+              onClick={() => setAkkoordOpen(true)}
+            >
+              {status.bewerkt ? "Verder aanpassen" : "Lezen en akkoord geven"}
+            </button>
+          </div>
+        </>
+      );
+    }
+    if (index === 6) {
       return (
         <Delen
           meeting={meeting}
@@ -214,7 +238,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         />
       );
     }
-    if (index === 6) {
+    if (index === 7) {
       return (
         <p className={`nd-meta ${styles.regel}`}>
           Het dashboard haalt de actiepunten uit de notulen.
@@ -252,14 +276,14 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </button>
       );
     }
-    if (index === 4 && status.paginaUrl) {
+    if (index === 5 && status.paginaUrl) {
       return (
         <ExternalLink href={status.paginaUrl} className={styles.openen}>
           Openen<span className="nd-visually-hidden"> in Superhuman</span>
         </ExternalLink>
       );
     }
-    if (index === 6 && status.acties?.length) {
+    if (index === 7 && status.acties?.length) {
       return (
         <button
           type="button"
@@ -270,7 +294,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         </button>
       );
     }
-    if (index === 5 && (status.nietGedeeld || status.elders)) {
+    if (index === 6 && (status.nietGedeeld || status.elders)) {
       return (
         <button
           type="button"
@@ -286,7 +310,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
     }
     const verstuurd =
       status.mail.stand === "verstuurd" || status.slack.stand === "verstuurd";
-    if (index === 5 && status.delen && verstuurd) {
+    if (index === 6 && status.delen && verstuurd) {
       return (
         <button
           type="button"
@@ -303,7 +327,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
   return (
     <>
       <p className={`nd-meta ${styles.teller}`}>
-        {status.stap + (status.actiesUit && status.stap < 7 ? 1 : 0)} van{" "}
+        {klaar + (status.actiesUit && klaar < STAPPEN.length ? 1 : 0)} van{" "}
         {STAPPEN.length} stappen klaar
       </p>
       <ol className={styles.stappen}>
@@ -312,8 +336,8 @@ export function Checklist({ meeting, status }: ChecklistProps) {
           return (
             <li key={naam} className={styles.stap} data-stand={stap}>
               <span className={styles.naam} data-stand={stap}>
-                {index === 5 ? delenNaam(status) : naam}
-                {index === 6 && status.acties && ` · ${status.acties.length}`}
+                {index === 6 ? delenNaam(status) : naam}
+                {index === 7 && status.acties && ` · ${status.acties.length}`}
                 {stap === "nvt" && " · niet nodig"}
                 {stap === "klaar" && openen(index)}
                 <span className="nd-visually-hidden">
@@ -391,6 +415,14 @@ export function Checklist({ meeting, status }: ChecklistProps) {
             </button>
           </div>
         </div>
+      )}
+      {akkoordOpen && status.notulen && (
+        <NotulenAkkoord
+          meeting={meeting}
+          notulen={status.notulen}
+          bewerkt={status.bewerkt}
+          onSluit={() => setAkkoordOpen(false)}
+        />
       )}
       {wegOpen && (
         <WeggelatenDialoog
@@ -601,8 +633,9 @@ function delenNaam(status: NotulenStatus): string {
 /** De stap die nu uitgelicht is; -1 als de meeting klaar of overgeslagen is. Privé slaat Gedeeld over. */
 function huidigeStap(status: NotulenStatus, prive: boolean): number {
   if (status.stand === "ok") return -1;
-  if (status.stap <= 4 || (status.stap === 5 && !prive)) return status.stap;
-  return status.stand === "muted" ? -1 : 6;
+  const klaar = stappenKlaar(status);
+  if (klaar <= 5 || (klaar === 6 && !prive)) return klaar;
+  return status.stand === "muted" ? -1 : 7;
 }
 
 function StapIcoon({ stap, status }: { stap: Stap; status: NotulenStatus }) {

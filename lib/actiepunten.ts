@@ -28,14 +28,14 @@ import { voegActieToe } from "./todos";
 const tekst = (waarde: unknown) => (typeof waarde === "string" ? waarde : null);
 
 /**
- * Haalt de acties uit notulen die nog niet uitgelezen zijn. Elke notulen maar
+ * Haalt de acties uit notulen met akkoord die nog niet uitgelezen zijn. Elke notulen maar
  * één keer (acties_uit), en een actie maar één keer (zelfde eigenaar en wat per meeting).
  */
 export function haalActiesUit(email: string): void {
   const db = database();
   const rijen = db
     .prepare(
-      "SELECT meeting_id, tekst FROM notulen WHERE email = ? AND tekst IS NOT NULL AND acties_uit IS NULL",
+      "SELECT meeting_id, tekst FROM notulen WHERE email = ? AND tekst IS NOT NULL AND akkoord IS NOT NULL AND acties_uit IS NULL",
     )
     .all(email);
   const voegToe = db.prepare(

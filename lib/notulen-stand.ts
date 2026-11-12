@@ -9,6 +9,7 @@ export const STAPPEN = [
   "Opname",
   "Transcript",
   "Notulen",
+  "Akkoord",
   "In Superhuman",
   "Gedeeld",
   "Actiepunten",
@@ -42,6 +43,10 @@ export type NotulenRij = {
   weggelaten?: Passage[];
   /** De opname in Plaud is opgeruimd (Gedaan bij de melding). */
   plaudGedaan?: boolean;
+  /** Akkoord gegeven op de notulen; pas daarna gaan ze naar Superhuman. */
+  akkoord?: boolean;
+  /** Wanneer de notulen in het dashboard voor het laatst zijn aangepast (ms). */
+  bewerkt?: number | null;
 };
 
 /** Een Plaud-opname zoals het paneel hem toont. */
@@ -79,6 +84,9 @@ export type NotulenStatus = {
   weggelaten: Passage[];
   /** Toon "Ruim de opname in Plaud op": er is iets weggelaten en het is nog niet opgeruimd. */
   plaudOpruimen: boolean;
+  akkoord: boolean;
+  /** Laatst aangepast in het dashboard (ms), voor "Concept opgeslagen om". */
+  bewerkt: number | null;
   /** De meeting loopt volgens de agenda nog (stap 0): Ingepland is de actieve stap. */
   lopend: boolean;
   /** Met "Meeting al afgelopen" klaar gezet terwijl de agendatijd nog loopt. */
@@ -144,6 +152,8 @@ export function notulenStatus(
     vroegKlaar: meeting.vroegKlaar,
     actiesUit: rij?.actiesUit ?? false,
     acties: null,
+    akkoord: rij?.akkoord ?? false,
+    bewerkt: rij?.bewerkt ?? null,
   };
   if (meeting.overgeslagen) {
     return {
@@ -190,6 +200,12 @@ export function notulenStatus(
   }
   if (stap === 3)
     return { ...basis, stand: "open", tekst: "Claude maakt notulen" };
+  if (stap === 4 && !basis.akkoord)
+    return {
+      ...basis,
+      stand: "jij",
+      tekst: "Wacht op jou: notulen lezen en akkoord geven",
+    };
   if (stap === 4) return { ...basis, stand: "open", tekst: "Naar Superhuman" };
   // Na Gedeeld, of na Superhuman bij Privé: klaar zodra de actiepunten eruit zijn.
   if (stap >= 6 || meeting.hoort === PRIVE) {
@@ -207,6 +223,13 @@ export function notulenStatus(
     };
   return { ...basis, stand: "jij", tekst: "Wacht op jou: delen" };
 }
+
+/**
+ * Het aantal afgeronde stappen in STAPPEN. De database telt Akkoord niet als
+ * eigen stap (`stap` 4 = notulen klaar), dus na akkoord komt er één bij.
+ */
+export const stappenKlaar = (status: NotulenStatus) =>
+  status.stap + (status.akkoord ? 1 : 0);
 
 /** Nog te doen: een status die niet klaar en niet overgeslagen is. */
 export const nogTeDoen = (status: NotulenStatus | null) =>
