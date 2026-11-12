@@ -260,6 +260,15 @@ function open(): DatabaseSync {
       ALTER TABLE notulen ADD COLUMN plaud_gedaan INTEGER;
     `);
   }
+  // Akkoord op de notulen (ms) en wanneer ze voor het laatst zijn aangepast (ms).
+  // Notulen die al in Superhuman staan, hebben het akkoord in feite al gehad.
+  if (!notulenKolommen.some((kolom) => kolom.name === "akkoord")) {
+    db.exec(`
+      ALTER TABLE notulen ADD COLUMN akkoord INTEGER;
+      ALTER TABLE notulen ADD COLUMN bewerkt INTEGER;
+      UPDATE notulen SET akkoord = COALESCE(sinds, 0) WHERE stap >= 5;
+    `);
+  }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db
     .prepare("PRAGMA table_info(slack_gebruikers)")
