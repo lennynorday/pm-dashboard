@@ -378,6 +378,17 @@ export function Checklist({ meeting, status }: ChecklistProps) {
             >
               Gedaan
             </button>
+            {/* Negeer verbergt de melding net als Gedaan; aparte opslag is niet nodig. */}
+            <button
+              type="button"
+              className="nd-button nd-button--small nd-button--quiet"
+              disabled={bezig}
+              onClick={() =>
+                startTransition(() => plaudOpgeruimdAction(meeting.id))
+              }
+            >
+              Negeer
+            </button>
           </div>
         </div>
       )}
@@ -459,6 +470,14 @@ function Opname({ meeting, status }: ChecklistProps) {
         <p className={`nd-meta ${styles.regel}`}>{keuzes.fout}</p>
       )}
       <div className={styles.links}>
+        {status.opnameId && (
+          <ExternalLink
+            href={plaudWebUrl(status.opnameId)}
+            className={styles.opnameLink}
+          >
+            Openen
+          </ExternalLink>
+        )}
         <button
           type="button"
           className={styles.opnameLink}
