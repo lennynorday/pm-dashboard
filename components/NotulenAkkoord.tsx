@@ -60,6 +60,8 @@ export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
   const dialoog = useRef<HTMLDialogElement>(null);
   const veld = useRef<HTMLDivElement>(null);
   const wacht = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Waar de muisklik begon: een selectie die buiten het venster eindigt levert ook een click op het dialoog-element.
+  const klikStart = useRef<EventTarget | null>(null);
   const [opgeslagen, setOpgeslagen] = useState(bewerkt);
   const [mislukt, setMislukt] = useState(false);
   const [actief, setActief] = useState<ReadonlySet<string>>(new Set());
@@ -149,8 +151,14 @@ export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
         if (wacht.current) void bewaar(false);
         onSluit();
       }}
+      onMouseDown={(event) => {
+        klikStart.current = event.target;
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) dialoog.current?.close();
+        const opBuitenKant =
+          event.target === event.currentTarget &&
+          klikStart.current === event.currentTarget;
+        if (opBuitenKant) dialoog.current?.close();
       }}
     >
       <div className="nd-dialog__body">
