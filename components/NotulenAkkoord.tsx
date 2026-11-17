@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { bewaarNotulenAction } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
@@ -57,9 +58,12 @@ const actieveOpmaak = () =>
 /** De notulen lezen en aanpassen; elke wijziging is meteen een concept, Akkoord zet ze door. */
 export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
   const id = useId();
+  const router = useRouter();
   const dialoog = useRef<HTMLDialogElement>(null);
   const veld = useRef<HTMLDivElement>(null);
   const wacht = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Waar de muisklik begon: een selectie die buiten het venster eindigt levert ook een click op het dialoog-element.
+  const klikStart = useRef<EventTarget | null>(null);
   const [opgeslagen, setOpgeslagen] = useState(bewerkt);
   const [mislukt, setMislukt] = useState(false);
   const [actief, setActief] = useState<ReadonlySet<string>>(new Set());
@@ -145,12 +149,20 @@ export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
       className={`nd-dialog ${styles.dialoog}`}
       aria-labelledby={`${id}-kop`}
       onClose={() => {
-        // Sluiten bewaart wat nog niet bewaard was.
-        if (wacht.current) void bewaar(false);
+        // Sluiten bewaart wat nog niet bewaard was en haalt het concept op, anders toont heropenen de oude tekst.
+        const aangepast = wacht.current !== null || opgeslagen !== bewerkt;
+        const klaar = wacht.current ? bewaar(false) : Promise.resolve();
+        if (aangepast) void klaar.then(() => router.refresh());
         onSluit();
       }}
+      onMouseDown={(event) => {
+        klikStart.current = event.target;
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) dialoog.current?.close();
+        const opBuitenKant =
+          event.target === event.currentTarget &&
+          klikStart.current === event.currentTarget;
+        if (opBuitenKant) dialoog.current?.close();
       }}
     >
       <div className="nd-dialog__body">
