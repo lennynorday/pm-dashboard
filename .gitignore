@@ -23,3 +23,6 @@ npm-debug.log*
 # Impeccable: tijdelijke review-opnames
 .impeccable/review/
 .impeccable/questions/
+
+# Nordifier-skill: gebouwde zip bevat de betaalde lettertypes
+skills/nordifier.zip

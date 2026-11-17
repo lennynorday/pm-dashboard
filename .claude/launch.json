@@ -18,6 +18,15 @@
         "demo"
       ],
       "port": 3000
+    },
+    {
+      "name": "pm-dashboard-staging",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/lennartterhaar/Code/pm-dashboard-meetings && npm run dev"
+      ],
+      "port": 3000
     }
   ]
 }

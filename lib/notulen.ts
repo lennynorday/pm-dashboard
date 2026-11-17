@@ -10,7 +10,7 @@ import {
   parseSlackBericht,
 } from "./claude/notulen";
 import type { Contactpersoon, PlatformGegevens } from "./accountgegevens";
-import { loadDashboard } from "./dashboard";
+import { dashboardVoor, loadDashboard } from "./dashboard";
 import { database } from "./db";
 import { DEMO } from "./demo";
 import { stuurMail } from "./gmail/concept";
@@ -382,6 +382,22 @@ export async function verwerkNotulen(
     console.error("Notulen verwerken mislukt:", fout);
   } finally {
     lopend.delete(email);
+  }
+}
+
+/**
+ * De achtergrondtimer: elke gebruiker die ooit notulen heeft gehad, één ronde.
+ * Platforms komen uit het dashboard van die gebruiker; zonder Orbit wordt die overgeslagen.
+ */
+export async function verwerkAlleNotulen(): Promise<void> {
+  const emails = database()
+    .prepare("SELECT email FROM notulen_start")
+    .all()
+    .map((rij) => String(rij.email));
+  for (const email of emails) {
+    const dashboard = await dashboardVoor(email);
+    if (dashboard.status !== "ok") continue;
+    await verwerkNotulen(email, dashboard.platforms.map(alsNotulenPlatform));
   }
 }
 

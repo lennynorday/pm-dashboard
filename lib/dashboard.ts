@@ -279,15 +279,20 @@ export function buildPlatforms(
 export const loadDashboard = cache(async (): Promise<Dashboard> => {
   const user = await currentUser();
   if (!user) return { status: "niet-verbonden" };
+  return dashboardVoor(user.email);
+});
+
+/** Het dashboard van één gebruiker op e-mail; zonder verzoek, dus ook voor de achtergrondtimer. */
+export async function dashboardVoor(email: string): Promise<Dashboard> {
   const [mine, culture] = await Promise.all([
-    fetchProjects(user.email, { mine: true }),
-    fetchProjects(user.email, { folderId: CULTURE_FOLDER_ID }),
+    fetchProjects(email, { mine: true }),
+    fetchProjects(email, { folderId: CULTURE_FOLDER_ID }),
   ]);
-  const hidden = readHiddenProjects(user.email);
+  const hidden = readHiddenProjects(email);
   if (mine.status !== "ok") return mine;
   if (culture.status !== "ok") return culture;
   const klantIds = fetchKlantIds(
-    user.email,
+    email,
     [...mine.projects, ...culture.projects].map((orbit) => orbit.client),
   );
   const { gegevens, fout } = await readAccountGegevens();
@@ -304,4 +309,4 @@ export const loadDashboard = cache(async (): Promise<Dashboard> => {
       mine.fetchedAt < culture.fetchedAt ? mine.fetchedAt : culture.fetchedAt,
     gegevensFout: fout,
   };
-});
+}
