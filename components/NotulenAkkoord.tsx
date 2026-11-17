@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { bewaarNotulenAction } from "@/app/actions";
 import type { Meeting } from "@/lib/meetings";
@@ -57,6 +58,7 @@ const actieveOpmaak = () =>
 /** De notulen lezen en aanpassen; elke wijziging is meteen een concept, Akkoord zet ze door. */
 export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
   const id = useId();
+  const router = useRouter();
   const dialoog = useRef<HTMLDialogElement>(null);
   const veld = useRef<HTMLDivElement>(null);
   const wacht = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,8 +149,10 @@ export function NotulenAkkoord({ meeting, notulen, bewerkt, onSluit }: Props) {
       className={`nd-dialog ${styles.dialoog}`}
       aria-labelledby={`${id}-kop`}
       onClose={() => {
-        // Sluiten bewaart wat nog niet bewaard was.
-        if (wacht.current) void bewaar(false);
+        // Sluiten bewaart wat nog niet bewaard was en haalt het concept op, anders toont heropenen de oude tekst.
+        const aangepast = wacht.current !== null || opgeslagen !== bewerkt;
+        const klaar = wacht.current ? bewaar(false) : Promise.resolve();
+        if (aangepast) void klaar.then(() => router.refresh());
         onSluit();
       }}
       onMouseDown={(event) => {
