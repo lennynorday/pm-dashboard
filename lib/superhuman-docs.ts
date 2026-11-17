@@ -77,6 +77,11 @@ async function request(pad: string, init?: RequestInit): Promise<Response> {
 
 async function json(response: Response): Promise<Record<string, unknown>> {
   if (!response.ok) {
+    // De body zegt waarom; die gaat alleen naar de log, niet naar de melding.
+    const body = await response.text().catch(() => "");
+    console.error(
+      `Superhuman fout ${response.status} ${response.url}: ${body.slice(0, 500)}`,
+    );
     throw new Error(`Superhuman gaf een fout (${response.status}).`);
   }
   return record(await response.json());
