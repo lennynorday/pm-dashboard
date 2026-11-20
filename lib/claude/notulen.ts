@@ -1,3 +1,4 @@
+import { leesSprekers, type Spreker } from "../sprekers.ts";
 import { leesWeggelaten, type Passage } from "../weggelaten.ts";
 import { ontsnap } from "./prompt.ts";
 
@@ -55,7 +56,7 @@ ${kop}
 
 ## 1. Onderwerp
 - bullets met wat er besproken en besloten is
-- **Actie Naam:** wat diegene gaat doen
+- **Actie [[Speaker 1]]:** wat diegene gaat doen
 
 ## 2. Volgend onderwerp
 - …
@@ -72,7 +73,11 @@ Regels:
 - Hebben meer mensen dezelfde actie, schrijf dan per persoon een eigen regel "**Actie Naam:** wat", niet "**Actie Theo en Kim:**" of "**Actie Theo / Kim:**".
 - Geen acties over de notulen zelf, zoals actiepunten verzamelen of verspreiden: dat gebeurt automatisch.
 - Let goed op wie een actie op zich neemt: dat is wie zegt "dat ga ik doen", niet wie de vraag stelt.
-- Lennart heet in het transcript soms Lenny of Lennie. Sprekers heten in het transcript "Speaker 1", "Speaker 2": leid de namen af uit de inhoud en de genodigden. Weet je een naam niet, schrijf dan wat iemand doet of vertegenwoordigt.
+- Sprekers heten in het transcript "Speaker 1", "Speaker 2" (soms al met een naam). Schrijf iemand die in het transcript spreekt nergens met een naam, maar overal als het label uit het transcript tussen dubbele vierkante haken, ook bij Aanwezig en bij acties: "[[Speaker 1]] stelt voor…", "**Actie [[Speaker 2]]:** wat". Het dashboard vult de namen in. Iemand die niet spreekt maar wel genoemd wordt, schrijf je gewoon met de voornaam.
+- Zet na de notulen dit blok, met per spreker de volledige naam die je uit de inhoud en de genodigden afleidt, en een korte zin die die spreker letterlijk zegt (zodat te herkennen is wie het is). Lennart heet in het transcript soms Lenny of Lennie. Weet je een naam niet, schrijf dan wat iemand doet of vertegenwoordigt.
+<sprekers>
+- Speaker 1 = Volledige naam | letterlijke zin
+</sprekers>
 - Gebruik de juist gespelde namen en de namen van de Norday-collega's als een woord in het transcript daar duidelijk een verhaspeling van is. Schrijf collega's in de tekst en bij acties met hun voornaam zoals die in de lijst staat.
 - Gebruik geen gedachtestreepjes (geen "–" of "—" als zinsdeel-scheiding).
 - Verzin niets dat niet in het transcript staat. Laat small talk weg.
@@ -115,15 +120,18 @@ function claudeAntwoord(
 /** Parset de uitvoer van `claude -p --output-format json` naar de notulentekst en de weggelaten passages. */
 export function parseNotulen(
   stdout: string,
-): { tekst: string; weggelaten: Passage[] } | { fout: string } {
+):
+  | { tekst: string; weggelaten: Passage[]; sprekers: Spreker[] }
+  | { fout: string } {
   const uit = claudeAntwoord(stdout);
   if ("fout" in uit) return uit;
   const blok = /<weggelaten>([\s\S]*?)<\/weggelaten>/.exec(uit.antwoord);
   const weggelaten = blok ? leesWeggelaten(blok[1]) : [];
-  const antwoord = uit.antwoord.replace(
-    /<weggelaten>[\s\S]*?<\/weggelaten>/,
-    "",
-  );
+  const sprekerBlok = /<sprekers>([\s\S]*?)<\/sprekers>/.exec(uit.antwoord);
+  const sprekers = sprekerBlok ? leesSprekers(sprekerBlok[1]) : [];
+  const antwoord = uit.antwoord
+    .replace(/<weggelaten>[\s\S]*?<\/weggelaten>/, "")
+    .replace(/<sprekers>[\s\S]*?<\/sprekers>/, "");
   // Een codeblok eromheen of een zin ervoor mag; de notulen beginnen bij Aanwezig.
   const begin = antwoord.indexOf("**Aanwezig:**");
   if (begin < 0) return { fout: "Claude gaf geen notulen in het vaste format" };
@@ -136,7 +144,7 @@ export function parseNotulen(
   if (!/^## 1\. /m.test(tekst)) {
     return { fout: "Claude gaf geen genummerde onderwerpen terug" };
   }
-  return { tekst, weggelaten };
+  return { tekst, weggelaten, sprekers };
 }
 
 /** Vervangt de standaard systeemprompt bij het Slack-bericht over de notulen. */

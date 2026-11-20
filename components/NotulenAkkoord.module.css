@@ -79,6 +79,101 @@
   padding-left: 20px;
 }
 
+/* Sprekersveld: wie welke spreker uit het transcript is. */
+.sprekers {
+  display: grid;
+  gap: var(--space-02);
+  margin: 0;
+  padding: var(--space-04);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  box-shadow: var(--ring);
+}
+
+.legenda {
+  float: left;
+  margin: 0;
+  padding: 0;
+}
+
+.spreker {
+  display: grid;
+  grid-template-columns: 90px 220px 1fr;
+  gap: var(--space-03);
+  align-items: center;
+}
+
+.keuze {
+  min-height: 36px;
+}
+
+.citaat {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Naam-knoppen in het veld (mdNaarHtml); data-soort zet vulKnoppen. */
+.veld [data-spreker] {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.veld [data-spreker]:hover {
+  text-decoration-style: solid;
+}
+
+.veld [data-spreker]:focus-visible {
+  outline: 2px solid var(--norday-dark);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.veld [data-soort="los"],
+.veld [data-soort="vrij"] {
+  margin: 0 2px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+
+.veld [data-soort="los"] {
+  background: var(--color-lilac-soft);
+}
+
+.veld [data-soort="vrij"] {
+  background: var(--color-pink-soft);
+}
+
+/* Menu bij een naam; de plek zet het component. */
+.menu {
+  position: fixed;
+  inset: auto;
+  width: 280px;
+}
+
+.menuKop {
+  margin: var(--space-01) var(--space-02) var(--space-02);
+}
+
+.menuVeld {
+  min-height: 36px;
+  margin-bottom: var(--space-02);
+}
+
+.menuLijst {
+  max-height: 220px;
+  overflow: auto;
+}
+
+@media (max-width: 640px) {
+  .spreker {
+    grid-template-columns: 1fr;
+    gap: var(--space-01);
+  }
+}
+
 .voet {
   flex-wrap: wrap;
 }

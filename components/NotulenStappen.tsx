@@ -24,6 +24,7 @@ import {
 } from "@/lib/notulen-stand";
 import { ActiepuntenDialoog } from "./Actiepunten";
 import { ExternalLink } from "./ExternalLink";
+import { vulNamenIn } from "@/lib/sprekers";
 import { NotulenAkkoord } from "./NotulenAkkoord";
 import { Delen, DelenDialoog } from "./NotulenDelen";
 import {
@@ -420,6 +421,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
         <NotulenAkkoord
           meeting={meeting}
           notulen={status.notulen}
+          sprekers={status.sprekers}
           bewerkt={status.bewerkt}
           onSluit={() => setAkkoordOpen(false)}
         />
@@ -434,7 +436,7 @@ export function Checklist({ meeting, status }: ChecklistProps) {
       {notulenOpen && status.notulen && (
         <NotulenDialoog
           meeting={meeting}
-          tekst={status.notulen}
+          tekst={vulNamenIn(status.notulen, status.sprekers)}
           paginaUrl={status.paginaUrl}
           onSluit={() => setNotulenOpen(false)}
         />
@@ -834,7 +836,9 @@ function WeggelatenDialoog({
               {passage.onderwerp !== null && (
                 <span className="nd-meta">Onderwerp {passage.onderwerp}</span>
               )}
-              <blockquote className={styles.regel}>{passage.tekst}</blockquote>
+              <blockquote className={styles.regel}>
+                {vulNamenIn(passage.tekst, status.sprekers)}
+              </blockquote>
               <div className={styles.knoppen}>
                 <button
                   type="button"

@@ -2,6 +2,7 @@
 import type { Actiepunt } from "./actiepunt.ts";
 import { type Meeting, PRIVE } from "./meetings.ts";
 import type { DeelInfo, Onderdeel } from "./notulen-delen.ts";
+import type { Spreker } from "./sprekers.ts";
 import type { Passage } from "./weggelaten.ts";
 
 export const STAPPEN = [
@@ -20,6 +21,8 @@ export type Stand = "ok" | "jij" | "open" | "warn" | "muted";
 
 /** Wat er per meeting in de database staat. `stap` is het aantal afgeronde stappen. */
 export type NotulenRij = {
+  /** Wie welke spreker is; de notulen verwijzen ernaar tot het akkoord. */
+  sprekers?: Spreker[];
   meetingId: string;
   stap: number;
   opnameId: string | null;
@@ -87,6 +90,7 @@ export type NotulenStatus = {
   akkoord: boolean;
   /** Laatst aangepast in het dashboard (ms), voor "Concept opgeslagen om". */
   bewerkt: number | null;
+  sprekers: Spreker[];
   /** De meeting loopt volgens de agenda nog (stap 0): Ingepland is de actieve stap. */
   lopend: boolean;
   /** Met "Meeting al afgelopen" klaar gezet terwijl de agendatijd nog loopt. */
@@ -154,6 +158,7 @@ export function notulenStatus(
     acties: null,
     akkoord: rij?.akkoord ?? false,
     bewerkt: rij?.bewerkt ?? null,
+    sprekers: rij?.sprekers ?? [],
   };
   if (meeting.overgeslagen) {
     return {
