@@ -4,6 +4,8 @@
  * alinea's, koppen, opsommingen, genummerde lijsten, vet en cursief.
  */
 
+import { VERWIJZING, verwijzing } from "./sprekers.ts";
+
 const ontsnap = (tekst: string) =>
   tekst
     .replace(/&/g, "&amp;")
@@ -11,9 +13,17 @@ const ontsnap = (tekst: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+/**
+ * Een spreker-verwijzing als naam-knop; de naam zelf vult het veld in.
+ * Het label staat er al in, zodat de tekst nooit leeg is.
+ */
+const naamKnop = (_: string, label: string, naam?: string) =>
+  `<span data-spreker="${label.trim()}"${naam ? ` data-naam="${naam.trim()}"` : ""} contenteditable="false" role="button" tabindex="0">${label.trim()}</span>`;
+
 /** Vet (**x**) en cursief (*x* of _x_) binnen een regel, als veilige HTML. */
 function inline(regel: string): string {
   return ontsnap(regel)
+    .replace(VERWIJZING, naamKnop)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/(^|[^*\w])\*(?!\s)(.+?)\*(?!\w)/g, "$1<em>$2</em>")
     .replace(/(^|[^\w])_(?!\s)(.+?)_(?!\w)/g, "$1<em>$2</em>");
@@ -71,6 +81,8 @@ export type Knoop = {
   nodeName: string;
   textContent: string | null;
   childNodes: ArrayLike<Knoop>;
+  /** Alleen elementen hebben attributen. */
+  getAttribute?: (naam: string) => string | null;
 };
 
 const TEKST = 3;
@@ -85,6 +97,8 @@ function markeer(binnen: string, teken: string): string {
 function inlineMd(knoop: Knoop): string {
   if (knoop.nodeType === TEKST)
     return (knoop.textContent ?? "").replace(/\s+/g, " ");
+  const spreker = knoop.getAttribute?.("data-spreker");
+  if (spreker) return verwijzing(spreker, knoop.getAttribute?.("data-naam"));
   const binnen = Array.from(knoop.childNodes).map(inlineMd).join("");
   switch (knoop.nodeName) {
     case "BR":

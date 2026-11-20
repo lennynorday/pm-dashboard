@@ -269,6 +269,10 @@ function open(): DatabaseSync {
       UPDATE notulen SET akkoord = COALESCE(sinds, 0) WHERE stap >= 5;
     `);
   }
+  // Wie welke spreker uit het transcript is (JSON [{ label, naam, citaat }]); de notulen verwijzen ernaar tot het akkoord.
+  if (!notulenKolommen.some((kolom) => kolom.name === "sprekers")) {
+    db.exec("ALTER TABLE notulen ADD COLUMN sprekers TEXT");
+  }
   // Of een Slack-gebruiker een app is (Jira, Google Calendar); leeg = nog niet opgehaald.
   const gebruikerKolommen = db
     .prepare("PRAGMA table_info(slack_gebruikers)")

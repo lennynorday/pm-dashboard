@@ -18,7 +18,8 @@ import { type AgendaUitkomst, leesAgenda } from "./google/agenda";
 import { NORDAY_DOMEIN } from "./google/oauth";
 import type { LinkUrls } from "./links";
 import { leesOvergeslagen, leesRegels, leesVroegKlaar } from "./meeting-regels";
-import { parsePassages, type Passage, zetPassageTerug } from "./weggelaten";
+import { parseSprekers, type Spreker, vulNamenIn } from "./sprekers";
+import { parsePassages, zetPassageTerug } from "./weggelaten";
 import {
   type Meeting,
   type PlatformNaam,
@@ -147,6 +148,7 @@ function parseRij(rij: Record<string, unknown>): NotulenRij {
     plaudGedaan: rij.plaud_gedaan !== null,
     akkoord: rij.akkoord !== null,
     bewerkt: typeof rij.bewerkt === "number" ? rij.bewerkt : null,
+    sprekers: parseSprekers(rij.sprekers),
   };
 }
 
@@ -519,6 +521,7 @@ async function verder(
     zetStap(email, meeting.id, 4, verwacht, {
       tekst: uitkomst.tekst,
       weggelaten: JSON.stringify(uitkomst.weggelaten),
+      sprekers: JSON.stringify(uitkomst.sprekers),
     });
   }
   const klaar = leesRij(email, meeting.id);
@@ -842,7 +845,7 @@ async function maakNotulen(
   meeting: Meeting,
   opnameId: string,
   platforms: NotulenPlatform[],
-): Promise<{ tekst: string; weggelaten: Passage[] } | { fout: string }> {
+): Promise<ReturnType<typeof parseNotulen>> {
   const transcript = await leesTranscript(opnameId);
   if (typeof transcript !== "string") return transcript;
   if (!transcript) return { fout: "Plaud gaf een leeg transcript" };
@@ -1047,7 +1050,8 @@ export function zetOpname(
        tekst = NULL, pagina_doc = NULL, pagina_id = NULL, pagina_url = NULL,
        slack_tekst = NULL, niet_gedeeld = NULL, elders = NULL,
        mail_stand = NULL, mail_url = NULL, slack_stand = NULL, slack_url = NULL,
-       fout = NULL, bezig = NULL, acties_uit = NULL, akkoord = NULL, bewerkt = NULL
+       fout = NULL, bezig = NULL, acties_uit = NULL, akkoord = NULL, bewerkt = NULL,
+       sprekers = NULL
      WHERE email = ? AND meeting_id = ?`,
   );
   // De open acties komen opnieuw uit de nieuwe notulen; afgehandelde (to-do, gedaan, genegeerd, herinnerd) blijven staan.
@@ -1198,7 +1202,16 @@ export function zetWeggelatenTerug(
       "UPDATE notulen SET tekst = ?, weggelaten = ? WHERE email = ? AND meeting_id = ? AND tekst = ?",
     )
     .run(
-      zetPassageTerug(notulen, passage),
+      zetPassageTerug(
+        notulen,
+        // Na het akkoord staan er namen in de notulen, geen verwijzingen meer.
+        rij.akkoord === null
+          ? passage
+          : {
+              ...passage,
+              tekst: vulNamenIn(passage.tekst, parseSprekers(rij.sprekers)),
+            },
+      ),
       JSON.stringify(passages.filter((_, i) => i !== index)),
       email,
       id,
@@ -1219,15 +1232,18 @@ export function bewaarNotulen(
   email: string,
   id: string,
   notulen: string,
+  sprekers: Spreker[],
   akkoord: boolean,
 ): number | null {
   const nu = Date.now();
+  // Bij akkoord komen de namen erin: Superhuman, actiepunten en Slack lezen gewone tekst.
+  const tekst = akkoord ? vulNamenIn(notulen, sprekers) : notulen;
   const { changes } = database()
     .prepare(
-      `UPDATE notulen SET tekst = ?, bewerkt = ?, akkoord = ?
+      `UPDATE notulen SET tekst = ?, sprekers = ?, bewerkt = ?, akkoord = ?
        WHERE email = ? AND meeting_id = ? AND stap = 4 AND akkoord IS NULL`,
     )
-    .run(notulen, nu, akkoord ? nu : null, email, id);
+    .run(tekst, JSON.stringify(sprekers), nu, akkoord ? nu : null, email, id);
   return changes > 0 ? nu : null;
 }
 

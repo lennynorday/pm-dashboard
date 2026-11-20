@@ -57,3 +57,19 @@ test("wat de browser maakt: <b>, <i>, <div>-regels, spaties binnen vet, genummer
   );
   assert.strictEqual(htmlNaarMd(veld), "Losse regel\n\n**vet** en *schuin*\n\n1. een\n2. twee");
 });
+
+test("een spreker-verwijzing wordt een naam-knop en weer een verwijzing", () => {
+  assert.strictEqual(
+    mdNaarHtml('- **Actie [[Speaker 1|Eva "x" Smit]]:** bellen'),
+    '<ul><li><strong>Actie <span data-spreker="Speaker 1" data-naam="Eva &quot;x&quot; Smit" contenteditable="false" role="button" tabindex="0">Speaker 1</span>:</strong> bellen</li></ul>',
+  );
+  const knop = (spreker: string, naam: string | null): Knoop => ({
+    ...el("SPAN", t("Eva")),
+    getAttribute: (attr) => (attr === "data-spreker" ? spreker : attr === "data-naam" ? naam : null),
+  });
+  assert.strictEqual(
+    htmlNaarMd(el("DIV", el("UL", el("LI", el("STRONG", t("Actie "), knop("Speaker 1", null), t(":")), t(" bellen"))))),
+    "- **Actie [[Speaker 1]]:** bellen",
+  );
+  assert.strictEqual(htmlNaarMd(el("DIV", el("P", knop("Speaker 2", "Femke"), t(" belt")))), "[[Speaker 2|Femke]] belt");
+});

@@ -65,12 +65,13 @@ test("parseNotulen haalt de notulen uit de envelop, ook met tekst eromheen", () 
   assert.deepStrictEqual(parseNotulen(envelop(notulen)), {
     tekst: notulen,
     weggelaten: [],
+    sprekers: [],
   });
   assert.deepStrictEqual(
     parseNotulen(
       envelop(`Hier zijn de notulen:\n\n\`\`\`markdown\n${notulen}\n\`\`\``),
     ),
-    { tekst: notulen, weggelaten: [] },
+    { tekst: notulen, weggelaten: [], sprekers: [] },
   );
   assert.deepStrictEqual(
     parseNotulen(
@@ -81,8 +82,31 @@ test("parseNotulen haalt de notulen uit de envelop, ook met tekst eromheen", () 
     {
       tekst: notulen,
       weggelaten: [{ onderwerp: 1, tekst: "Marco is altijd te laat" }],
+      sprekers: [],
     },
   );
+});
+
+test("parseNotulen haalt de sprekers eruit en laat de verwijzingen staan", () => {
+  const notulen =
+    "**Aanwezig:** [[Speaker 1]] (Norday)\n\n## 1. Planning\n- **Actie [[Speaker 1]]:** offerte maken";
+  const uit = parseNotulen(
+    envelop(
+      `${notulen}\n\n<sprekers>\n- Speaker 1 = Lennart ter Haar | "Hé Noor, goedemorgen."\n- Speaker 2 = Noor Bakker\n</sprekers>`,
+    ),
+  );
+  assert.deepStrictEqual(uit, {
+    tekst: notulen,
+    weggelaten: [],
+    sprekers: [
+      {
+        label: "Speaker 1",
+        naam: "Lennart ter Haar",
+        citaat: "Hé Noor, goedemorgen.",
+      },
+      { label: "Speaker 2", naam: "Noor Bakker", citaat: "" },
+    ],
+  });
 });
 
 test("parseNotulen zet Doel op een eigen regel", () => {
@@ -95,6 +119,7 @@ test("parseNotulen zet Doel op een eigen regel", () => {
     tekst:
       "**Aanwezig:** Lennart  \n**Doel:** plannen\n\n## 1. Planning\n- Klaar",
     weggelaten: [],
+    sprekers: [],
   });
 });
 

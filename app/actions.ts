@@ -40,6 +40,7 @@ import {
 } from "@/lib/meeting-regels";
 import { PRIVE, TEAM, titelWoord } from "@/lib/meetings";
 import { normaliseerRoepnamen, roepnaamConflict } from "@/lib/roepnamen";
+import { parseSprekers } from "@/lib/sprekers";
 import {
   actueleDeelteksten,
   bewaarNotulen,
@@ -77,6 +78,7 @@ import {
 import {
   type HerinnerVoorstel,
   actieNaarTodo,
+  bewaardeLeden,
   herinner,
   herinnerVoorstel,
   zetActieStatus,
@@ -996,13 +998,20 @@ export async function plaudOpgeruimdAction(meetingId: string): Promise<void> {
 export async function bewaarNotulenAction(
   meetingId: string,
   notulen: string,
+  sprekers: unknown,
   akkoord: boolean,
 ): Promise<number | null> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string") return null;
   if (typeof notulen !== "string" || !notulen.trim() || notulen.length > 200_000)
     return null;
-  const bewaard = bewaarNotulen(user.email, meetingId, notulen, akkoord === true);
+  const bewaard = bewaarNotulen(
+    user.email,
+    meetingId,
+    notulen,
+    parseSprekers(sprekers),
+    akkoord === true,
+  );
   if (bewaard === null || akkoord !== true) return bewaard;
   // In de demo gaat er niets naar Superhuman.
   const platforms = notulenAan() && !DEMO ? await notulenPlatforms() : null;
@@ -1012,6 +1021,13 @@ export async function bewaarNotulenAction(
   }
   revalidatePath("/", "layout");
   return bewaard;
+}
+
+/** De Slack-collega's, voor "Andere collega" en het sprekersveld in de notulen. */
+export async function collegasAction(): Promise<string[]> {
+  const user = await currentUser();
+  if (!user) return [];
+  return (await bewaardeLeden(user.email)).map((persoon) => persoon.naam);
 }
 
 /** Verversen voor één meeting: opnieuw naar Plaud kijken, zonder de rest van de pagina. */

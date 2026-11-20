@@ -12,7 +12,10 @@ export function zetStap(
   stap: number,
   verwacht: Verwacht,
   velden: Partial<
-    Record<"opname_id" | "tekst" | "pagina_url" | "weggelaten", string>
+    Record<
+      "opname_id" | "tekst" | "pagina_url" | "weggelaten" | "sprekers",
+      string
+    >
   > = {},
 ): boolean {
   const { changes } = db
@@ -20,7 +23,8 @@ export function zetStap(
       `UPDATE notulen SET stap = ?, sinds = ?, bezig = NULL, fout = NULL,
          opname_id = COALESCE(?, opname_id), tekst = COALESCE(?, tekst),
          pagina_url = COALESCE(?, pagina_url),
-         weggelaten = COALESCE(?, weggelaten)
+         weggelaten = COALESCE(?, weggelaten),
+         sprekers = COALESCE(?, sprekers)
        WHERE email = ? AND meeting_id = ? AND stap = ? AND opname_id IS ?`,
     )
     .run(
@@ -30,6 +34,7 @@ export function zetStap(
       velden.tekst ?? null,
       velden.pagina_url ?? null,
       velden.weggelaten ?? null,
+      velden.sprekers ?? null,
       email,
       id,
       verwacht.stap,
