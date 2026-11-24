@@ -24,11 +24,11 @@ export function parseDuur(tekst: string): number {
   return (Number(uren) * 3600 + Number(minuten) * 60 + Number(seconden)) * 1000;
 }
 
-/** De regels van `plaud recent`: "  of_<32 hex>  <naam>  <YYYY-MM-DD>  37m30s". De naam mag spaties bevatten. */
+/** De regels van `plaud recent`: "  of_/f_<32 hex>  <naam>  <YYYY-MM-DD>  37m30s". De naam mag spaties bevatten. */
 export function parseRecent(tekst: string): Opname[] {
   return tekst.split("\n").flatMap((regel) => {
     const deel =
-      /^\s+(of_[0-9a-f]{32})\s{2,}(.*?)\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}\S+\s*$/.exec(
+      /^\s+(o?f_[0-9a-f]{32})\s{2,}(.*?)\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}\S+\s*$/.exec(
         regel,
       );
     return deel ? [{ id: deel[1], naam: deel[2], datum: deel[3] }] : [];

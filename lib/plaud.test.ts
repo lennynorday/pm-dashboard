@@ -192,3 +192,19 @@ test("opnamesRondDag houdt de dag zelf en de dagen ernaast, ook over een maandgr
     ["2026-10-31", "2026-11-01", "2026-11-02"],
   );
 });
+
+test("parseRecent en plaudWebUrl kennen ook de nieuwe f_-ids (sinds nov 2026)", () => {
+  const regel =
+    "  f_138767ef00e8478689c240a0c4c06c3b  11-23 Ontwerp- en CMS-review: Verhaalpagina’s  2026-11-23  38m24s";
+  assert.deepStrictEqual(parseRecent(regel), [
+    {
+      id: "f_138767ef00e8478689c240a0c4c06c3b",
+      naam: "11-23 Ontwerp- en CMS-review: Verhaalpagina’s",
+      datum: "2026-11-23",
+    },
+  ]);
+  assert.strictEqual(
+    plaudWebUrl("f_138767ef00e8478689c240a0c4c06c3b"),
+    "https://web.plaud.ai/file/f_138767ef00e8478689c240a0c4c06c3b",
+  );
+});
