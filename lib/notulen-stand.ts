@@ -101,7 +101,7 @@ export type NotulenStatus = {
   acties: Actiepunt[] | null;
 };
 
-/** De opname in Plaud web; de URL gebruikt het id zonder "of_". */
+/** De opname in Plaud web; de URL gebruikt het id zonder "of_" (nieuwe "f_"-ids blijven heel). */
 export const plaudWebUrl = (id: string) =>
   `https://web.plaud.ai/file/${id.replace(/^of_/, "")}`;
 

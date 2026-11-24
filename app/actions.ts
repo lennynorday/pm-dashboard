@@ -961,7 +961,7 @@ export async function kiesOpnameAction(
 ): Promise<string | null> {
   const user = await currentUser();
   if (!user || typeof meetingId !== "string") return null;
-  if (opnameId !== null && !/^of_[0-9a-f]{32}$/.test(opnameId)) return null;
+  if (opnameId !== null && !/^o?f_[0-9a-f]{32}$/.test(opnameId)) return null;
   if (!notulenAan()) return NOTULEN_UIT;
   if (!zetOpname(user.email, meetingId, opnameId)) return null;
   const platforms = await notulenPlatforms();
